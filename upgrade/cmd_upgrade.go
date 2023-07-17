@@ -17,12 +17,11 @@ func main() {
 	//以管理员身份运行
 	nac.Init()
 
-	if len(os.Args) > 0 {
-		switch os.Args[0] {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
 		case "upgrade":
 
 			basename := "in_upgrade_upgrade.exe"
-
 			//下载in_upgrade_upgrade
 			url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
 			filename := filepath.Join(oss.ExecDir(), basename)
