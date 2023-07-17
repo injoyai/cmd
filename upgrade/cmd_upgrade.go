@@ -29,6 +29,7 @@ func main() {
 				<-time.After(time.Second)
 			}
 			//运行
+			logs.Debug(filename)
 			shell.Start(filename + " download")
 			return
 
