@@ -19,32 +19,55 @@ func main() {
 	nac.Init()
 
 	if len(os.Args) > 1 {
+
+		upgrade := "in_upgrade.exe"
+		upgrade_upgrade := "in_upgrade_upgrade.exe"
+
 		switch os.Args[1] {
+
+		case "version":
+
+			fmt.Println("v1.0.0")
+			fmt.Println("转移仓库版本")
+
 		case "upgrade":
 
-			fmt.Println("开始下载升级软件...")
-			basename := "in_upgrade_upgrade.exe"
+			fmt.Println("开始下载...")
 			//下载in_upgrade_upgrade
 			url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
-			filename := filepath.Join(oss.ExecDir(), basename)
+			filename := filepath.Join(oss.ExecDir(), upgrade_upgrade)
 			for logs.PrintErr(bar.Download(url, filename)) {
 				<-time.After(time.Second)
 			}
 			//运行
 			fmt.Println(filename)
-
-			shell.Start(filename + " download")
+			shell.Start(filename + " cover")
 			return
 
-		case "download":
+		case "cover":
 
-			basename := "in_upgrade.exe"
-			//下载in_upgrade_upgrade
-			url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
-			filename := filepath.Join(oss.ExecDir(), basename)
-			for logs.PrintErr(bar.Download(url, filename)) {
+			fmt.Println("开始升级...")
+			fn := func() error {
+				f, err := os.Open(filepath.Join(oss.ExecDir(), upgrade_upgrade))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				for logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), upgrade), f)) {
+					<-time.After(time.Second)
+				}
+				return nil
+			}
+			for logs.PrintErr(fn()) {
 				<-time.After(time.Second)
 			}
+
+			////下载in_upgrade_upgrade
+			//url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
+			//filename := filepath.Join(oss.ExecDir(), upgrade)
+			//for logs.PrintErr(bar.Download(url, filename)) {
+			//	<-time.After(time.Second)
+			//}
 
 		}
 
