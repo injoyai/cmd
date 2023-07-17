@@ -1,4 +1,4 @@
-name="in_upgrade"
+name="upgrade"
 
 GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s" -o ./$name.exe
 echo "Windows编译完成..."
@@ -11,4 +11,4 @@ if [ -f "./$name.000" ]; then
   rm "./$name.000"
 fi
 
-sleep 20
+sleep 5
