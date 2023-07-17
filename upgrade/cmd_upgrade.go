@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/injoyai/goutil/cmd/nac"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
@@ -21,6 +22,7 @@ func main() {
 		switch os.Args[1] {
 		case "upgrade":
 
+			fmt.Println("开始下载升级软件...")
 			basename := "in_upgrade_upgrade.exe"
 			//下载in_upgrade_upgrade
 			url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
@@ -29,7 +31,8 @@ func main() {
 				<-time.After(time.Second)
 			}
 			//运行
-			logs.Debug(filename)
+			fmt.Println(filename)
+
 			shell.Start(filename + " download")
 			return
 
