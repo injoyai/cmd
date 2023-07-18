@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/injoyai/goutil/cmd/nac"
+	"github.com/injoyai/cmd/nac"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
