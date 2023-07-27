@@ -7,6 +7,7 @@ import (
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/logs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -62,12 +63,22 @@ func main() {
 				<-time.After(time.Second)
 			}
 
-			////下载in_upgrade_upgrade
-			//url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
-			//filename := filepath.Join(oss.ExecDir(), upgrade)
-			//for logs.PrintErr(bar.Download(url, filename)) {
-			//	<-time.After(time.Second)
-			//}
+		////下载in_upgrade_upgrade
+		//url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
+		//filename := filepath.Join(oss.ExecDir(), upgrade)
+		//for logs.PrintErr(bar.Download(url, filename)) {
+		//	<-time.After(time.Second)
+		//}
+
+		default:
+
+			//通过本地升级
+			//打开本地文件
+			fmt.Printf("通过本地文件(%s)升级\n", os.Args[1])
+			bs, err := ioutil.ReadFile(os.Args[1])
+			if !logs.PrintErr(err) {
+				logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), "in.exe"), bs))
+			}
 
 		}
 
