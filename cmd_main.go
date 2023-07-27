@@ -49,18 +49,6 @@ func main() {
 		},
 
 		&Command{
-			Flag: []*Flag{
-				{Name: "color", Short: "c", Memo: "日志颜色"},
-				{Name: "download", Short: "d", Memo: "重新下载"},
-			},
-			Use:     "install",
-			Short:   "install",
-			Long:    "安装应用",
-			Example: "in install github.com/xxx/xxx",
-			Run:     handlerInstall,
-		},
-
-		&Command{
 			Use:     "go",
 			Short:   "go",
 			Long:    "go cmd",
@@ -358,6 +346,9 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "download", Short: "d", Memo: "重新下载"},
+			},
 			Use:     "download",
 			Short:   "下载",
 			Example: "in download hfs",
@@ -365,10 +356,28 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "download", Short: "d", Memo: "重新下载"},
+			},
+			Use:     "install",
+			Short:   "install",
+			Long:    "安装应用",
+			Example: "in install hfs",
+			Run:     handlerInstall,
+		},
+
+		&Command{
 			Use:     "open",
 			Short:   "打开",
 			Example: "in open hosts",
 			Run:     handlerOpen,
+		},
+
+		&Command{
+			Use:     "upgrade",
+			Short:   "自我升级",
+			Example: "in upgrade",
+			Run:     handlerUpgrade,
 		},
 	)
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/logs"
@@ -11,24 +11,28 @@ import (
 
 func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
-		fmt.Printf("请输入参数,例(in open hosts)")
+		shell.Start(oss.ExecDir())
 		return
 	}
 	switch strings.ToLower(args[0]) {
 	case "hosts":
 		if shell.Start("C:\\Windows\\System32\\drivers\\etc\\hosts") != nil {
-			shell.Start("C:\\Windows\\System32\\drivers\\etc\\")
+			logs.PrintErr(shell.Start("C:\\Windows\\System32\\drivers\\etc\\"))
 		}
 	case "injoy":
-		shell.Start(oss.UserDefaultDir())
+		logs.PrintErr(shell.Start(oss.UserDefaultDir()))
 	case "appdata":
-		shell.Start(oss.UserDataDir())
+		logs.PrintErr(shell.Start(oss.UserDataDir()))
 	case "startup":
-		shell.Start(oss.UserStartupDir())
-	case "hfs", "downloader", "influxdb", "chromedriver":
-		handlerInstall(cmd, args, flags)
-		logs.PrintErr(shell.Start(args[0] + ".exe"))
+		logs.PrintErr(shell.Start(oss.UserStartupDir()))
 	default:
-		shell.Start(args[0])
+
+		if resource.All[strings.ToLower(args[0])] != nil {
+			name := resource.MustDownload(args[0], oss.ExecDir(), flags.GetBool("download"))
+			logs.PrintErr(shell.Start(name))
+			return
+		}
+
+		logs.PrintErr(shell.Start(args[0]))
 	}
 }

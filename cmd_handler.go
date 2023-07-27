@@ -5,12 +5,12 @@ import (
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
 	"github.com/injoyai/cmd/crud"
+	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/conv/cfg"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/other/notice/voice"
-	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/dial/proxy"
 	"github.com/injoyai/logs"
@@ -47,62 +47,20 @@ func handleBuild(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(result)
 }
 
+func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 || len(args[0]) == 0 {
+		fmt.Println("请输入下载的内容")
+		return
+	}
+	resource.MustDownload(args[0], "./", flags.GetBool("download"))
+}
+
 func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("请输入需要安装的应用")
 		return
 	}
-	switch strings.ToLower(args[0]) {
-
-	case "in":
-
-		url := "https://github.com/injoyai/goutil/raw/main/cmd/in.exe"
-		logs.PrintErr(bar.Download(url, "./in.exe"))
-
-	case "upgrade":
-
-		logs.PrintErr(oss.New("./in_upgrade.exe", upgrade))
-
-	case "upx":
-
-		logs.PrintErr(oss.New("./upx.exe", upx))
-
-	case "rsrc":
-
-		logs.PrintErr(oss.New("./rsrc.exe", rsrc))
-
-	case "chromedriver":
-
-		if _, err := installChromedriver(oss.UserDefaultDir(), flags.GetBool("download")); err != nil {
-			log.Printf("[错误] %s", err.Error())
-		}
-
-	case "downloader":
-
-		url := "https://github.com/injoyai/downloader/releases/latest/download/downloader.exe"
-		logs.PrintErr(bar.Download(url, "./downloader.exe"))
-
-	case "swag":
-
-		logs.PrintErr(oss.New("./swag.exe", swag))
-
-	case "hfs":
-
-		logs.PrintErr(oss.New("./hfs.exe", hfs))
-
-	case "influxdb":
-
-		url := "https://dl.influxdata.com/influxdb/releases/influxdb2-2.7.1-windows-amd64.zip"
-		logs.PrintErr(bar.Download(url, "./influxdb.zip"))
-		logs.PrintErr(DecodeZIP("./influxdb.zip", "./"))
-		os.Remove("./influxdb.zip")
-
-	default:
-
-		bs, _ := exec.Command("go", "install", args[0]).CombinedOutput()
-		fmt.Println(string(bs))
-
-	}
+	resource.MustDownload(args[0], oss.ExecDir(), flags.GetBool("download"))
 }
 
 func handlerGo(cmd *cobra.Command, args []string, flags *Flags) {
