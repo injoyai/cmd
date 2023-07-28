@@ -6,18 +6,16 @@ import (
 	"github.com/DrmagicE/gmqtt"
 	"github.com/DrmagicE/gmqtt/pkg/packets"
 	"github.com/DrmagicE/gmqtt/server"
+	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/io/dial"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"github.com/tebeka/selenium"
 	"log"
 	"net"
-	"os"
 	"path/filepath"
-	"time"
 )
 
 //====================SeleniumServer====================//
@@ -103,33 +101,15 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	{
 		fmt.Println("开始运行InfluxDB服务...")
-		filename := userDir + "/influxd.exe"
-		if !oss.Exists(filename) {
-			url := "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"
-			zipName := filepath.Join(userDir, "influxdb.zip")
-			oldDir := userDir + "/influxdb-1.8.10-1"
-			oldFilename := userDir + "/influxdb-1.8.10-1/influxd.exe"
-			for logs.PrintErr(bar.Download(url, zipName)) {
-				<-time.After(time.Second)
-			}
-			logs.PrintErr(DecodeZIP(zipName, userDir))
-			os.Remove(zipName)
-			os.Rename(oldFilename, filename)
-			os.RemoveAll(oldDir)
-		}
-		shell.Start(filename)
+		name := resource.MustDownload("influxdb", userDir, false)
+		shell.Start(filepath.Join(userDir, name))
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
-		filename := "edge.exe"
-		shell.Stop(filename)
-		filename = filepath.Join(userDir, filename)
-		if !oss.Exists(filename) || flags.GetBool("download") {
-			for logs.PrintErr(bar.Download("http://192.168.10.102:8888/gateway/aiot/-/raw/main/edge/bin/windows/edge.exe?inline=false", filename)) {
-				<-time.After(time.Second)
-			}
-		}
-		shell.Start(filename)
+		name := "edge.exe"
+		shell.Stop(name)
+		resource.MustDownload("edge", userDir, flags.GetBool("download"))
+		shell.Start(filepath.Join(userDir, name))
 	}
 }
 
@@ -137,18 +117,7 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := userDir + "/influxd.exe"
-	if !oss.Exists(filename) || flags.GetBool("download") {
-		url := "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"
-		zipName := filepath.Join(userDir, "influxdb.zip")
-		oldDir := userDir + "/influxdb-1.8.10-1"
-		oldFilename := userDir + "/influxdb-1.8.10-1/influxd.exe"
-		for ; logs.PrintErr(bar.Download(url, zipName)); <-time.After(time.Second) {
-		}
-		logs.PrintErr(DecodeZIP(zipName, userDir))
-		os.Remove(zipName)
-		os.Rename(oldFilename, filename)
-		os.RemoveAll(oldDir)
-	}
+	filename := filepath.Join(userDir, "/influxd.exe")
+	resource.MustDownload("influxdb", userDir, flags.GetBool("download"))
 	shell.Start(filename)
 }
