@@ -69,9 +69,9 @@ var (
 				zipFilename := filepath.Join(dir, "influxdb.zip")
 				logs.PrintErr(bar.Download(url, zipFilename))
 				logs.PrintErr(zip.Decode(zipFilename, dir))
-				os.Remove(zipFilename)
-				os.Rename(oldFilename, filepath.Join(dir, name))
-				os.RemoveAll(filepath.Join(dir, folder))
+				logs.PrintErr(os.Remove(zipFilename))
+				logs.PrintErr(os.Rename(oldFilename, filepath.Join(dir, name)))
+				logs.PrintErr(os.RemoveAll(filepath.Join(dir, folder)))
 			},
 		},
 		"mingw64": {
