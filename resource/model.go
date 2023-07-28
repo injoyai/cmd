@@ -12,10 +12,10 @@ import (
 )
 
 type Entity struct {
-	Key     []string               //标识
-	Name    string                 //文件名称
-	Url     string                 //下载地址
-	Handler func(url, name string) //函数
+	Key     []string                    //标识
+	Name    string                      //文件名称
+	Url     string                      //下载地址
+	Handler func(url, dir, name string) //函数
 }
 
 var (
@@ -61,18 +61,27 @@ var (
 		"influxdb": {
 			Key:  []string{"influx"},
 			Name: "influxdb.exe",
-			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb2-2.7.1-windows-amd64.zip",
-			Handler: func(url, name string) {
-				logs.PrintErr(bar.Download(url, "influxdb.zip"))
-				logs.PrintErr(zip.Decode("influxdb.zip", "./"))
-				os.Remove("influxdb.zip")
+			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
+			Handler: func(url, dir, name string) {
+				folder := "/influxdb-1.8.10-1"
+				oldFilename := filepath.Join(dir, folder, "/influxd.exe")
+				zipFilename := filepath.Join(dir, "influxdb.zip")
+				logs.PrintErr(bar.Download(url, zipFilename))
+				logs.PrintErr(zip.Decode(zipFilename, dir))
+				os.Remove(zipFilename)
+				os.Rename(oldFilename, filepath.Join(dir, name))
+				os.RemoveAll(filepath.Join(dir, folder))
 			},
 		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",
-			Handler: func(url, name string) {},
+			Handler: func(url, dir, name string) {},
 		},
 
+		"edge": {
+			Name: "edge.exe",
+			Url:  "https://www.qianlangyun.com:8888/gateway/aiot/-/raw/main/edge/bin/windows/edge.exe?inline=false",
+		},
 		"build.sh": {
 			Key:  []string{"build"},
 			Name: "build.sh",
@@ -130,7 +139,7 @@ func Download(resource string, fileDir string, redownload bool) (name string, er
 		}
 		fmt.Println("开始下载...")
 		if val.Handler != nil {
-			val.Handler(val.Url, val.Name)
+			val.Handler(val.Url, fileDir, val.Name)
 		} else {
 			err = bar.Download(val.Url, filename)
 		}
