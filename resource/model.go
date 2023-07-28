@@ -9,6 +9,7 @@ import (
 	"github.com/injoyai/logs"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Entity struct {
@@ -59,8 +60,8 @@ var (
 			Url:  "https://github.com/injoyai/cmd/raw/main/in.exe",
 		},
 		"influxdb": {
-			Key:  []string{"influx"},
-			Name: "influxdb.exe",
+			Key:  []string{"influx", "influxd"},
+			Name: "influxd.exe",
 			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
 			Handler: func(url, dir, name string) {
 				folder := "/influxdb-1.8.10-1"
@@ -117,13 +118,14 @@ func init() {
 	}
 }
 
-func MustDownload(resource string, fileDir string, redownload bool) string {
+func MustDownload(resource string, fileDir string, redownload bool) (filename string) {
 	for {
 		name, err := Download(resource, fileDir, redownload)
 		if err == nil {
-			return name
+			return filepath.Join(fileDir, name)
 		}
 		fmt.Println(err)
+		<-time.After(time.Second)
 	}
 }
 
@@ -145,9 +147,9 @@ func Download(resource string, fileDir string, redownload bool) (name string, er
 		}
 		return val.Name, err
 	}
-	fmt.Println("开始下载...")
 	name = filepath.Base(resource)
 	filename := filepath.Join(fileDir, name)
+	fmt.Println("开始下载...")
 	err = bar.Download(resource, filename)
 	return
 }

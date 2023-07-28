@@ -101,15 +101,14 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	{
 		fmt.Println("开始运行InfluxDB服务...")
-		name := resource.MustDownload("influxdb", userDir, false)
-		shell.Start(filepath.Join(userDir, name))
+		filename := resource.MustDownload("influxdb", userDir, false)
+		shell.Start(filename)
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
-		name := "edge.exe"
-		shell.Stop(name)
-		resource.MustDownload("edge", userDir, flags.GetBool("download"))
-		shell.Start(filepath.Join(userDir, name))
+		shell.Stop("edge.exe")
+		filename := resource.MustDownload("edge", userDir, flags.GetBool("download"))
+		shell.Start(filename)
 	}
 }
 
@@ -117,7 +116,6 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := filepath.Join(userDir, "/influxd.exe")
-	resource.MustDownload("influxdb", userDir, flags.GetBool("download"))
+	filename := resource.MustDownload("influxdb", userDir, flags.GetBool("download"))
 	shell.Start(filename)
 }
