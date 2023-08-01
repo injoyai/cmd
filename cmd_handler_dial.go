@@ -157,11 +157,15 @@ func handlerDialDeal(c *io.Client, flags *Flags) {
 func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload("npc", oss.ExecDir(), false)
 	addr := conv.GetDefaultString("", args...)
-	file := cache.NewFile("dial", "nps").Sync()
+	file := cache.NewFile("dial", "nps")
 	addr = file.GetString("addr", addr)
 	addr = flags.GetString("addr", addr)
 	key := file.GetString("key", flags.GetString("key"))
 	Type := file.GetString("type", flags.GetString("type", "tcp"))
+	file.Set("addr", addr)
+	file.Set("key", key)
+	file.Set("type", Type)
+	file.Cover()
 	c := exec.Command("cmd", "/c", fmt.Sprintf("npc -server=%s -vkey=%s -type=%s", addr, key, Type))
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
