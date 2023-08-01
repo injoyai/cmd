@@ -181,6 +181,17 @@ func main() {
 					Example: "in dial deploy 127.0.0.1 -r false",
 					Run:     handlerDialDeploy,
 				},
+				{
+					Flag: []*Flag{
+						{Name: "addr", Short: "a", Memo: "服务地址"},
+						{Name: "key", Short: "k", Memo: "唯一标识"},
+						{Name: "type", Memo: "连接类型"},
+					},
+					Use:     "nps",
+					Short:   "内网穿透客户端",
+					Example: "in dial nps",
+					Run:     dialDialNPS,
+				},
 			},
 		},
 

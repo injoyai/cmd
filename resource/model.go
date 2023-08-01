@@ -74,6 +74,11 @@ var (
 				logs.PrintErr(os.RemoveAll(filepath.Join(dir, folder)))
 			},
 		},
+		"npc": {
+			Key:  []string{"npc.exe"},
+			Name: "npc.exe",
+			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
+		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",
 			Handler: func(url, dir, name string) {},
