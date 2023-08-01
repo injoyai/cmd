@@ -101,18 +101,6 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "serverAddr", Short: "s", Memo: "服务地址"},
-				{Name: "sn", Short: "k", Memo: "客户端标识"},
-				{Name: "proxyAddr", Short: "p", Memo: "代理地址"},
-			},
-			Use:     "proxy",
-			Short:   "代理",
-			Example: "in proxy",
-			Run:     handlerProxy,
-		},
-
-		&Command{
-			Flag: []*Flag{
 				{Name: "redial", Short: "r", Memo: "自动重连", DefValue: "true"},
 				{Name: "debug", Short: "d", Memo: "打印日志", DefValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefValue: "500"},
@@ -188,9 +176,19 @@ func main() {
 						{Name: "type", Memo: "连接类型"},
 					},
 					Use:     "nps",
-					Short:   "内网穿透客户端",
+					Short:   "连接内网穿透服务",
 					Example: "in dial nps",
 					Run:     dialDialNPS,
+				},
+				{
+					Flag: []*Flag{
+						{Name: "addr", Short: "a", Memo: "服务地址"},
+						{Name: "sn", Short: "s", Memo: "客户端标识"},
+					},
+					Use:     "proxy",
+					Short:   "连接代理服务",
+					Example: "in dial proxy",
+					Run:     handlerDialProxy,
 				},
 			},
 		},
@@ -326,37 +324,6 @@ func main() {
 		},
 
 		&Command{
-			Use: "demo",
-			Child: []*Command{
-				{
-					Use:   "build",
-					Short: "build.sh",
-					Run:   handlerDemo("./build.sh", build),
-				},
-				{
-					Use:   "dockerfile",
-					Short: "dockerfile",
-					Run:   handlerDemo("./Dockerfile", dockerfile),
-				},
-				{
-					Use:   "service",
-					Short: "service.service",
-					Run:   handlerDemo("./service.service", service),
-				},
-				{
-					Use:   "install_minio",
-					Short: "install_minio.sh",
-					Run:   handlerDemo("./install_minio.sh", installMinio),
-				},
-				{
-					Use:   "install_nodered",
-					Short: "install_nodered.sh",
-					Run:   handlerDemo("./install_nodered.sh", installNodeRed),
-				},
-			},
-		},
-
-		&Command{
 			Flag: []*Flag{
 				{Name: "download", Short: "d", Memo: "重新下载"},
 			},
@@ -378,6 +345,9 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "download", Short: "d", Memo: "重新下载"},
+			},
 			Use:     "open",
 			Short:   "打开",
 			Example: "in open hosts",

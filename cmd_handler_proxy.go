@@ -9,7 +9,7 @@ import (
 	"runtime"
 )
 
-func handlerProxy(cmd *cobra.Command, args []string, flags *Flags) {
+func handlerDialProxy(cmd *cobra.Command, args []string, flags *Flags) {
 	//服务端地址
 	serverAddr := cfg.GetString("addr", flags.GetString("serverAddr"))
 	if runtime.GOOS == "windows" && len(serverAddr) == 0 {

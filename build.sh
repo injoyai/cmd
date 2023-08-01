@@ -15,4 +15,4 @@ if [ -f "./$name.000" ]; then
   rm "./$name.000"
 fi
 
-sleep 5
+sleep 2

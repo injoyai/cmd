@@ -25,6 +25,7 @@ func handleVersion(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func handlerSwag(cmd *cobra.Command, args []string, flags *Flags) {
+	resource.MustDownload("swag", oss.ExecDir(), false)
 	param := []string{"swag init"}
 	flags.Range(func(key string, val *Flag) bool {
 		param = append(param, fmt.Sprintf(" -%s %s", val.Short, val.Value))
