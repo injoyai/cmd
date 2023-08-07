@@ -55,13 +55,14 @@ type Command struct {
 	Child   []*Command
 }
 
-func (this *Command) command() *cobra.Command {
+func (this *Command) command(flags ...*Flag) *cobra.Command {
 	if this.Command == nil {
 		this.Command = &cobra.Command{}
 	}
 	for _, v := range this.Flag {
 		this.Command.PersistentFlags().StringVarP(&v.Value, v.Name, v.Short, v.DefValue, v.Memo)
 	}
+	flags = append(this.Flag, flags...)
 
 	this.Command.Use = conv.SelectString(this.Command.Use == "", this.Use, this.Command.Use)
 	this.Command.Short = conv.SelectString(this.Command.Short == "", this.Short, this.Command.Short)
@@ -69,11 +70,11 @@ func (this *Command) command() *cobra.Command {
 	this.Command.Example = conv.SelectString(this.Command.Example == "", this.Example, this.Command.Example)
 	this.Command.Run = func(cmd *cobra.Command, args []string) {
 		if this.Run != nil {
-			this.Run(cmd, args, newFlags(this.Flag))
+			this.Run(cmd, args, newFlags(flags))
 		}
 	}
 	for _, v := range this.Child {
-		this.Command.AddCommand(v.command())
+		this.Command.AddCommand(v.command(flags...))
 	}
 	return this.Command
 }
@@ -81,5 +82,5 @@ func (this *Command) command() *cobra.Command {
 type RunFunc func(cmd *cobra.Command, args []string, flag *Flags)
 
 type ICommand interface {
-	command() *cobra.Command
+	command(flags ...*Flag) *cobra.Command
 }

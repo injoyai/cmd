@@ -23,8 +23,11 @@ func handlerDialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	c := dial.RedialTCP(args[0])
+	c := dial.RedialTCP(args[0], func(c *io.Client) {
+		c.Debug(flags.GetBool("debug"))
+	})
 	handlerDialDeal(c, flags)
+	<-c.DoneAll()
 }
 
 func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
@@ -42,8 +45,11 @@ func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if !strings.HasPrefix(args[0], "wss://") || !strings.HasPrefix(args[0], "ws://") {
 		args[0] = "ws://" + args[0]
 	}
-	c := dial.RedialWebsocket(args[0], nil)
+	c := dial.RedialWebsocket(args[0], nil, func(c *io.Client) {
+		c.Debug(flags.GetBool("debug"))
+	})
 	handlerDialDeal(c, flags)
+	<-c.DoneAll()
 }
 
 func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
@@ -112,8 +118,11 @@ func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		StopBits: flags.GetInt("stopBits"),
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
+	}, func(c *io.Client) {
+		c.Debug(flags.GetBool("debug"))
 	})
 	handlerDialDeal(c, flags)
+	<-c.DoneAll()
 }
 
 func handlerDialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
@@ -124,11 +133,9 @@ func handlerDialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func handlerDialDeal(c *io.Client, flags *Flags) {
-	defer c.Close()
 	oss.ListenExit(func() { c.CloseAll() })
 	r := bufio.NewReader(os.Stdin)
 	c.SetOptions(func(c *io.Client) {
-		c.Debug()
 		if !flags.GetBool("redial") {
 			c.SetRedialWithNil()
 		}
