@@ -75,9 +75,13 @@ func main() {
 			//通过本地升级
 			//打开本地文件
 			fmt.Printf("通过本地文件(%s)升级\n", os.Args[1])
-			bs, err := ioutil.ReadFile(os.Args[1])
-			if !logs.PrintErr(err) {
-				logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), "in.exe"), bs))
+			for {
+				bs, err := ioutil.ReadFile(os.Args[1])
+				if !logs.PrintErr(err) {
+					if !logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), "in.exe"), bs)) {
+						break
+					}
+				}
 			}
 
 		}
