@@ -9,13 +9,13 @@ import (
 	"github.com/injoyai/goutil/cache"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/dial"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"os"
-	"os/exec"
 	"strings"
 )
 
@@ -162,7 +162,7 @@ func handlerDialDeal(c *io.Client, flags *Flags) {
 }
 
 func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload("npc", oss.ExecDir(), false)
+	resource.MustDownload("npc", oss.ExecDir(), flags.GetBool("download"))
 	addr := conv.GetDefaultString("", args...)
 	file := cache.NewFile("dial", "nps")
 	addr = file.GetString("addr", addr)
@@ -173,9 +173,5 @@ func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	file.Set("key", key)
 	file.Set("type", Type)
 	file.Cover()
-	c := exec.Command("cmd", "/c", fmt.Sprintf("npc -server=%s -vkey=%s -type=%s", addr, key, Type))
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-	c.Stdin = os.Stdin
-	logs.PrintErr(c.Run())
+	shell.Run(fmt.Sprintf("npc -server=%s -vkey=%s -type=%s", addr, key, Type))
 }

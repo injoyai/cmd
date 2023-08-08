@@ -6,7 +6,7 @@ require (
 	github.com/DrmagicE/gmqtt v0.5.0
 	github.com/injoyai/base v1.0.5
 	github.com/injoyai/conv v1.0.5
-	github.com/injoyai/goutil v0.0.0-20230717145027-ca16e04faf93
+	github.com/injoyai/goutil v0.0.0-20230803081810-7bf2828b3488
 	github.com/injoyai/io v0.0.7
 	github.com/injoyai/logs v1.0.2
 	github.com/spf13/cobra v1.7.0

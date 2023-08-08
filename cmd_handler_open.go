@@ -28,7 +28,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	default:
 
 		if resource.All[strings.ToLower(args[0])] != nil {
-			filename := resource.MustDownload(args[0], oss.ExecDir(), flags.GetBool("download"))
+			filename := resource.MustDownload(args[0], oss.UserInjoyDir(), flags.GetBool("download"))
 			logs.PrintErr(shell.Start(filename))
 			return
 		}
