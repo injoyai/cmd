@@ -75,13 +75,16 @@ var (
 			},
 		},
 		"npc": {
-			Key:  []string{"npc.exe"},
 			Name: "npc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",
 			Handler: func(url, dir, name string) {},
+		},
+		"zerotier": {
+			Name: "zerotier.exe",
+			Url:  "https://download.zerotier.com/dist/ZeroTier%20One.msi",
 		},
 
 		"edge": {
@@ -111,6 +114,11 @@ var (
 			Key:  []string{"install_nodered"},
 			Name: "install_nodered.sh",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/install_nodered.sh",
+		},
+		"install_v2raya.sh": {
+			Key:  []string{"install_v2raya"},
+			Name: "install_v2raya.sh",
+			Url:  "https://github.com/injoyai/cmd/raw/main/resource/install_v2raya.sh",
 		},
 	}
 )
