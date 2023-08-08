@@ -15,8 +15,6 @@ import (
 	"github.com/tebeka/selenium"
 	"log"
 	"net"
-	"os"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -110,10 +108,7 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("开始运行Edge服务...")
 		shell.Stop("edge.exe")
 		filename := resource.MustDownload("edge", userDir, flags.GetBool("download"))
-		c := exec.Command("cmd", "/c", filename)
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-		c.Run()
+		shell.Run(filename)
 	}
 }
 
