@@ -134,7 +134,7 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ws, err := websocket.Upgrade(w, r, r.Header, 4096, 4096)
 			in.CheckErr(err)
 			defer ws.Close()
-			logs.Debugf("[%s] 新的Websocket连接...\n")
+			logs.Debugf("[%s] 新的Websocket连接...\n", r.URL.Path)
 			for {
 				_, msg, err := ws.ReadMessage()
 				in.CheckErr(err)
