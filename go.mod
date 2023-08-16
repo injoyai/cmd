@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/DrmagicE/gmqtt v0.5.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/injoyai/base v1.0.5
 	github.com/injoyai/conv v1.0.5
 	github.com/injoyai/goutil v0.0.0-20230803081810-7bf2828b3488

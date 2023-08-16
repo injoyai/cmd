@@ -6,7 +6,9 @@ import (
 	"github.com/DrmagicE/gmqtt"
 	"github.com/DrmagicE/gmqtt/pkg/packets"
 	"github.com/DrmagicE/gmqtt/server"
+	"github.com/gorilla/websocket"
 	"github.com/injoyai/cmd/resource"
+	"github.com/injoyai/goutil/frame/in"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/io/dial"
@@ -15,6 +17,7 @@ import (
 	"github.com/tebeka/selenium"
 	"log"
 	"net"
+	"net/http"
 	"path/filepath"
 )
 
@@ -118,4 +121,25 @@ func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename := resource.MustDownload("influxdb", userDir, flags.GetBool("download"))
 	shell.Start(filename)
+}
+
+//====================WebsocketServer====================//
+
+func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
+	port := flags.GetInt("port", 8200)
+	log.Printf("[信息][:%d] 开启Websocket服务成功...\n", port)
+	logs.PrintErr(http.ListenAndServe(
+		fmt.Sprintf(":%d", port),
+		in.InitGo(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ws, err := websocket.Upgrade(w, r, r.Header, 4096, 4096)
+			in.CheckErr(err)
+			defer ws.Close()
+			logs.Debugf("[%s] 新的Websocket连接...\n")
+			for {
+				_, msg, err := ws.ReadMessage()
+				in.CheckErr(err)
+				logs.Debugf("[%s] %s\n", r.URL.Path, string(msg))
+			}
+		})),
+	))
 }

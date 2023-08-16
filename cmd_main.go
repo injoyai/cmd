@@ -255,6 +255,14 @@ func main() {
 					Run: handlerInfluxServer,
 				},
 				{
+					Command: &cobra.Command{
+						Use:     "ws",
+						Short:   "websocket服务",
+						Example: "in server ws",
+					},
+					Run: handlerWebsocketServer,
+				},
+				{
 					Flag: []*Flag{
 						{Name: "download", Short: "d", Memo: "重新下载"},
 						{Name: "port", Short: "p", DefValue: "10088", Memo: "端口"},
