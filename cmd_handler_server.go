@@ -127,6 +127,7 @@ func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 8200)
+	debug := flags.GetBool("debug")
 	log.Printf("[信息][:%d] 开启Websocket服务成功...\n", port)
 	logs.PrintErr(http.ListenAndServe(
 		fmt.Sprintf(":%d", port),
@@ -134,12 +135,29 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ws, err := websocket.Upgrade(w, r, r.Header, 4096, 4096)
 			in.CheckErr(err)
 			defer ws.Close()
-			logs.Debugf("[%s] 新的Websocket连接...\n", r.URL.Path)
+			if debug {
+				logs.Debugf("[%s] 新的Websocket连接...\n", r.URL.Path)
+			}
 			for {
 				_, msg, err := ws.ReadMessage()
 				in.CheckErr(err)
-				logs.Debugf("[%s] %s\n", r.URL.Path, string(msg))
+				if debug {
+					logs.Debugf("[%s] %s\n", r.URL.Path, string(msg))
+				}
 			}
 		})),
 	))
+}
+
+//====================UDPServer====================//
+
+func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
+	port := flags.GetInt("port", 10088)
+	s, err := dial.NewUDPServer(port)
+	if err != nil {
+		log.Printf("[错误] %s", err.Error())
+		return
+	}
+	s.Debug(flags.GetBool("debug"))
+	s.Run()
 }
