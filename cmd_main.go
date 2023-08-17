@@ -263,6 +263,25 @@ func main() {
 					Run: handlerWebsocketServer,
 				},
 				{
+					Command: &cobra.Command{
+						Use:     "udp",
+						Short:   "udp服务",
+						Example: "in server udp",
+					},
+					Run: handlerUDPServer,
+				},
+				{
+					Flag: []*Flag{
+						{Name: "addr", Short: "a", DefValue: "127.0.0.1:80", Memo: "代理地址"},
+					},
+					Command: &cobra.Command{
+						Use:     "proxy",
+						Short:   "proxy服务",
+						Example: "in server proxy",
+					},
+					Run: handlerProxyServer,
+				},
+				{
 					Flag: []*Flag{
 						{Name: "download", Short: "d", Memo: "重新下载"},
 						{Name: "port", Short: "p", DefValue: "10088", Memo: "端口"},

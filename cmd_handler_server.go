@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/DrmagicE/gmqtt"
 	"github.com/DrmagicE/gmqtt/pkg/packets"
@@ -11,6 +12,7 @@ import (
 	"github.com/injoyai/goutil/frame/in"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
+	"github.com/injoyai/io"
 	"github.com/injoyai/io/dial"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
@@ -160,4 +162,31 @@ func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	s.Debug(flags.GetBool("debug"))
 	s.Run()
+}
+
+//====================ProxyServer====================//
+
+func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
+	port := flags.GetInt("port", 10088)
+	addr := flags.GetString("addr")
+	dial.RunTCPServer(port, func(s *io.Server) {
+		s.Debug(flags.GetBool("debug"))
+		s.SetPrintWithBase()
+		s.SetBeforeFunc(func(client *io.Client) error {
+			s.Print(io.Message("新的客户端连接..."), io.TagInfo)
+			_, err := dial.NewTCP(addr, func(c *io.Client) {
+				c.Debug(false)
+				c.SetDealWithWriter(client)
+				c.SetCloseFunc(func(ctx context.Context, msg *io.IMessage) {
+					client.CloseWithErr(errors.New(msg.String()))
+				})
+				go c.Run()
+				client.SetReadWithWriter(c)
+			})
+			if err != nil {
+				s.Print(io.NewMessage(err.Error()), io.TagErr)
+			}
+			return err
+		})
+	})
 }
