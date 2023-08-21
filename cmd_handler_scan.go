@@ -112,7 +112,7 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 		case <-ctx.Done():
 			return
 		case data := <-ch:
-			fmt.Printf("%v: %v\n", data.IP, data.SN)
+			fmt.Printf("%v: %v\t%s(%s)\n", data.IP, data.SN, data.Model, data.Version)
 			if flags.GetBool("open") {
 				logs.PrintErr(shell.OpenBrowser(fmt.Sprintf("http://%s:10001", data.IP)))
 			}
