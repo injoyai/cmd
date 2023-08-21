@@ -13,8 +13,10 @@ import (
 )
 
 type IPSN struct {
-	IP string
-	SN string
+	IP      string
+	SN      string
+	Model   string
+	Version string
 }
 
 func qlScanEdge(startIP, endIP net.IP) (chan IPSN, context.Context) {
@@ -42,7 +44,12 @@ func qlScanEdge(startIP, endIP net.IP) (chan IPSN, context.Context) {
 					case "REGISTER":
 						gm := m.GetGMap("data")
 						gm["_realIP"] = strings.Split(addr, ":")[0]
-						ch <- IPSN{SN: conv.String(gm["sn"]), IP: conv.String(gm["_realIP"])}
+						ch <- IPSN{
+							SN:      conv.String(gm["sn"]),
+							IP:      conv.String(gm["_realIP"]),
+							Model:   conv.String(gm["model"]),
+							Version: conv.String(gm["version"]),
+						}
 						c.Close()
 					}
 				})
