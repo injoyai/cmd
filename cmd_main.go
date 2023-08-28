@@ -277,6 +277,14 @@ func main() {
 					},
 					Run: handlerDeployServer,
 				},
+				{
+					Command: &cobra.Command{
+						Use:     "stream",
+						Short:   "部署服务",
+						Example: "in server stream",
+					},
+					Run: handlerStreamServer,
+				},
 			},
 		},
 
