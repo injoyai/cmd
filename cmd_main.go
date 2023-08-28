@@ -195,16 +195,18 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "port", Short: "p", Memo: "监听端口"},
+				{Name: "debug", Short: "d", DefValue: "true", Memo: "打印日志"},
+				{Name: "download", Short: "r", Memo: "重新下载"},
+			},
 			Use:     "server",
 			Short:   "服务",
 			Example: "in server tcp",
 			Child: []*Command{
 				{
 					Flag: []*Flag{
-						{Name: "port", Short: "p", Memo: "监听端口", DefValue: "20165"},
 						{Name: "chromedriver", Short: "c", Memo: "驱动路径"},
-						{Name: "debug", Short: "d", Memo: "打印日志", DefValue: "true"},
-						{Name: "download", Memo: "重新下载"},
 					},
 					Use:     "selenium",
 					Short:   "自动化服务",
@@ -212,19 +214,11 @@ func main() {
 					Run:     handlerSeleniumServer,
 				},
 				{
-					Flag: []*Flag{
-						{Name: "port", Short: "p", DefValue: "10086", Memo: "监听端口"},
-						{Name: "debug", Short: "d", DefValue: "true", Memo: "打印日志"},
-					},
 					Use:   "tcp",
 					Short: "TCP服务",
 					Run:   handlerTCPServer,
 				},
 				{
-					Flag: []*Flag{
-						{Name: "port", Short: "p", DefValue: "1883", Memo: "监听端口"},
-						{Name: "debug", Short: "d", DefValue: "true", Memo: "打印日志"},
-					},
 					Command: &cobra.Command{
 						Use:     "mqtt",
 						Short:   "MQTT服务",
@@ -233,9 +227,6 @@ func main() {
 					Run: handlerMQTTServer,
 				},
 				{
-					Flag: []*Flag{
-						{Name: "download", Short: "d", Memo: "重新下载"},
-					},
 					Command: &cobra.Command{
 						Use:     "edge",
 						Short:   "Edge服务",
@@ -244,9 +235,6 @@ func main() {
 					Run: handlerEdgeServer,
 				},
 				{
-					Flag: []*Flag{
-						{Name: "download", Short: "d", Memo: "重新下载"},
-					},
 					Command: &cobra.Command{
 						Use:     "influx",
 						Short:   "Influx服务",
@@ -282,10 +270,6 @@ func main() {
 					Run: handlerProxyServer,
 				},
 				{
-					Flag: []*Flag{
-						{Name: "download", Short: "d", Memo: "重新下载"},
-						{Name: "port", Short: "p", DefValue: "10088", Memo: "端口"},
-					},
 					Command: &cobra.Command{
 						Use:     "deploy",
 						Short:   "部署服务",
@@ -377,6 +361,20 @@ func main() {
 			Short:   "自我升级",
 			Example: "in upgrade",
 			Run:     handlerUpgrade,
+		},
+
+		&Command{
+			Use:     "course",
+			Short:   "教程",
+			Example: "in course",
+			Child: []*Command{
+				{
+					Use:     "python",
+					Short:   "教程",
+					Example: "in course python",
+					Run:     handlerCoursePython,
+				},
+			},
 		},
 	)
 

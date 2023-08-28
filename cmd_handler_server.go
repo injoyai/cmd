@@ -35,7 +35,7 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 	}
-	port := flags.GetInt("port")
+	port := flags.GetInt("port", 20165)
 	selenium.SetDebug(flags.GetBool("debug"))
 	ser, err := selenium.NewChromeDriverService(flags.GetString("chromedriver", filename), port)
 	if err != nil {
@@ -57,6 +57,7 @@ func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 	s.Debug(flags.GetBool("debug"))
+	s.SetPrintWithBase()
 	s.Run()
 }
 
@@ -161,7 +162,8 @@ func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 	s.Debug(flags.GetBool("debug"))
-	s.Run()
+	s.SetPrintWithBase()
+	logs.PrintErr(s.Run())
 }
 
 //====================ProxyServer====================//
