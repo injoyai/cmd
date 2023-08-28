@@ -13,10 +13,10 @@ import (
 )
 
 type Entity struct {
-	Key     []string                    //标识
-	Name    string                      //文件名称
-	Url     string                      //下载地址
-	Handler func(url, dir, name string) //函数
+	Key     []string                          //标识
+	Name    string                            //文件名称
+	Url     string                            //下载地址
+	Handler func(url, dir, name string) error //函数
 }
 
 var (
@@ -63,15 +63,20 @@ var (
 			Key:  []string{"influx", "influxd"},
 			Name: "influxd.exe",
 			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
-			Handler: func(url, dir, name string) {
+			Handler: func(url, dir, name string) error {
 				zipFilename := filepath.Join(dir, "influxdb.zip")
-				logs.PrintErr(bar.Download(url, zipFilename))
-				logs.PrintErr(zip.Decode(zipFilename, dir))
+				if err := bar.Download(url, zipFilename); err != nil {
+					return err
+				}
+				if err := zip.Decode(zipFilename, dir); err != nil {
+					return err
+				}
 				logs.PrintErr(os.Remove(zipFilename))
 
 				folder := "/influxdb-1.8.10-1"
 				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "/influxd.exe"), filepath.Join(dir, name)))
 				logs.PrintErr(os.RemoveAll(filepath.Join(dir, folder)))
+				return nil
 			},
 		},
 		"npc": {
@@ -81,10 +86,14 @@ var (
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
 			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
-			Handler: func(url, dir, name string) {
+			Handler: func(url, dir, name string) error {
 				zipFilename := filepath.Join(dir, "ffmpeg.zip")
-				logs.PrintErr(bar.Download(url, zipFilename))
-				logs.PrintErr(zip.Decode(zipFilename, dir))
+				if err := bar.Download(url, zipFilename); err != nil {
+					return err
+				}
+				if err := zip.Decode(zipFilename, dir); err != nil {
+					return err
+				}
 				logs.PrintErr(os.Remove(zipFilename))
 
 				folder := "/ffmpeg-5.1.2-essentials_build/bin"
@@ -93,11 +102,29 @@ var (
 				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffprobe.exe"), filepath.Join(dir, "ffprobe.exe")))
 
 				logs.PrintErr(os.RemoveAll(filepath.Join(dir, "ffmpeg-5.1.2-essentials_build")))
+				return nil
+			},
+		},
+		"mediamtx": {
+			Key:  []string{"stream"},
+			Name: "mediamtx.exe",
+			Url:  "https://github.com/bluenviron/mediamtx/releases/download/v1.0.0/mediamtx_v1.0.0_windows_amd64.zip",
+			Handler: func(url, dir, name string) error {
+				zipFilename := filepath.Join(dir, "mediamtx.zip")
+				if err := bar.Download(url, zipFilename); err != nil {
+					return err
+				}
+				if err := zip.Decode(zipFilename, dir); err != nil {
+					return err
+				}
+				logs.PrintErr(os.Remove(zipFilename))
+				logs.PrintErr(os.Remove(filepath.Join(dir, "LICENSE")))
+				return nil
 			},
 		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",
-			Handler: func(url, dir, name string) {},
+			Handler: func(url, dir, name string) error { return nil },
 		},
 		"zerotier": {
 			Name: "zerotier.exe",
@@ -171,7 +198,9 @@ func Download(resource string, fileDir string, redownload bool) (name string, er
 		}
 		fmt.Println("开始下载...")
 		if val.Handler != nil {
-			val.Handler(val.Url, fileDir, val.Name)
+			if err := val.Handler(val.Url, fileDir, val.Name); err != nil {
+				return "", err
+			}
 		} else {
 			err = bar.Download(val.Url, filename)
 		}

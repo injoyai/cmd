@@ -192,3 +192,11 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 	})
 }
+
+//====================StreamServer====================//
+
+func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
+	userDir := oss.UserInjoyDir()
+	filename := resource.MustDownload("mediamtx", userDir, flags.GetBool("download"))
+	shell.Run(filename)
+}
