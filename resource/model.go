@@ -64,19 +64,36 @@ var (
 			Name: "influxd.exe",
 			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
 			Handler: func(url, dir, name string) {
-				folder := "/influxdb-1.8.10-1"
-				oldFilename := filepath.Join(dir, folder, "/influxd.exe")
 				zipFilename := filepath.Join(dir, "influxdb.zip")
 				logs.PrintErr(bar.Download(url, zipFilename))
 				logs.PrintErr(zip.Decode(zipFilename, dir))
 				logs.PrintErr(os.Remove(zipFilename))
-				logs.PrintErr(os.Rename(oldFilename, filepath.Join(dir, name)))
+
+				folder := "/influxdb-1.8.10-1"
+				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "/influxd.exe"), filepath.Join(dir, name)))
 				logs.PrintErr(os.RemoveAll(filepath.Join(dir, folder)))
 			},
 		},
 		"npc": {
 			Name: "npc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
+		},
+		"ffmpeg": {
+			Name: "ffmpeg.exe",
+			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
+			Handler: func(url, dir, name string) {
+				zipFilename := filepath.Join(dir, "ffmpeg.zip")
+				logs.PrintErr(bar.Download(url, zipFilename))
+				logs.PrintErr(zip.Decode(zipFilename, dir))
+				logs.PrintErr(os.Remove(zipFilename))
+
+				folder := "/ffmpeg-5.1.2-essentials_build/bin"
+				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffmpeg.exe"), filepath.Join(dir, "ffmpeg.exe")))
+				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffplay.exe"), filepath.Join(dir, "ffplay.exe")))
+				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffprobe.exe"), filepath.Join(dir, "ffprobe.exe")))
+
+				logs.PrintErr(os.RemoveAll(filepath.Join(dir, "ffmpeg-5.1.2-essentials_build")))
+			},
 		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",

@@ -82,6 +82,7 @@ func main() {
 						break
 					}
 				}
+				<-time.After(time.Second)
 			}
 
 		}

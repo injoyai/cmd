@@ -143,7 +143,7 @@ func handlerDeployClient(addr string, flags *Flags) {
 
 func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
-	port := flags.GetInt("port")
+	port := flags.GetInt("port", 10088)
 	s, err := dial.NewTCPServer(port, func(s *io.Server) {
 		s.Debug()
 		s.SetReadWriteWithPkg()
