@@ -175,9 +175,9 @@ func init() {
 	}
 }
 
-func MustDownload(resource string, fileDir string, redownload bool) (filename string) {
+func MustDownload(resource string, fileDir string, redownload bool, proxy ...string) (filename string) {
 	for {
-		name, err := Download(resource, fileDir, redownload)
+		name, err := Download(resource, fileDir, redownload, proxy...)
 		if err == nil {
 			return filepath.Join(fileDir, name)
 		}
@@ -186,7 +186,7 @@ func MustDownload(resource string, fileDir string, redownload bool) (filename st
 	}
 }
 
-func Download(resource string, fileDir string, redownload bool) (name string, err error) {
+func Download(resource string, fileDir string, redownload bool, proxy ...string) (name string, err error) {
 	if len(resource) == 0 {
 		return "", errors.New("请输入需要下载的资源")
 	}

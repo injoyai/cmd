@@ -56,8 +56,9 @@ func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 		log.Printf("[错误] %s", err.Error())
 		return
 	}
+	s.SetTimeout(flags.GetSecond("timeout", -1))
 	s.Debug(flags.GetBool("debug"))
-	s.SetPrintWithBase()
+	s.SetPrintWithASCII()
 	s.Run()
 }
 
@@ -104,16 +105,17 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================EdgeServer====================//
 
 func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
+	proxy := flags.GetString("proxy")
 	userDir := oss.UserInjoyDir()
 	{
 		fmt.Println("开始运行InfluxDB服务...")
-		filename := resource.MustDownload("influxdb", userDir, false)
+		filename := resource.MustDownload("influxdb", userDir, false, proxy)
 		shell.Start(filename)
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
 		shell.Stop("edge.exe")
-		filename := resource.MustDownload("edge", userDir, flags.GetBool("download"))
+		filename := resource.MustDownload("edge", userDir, flags.GetBool("download"), proxy)
 		shell.Run(filename)
 	}
 }
@@ -122,7 +124,8 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := resource.MustDownload("influxdb", userDir, flags.GetBool("download"))
+	filename := resource.MustDownload("influxdb", userDir,
+		flags.GetBool("download"), flags.GetString("proxy"))
 	shell.Start(filename)
 }
 
@@ -161,8 +164,9 @@ func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 		log.Printf("[错误] %s", err.Error())
 		return
 	}
+	s.SetTimeout(flags.GetSecond("timeout", -1))
 	s.Debug(flags.GetBool("debug"))
-	s.SetPrintWithBase()
+	s.SetPrintWithASCII()
 	logs.PrintErr(s.Run())
 }
 
@@ -172,6 +176,7 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
 	addr := flags.GetString("addr")
 	dial.RunTCPServer(port, func(s *io.Server) {
+		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
 		s.SetPrintWithBase()
 		s.SetBeforeFunc(func(client *io.Client) error {

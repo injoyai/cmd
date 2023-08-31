@@ -12,5 +12,5 @@ import (
 func handlerUpgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload("upgrade", oss.ExecDir(), true)
 	filename := conv.GetDefaultString("", args...)
-	logs.PrintErr(shell.Start("in_upgrade " + filename))
+	logs.PrintErr(shell.Run("in_upgrade " + filename))
 }
