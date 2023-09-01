@@ -222,6 +222,12 @@ func main() {
 					Run:     handlerTCPServer,
 				},
 				{
+					Use:     "udp",
+					Short:   "udp服务",
+					Example: "in server udp",
+					Run:     handlerUDPServer,
+				},
+				{
 					Use:     "mqtt",
 					Short:   "MQTT服务",
 					Example: "in server mqtt -p 1883",
@@ -244,12 +250,6 @@ func main() {
 					Short:   "websocket服务",
 					Example: "in server ws",
 					Run:     handlerWebsocketServer,
-				},
-				{
-					Use:     "udp",
-					Short:   "udp服务",
-					Example: "in server udp",
-					Run:     handlerUDPServer,
 				},
 				{
 					Flag: []*Flag{
