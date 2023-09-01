@@ -42,7 +42,7 @@ func main() {
 			}
 			//运行
 			fmt.Println(filename)
-			shell.Start(filename + " cover")
+			shell.Run(filename + " cover")
 			return
 
 		case "cover":
@@ -62,13 +62,6 @@ func main() {
 			for logs.PrintErr(fn()) {
 				<-time.After(time.Second)
 			}
-
-		////下载in_upgrade_upgrade
-		//url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
-		//filename := filepath.Join(oss.ExecDir(), upgrade)
-		//for logs.PrintErr(bar.Download(url, filename)) {
-		//	<-time.After(time.Second)
-		//}
 
 		default:
 

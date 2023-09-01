@@ -51,15 +51,34 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10086)
-	s, err := dial.NewTCPServer(port)
+	s, err := dial.NewTCPServer(port, func(s *io.Server) {
+		s.SetTimeout(flags.GetSecond("timeout", -1))
+		s.Debug(flags.GetBool("debug"))
+		s.SetPrintWithASCII()
+		s.SetKey(fmt.Sprintf(":%d", port))
+	})
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	logs.PrintErr(s.Run())
+}
+
+//====================UDPServer====================//
+
+func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
+	port := flags.GetInt("port", 10088)
+	s, err := dial.NewUDPServer(port, func(s *io.Server) {
+		s.SetTimeout(flags.GetSecond("timeout", -1))
+		s.Debug(flags.GetBool("debug"))
+		s.SetPrintWithASCII()
+		s.SetKey(fmt.Sprintf(":%d", port))
+	})
 	if err != nil {
 		log.Printf("[错误] %s", err.Error())
 		return
 	}
-	s.SetTimeout(flags.GetSecond("timeout", -1))
-	s.Debug(flags.GetBool("debug"))
-	s.SetPrintWithASCII()
-	s.Run()
+	logs.PrintErr(s.Run())
 }
 
 //====================MQTTServer====================//
@@ -155,27 +174,13 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 	))
 }
 
-//====================UDPServer====================//
-
-func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
-	port := flags.GetInt("port", 10088)
-	s, err := dial.NewUDPServer(port)
-	if err != nil {
-		log.Printf("[错误] %s", err.Error())
-		return
-	}
-	s.SetTimeout(flags.GetSecond("timeout", -1))
-	s.Debug(flags.GetBool("debug"))
-	s.SetPrintWithASCII()
-	logs.PrintErr(s.Run())
-}
-
 //====================ProxyServer====================//
 
 func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
-	port := flags.GetInt("port", 10088)
+	port := flags.GetInt("port", 10089)
 	addr := flags.GetString("addr")
 	dial.RunTCPServer(port, func(s *io.Server) {
+		s.SetKey(fmt.Sprintf(":%d", port))
 		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
 		s.SetPrintWithBase()
