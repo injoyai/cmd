@@ -13,10 +13,10 @@ import (
 )
 
 type Entity struct {
-	Key     []string                          //标识
-	Name    string                            //文件名称
-	Url     string                            //下载地址
-	Handler func(url, dir, name string) error //函数
+	Key     []string                                           //标识
+	Name    string                                             //文件名称
+	Url     string                                             //下载地址
+	Handler func(url, dir, name string, proxy ...string) error //函数
 }
 
 var (
@@ -63,7 +63,7 @@ var (
 			Key:  []string{"influx", "influxd"},
 			Name: "influxd.exe",
 			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
-			Handler: func(url, dir, name string) error {
+			Handler: func(url, dir, name string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "influxdb.zip")
 				if err := bar.Download(url, zipFilename); err != nil {
 					return err
@@ -86,7 +86,7 @@ var (
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
 			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
-			Handler: func(url, dir, name string) error {
+			Handler: func(url, dir, name string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "ffmpeg.zip")
 				if err := bar.Download(url, zipFilename); err != nil {
 					return err
@@ -105,26 +105,14 @@ var (
 				return nil
 			},
 		},
-		"mediamtx": {
+		"livego": {
 			Key:  []string{"stream"},
-			Name: "mediamtx.exe",
-			Url:  "https://github.com/bluenviron/mediamtx/releases/download/v1.0.0/mediamtx_v1.0.0_windows_amd64.zip",
-			Handler: func(url, dir, name string) error {
-				zipFilename := filepath.Join(dir, "mediamtx.zip")
-				if err := bar.Download(url, zipFilename); err != nil {
-					return err
-				}
-				if err := zip.Decode(zipFilename, dir); err != nil {
-					return err
-				}
-				logs.PrintErr(os.Remove(zipFilename))
-				logs.PrintErr(os.Remove(filepath.Join(dir, "LICENSE")))
-				return nil
-			},
+			Name: "livego.exe",
+			Url:  "https://github.com/injoyai/livego/releases/latest/download/win_amd64.exe",
 		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",
-			Handler: func(url, dir, name string) error { return nil },
+			Handler: func(url, dir, name string, proxy ...string) error { return nil },
 		},
 		"zerotier": {
 			Name: "zerotier.exe",
