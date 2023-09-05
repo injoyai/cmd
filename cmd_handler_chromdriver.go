@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func installChromedriver(dir string, reDownload bool) (string, error) {
+func installChromedriver(dir string, reDownload bool, proxy ...string) (string, error) {
 
 	appDir := APPDir("chrome.exe")
 	if len(appDir) == 0 {
@@ -46,7 +46,7 @@ func installChromedriver(dir string, reDownload bool) (string, error) {
 	if list := strings.Split(version, "."); len(list) >= 2 {
 		url := getChromedriverUrl(list[0])
 		zipName := filepath.Join(dir, "chromedriver.zip")
-		if err := bar.Download(url, zipName); err != nil {
+		if err := bar.Download(url, zipName, proxy...); err != nil {
 			return "", err
 		}
 		if err := DecodeZIP(zipName, dir); err != nil {

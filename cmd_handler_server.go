@@ -30,7 +30,7 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename := filepath.Join(userDir, "chromedriver.exe")
 	if !oss.Exists(filename) {
-		if _, err := installChromedriver(userDir, flags.GetBool("download")); err != nil {
+		if _, err := installChromedriver(userDir, flags.GetBool("download"), flags.GetString("proxy")); err != nil {
 			logs.Err(err)
 			return
 		}
@@ -207,6 +207,6 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := resource.MustDownload("livego", userDir, flags.GetBool("download"))
+	filename := resource.MustDownload("livego", userDir, flags.GetBool("download"), flags.GetString("proxy"))
 	shell.Run(filename)
 }
