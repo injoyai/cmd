@@ -116,6 +116,12 @@ func main() {
 					Run:     handlerDialTCP,
 				},
 				{
+					Use:     "udp",
+					Short:   "UDP连接",
+					Example: "in dial udp 127.0.0.1:80 -r false",
+					Run:     handlerDialUDP,
+				},
+				{
 					Use:     "ws",
 					Short:   "Websocket连接",
 					Example: "in dial ws 127.0.0.1:80 -r false",
@@ -134,12 +140,6 @@ func main() {
 						{Name: "high", Memo: "高度", DefValue: "32"},
 						{Name: "wide", Memo: "宽度", DefValue: "300"},
 					},
-					Use:     "ssh",
-					Short:   "SSH连接",
-					Example: "in dial ssh 127.0.0.1 -r false",
-					Run:     handlerDialSSH,
-				},
-				{
 					Use:     "ssh",
 					Short:   "SSH连接",
 					Example: "in dial ssh 127.0.0.1 -r false",
