@@ -26,7 +26,20 @@ func handlerDialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	c := dial.RedialTCP(args[0], func(c *io.Client) {
 		c.Debug(flags.GetBool("debug"))
 	})
-	handlerDialDeal(c, flags)
+	handlerDialDeal(c, flags, true)
+	<-c.DoneAll()
+}
+
+func handlerDialUDP(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("[错误] 未填写连接地址")
+	}
+	c := dial.RedialUDP(args[0], func(c *io.Client) {
+		c.Debug(flags.GetBool("debug"))
+	})
+	handlerDialDeal(c, flags, true)
+	c.SetPrintWithHEX()
+	c.WriteString(io.Pong)
 	<-c.DoneAll()
 }
 
@@ -48,7 +61,7 @@ func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	c := dial.RedialWebsocket(args[0], nil, func(c *io.Client) {
 		c.Debug(flags.GetBool("debug"))
 	})
-	handlerDialDeal(c, flags)
+	handlerDialDeal(c, flags, true)
 	<-c.DoneAll()
 }
 
@@ -85,7 +98,7 @@ func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 			logs.Err(err)
 			continue
 		}
-		handlerDialDeal(c, flags)
+		handlerDialDeal(c, flags, false)
 		c.Debug(false)
 		c.SetDealFunc(func(msg *io.IMessage) {
 			fmt.Print(msg.String())
@@ -121,7 +134,7 @@ func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	}, func(c *io.Client) {
 		c.Debug(flags.GetBool("debug"))
 	})
-	handlerDialDeal(c, flags)
+	handlerDialDeal(c, flags, true)
 	<-c.DoneAll()
 }
 
@@ -132,7 +145,7 @@ func handlerDialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 	handlerDeployClient(args[0], flags)
 }
 
-func handlerDialDeal(c *io.Client, flags *Flags) {
+func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
 	oss.ListenExit(func() { c.CloseAll() })
 	r := bufio.NewReader(os.Stdin)
 	c.SetOptions(func(c *io.Client) {
@@ -149,7 +162,11 @@ func handlerDialDeal(c *io.Client, flags *Flags) {
 					logs.PrintErr(err)
 					msg := string(bs)
 					if len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X') {
-						_, err := c.WriteHEX(msg[2:])
+						msg = msg[2:]
+						if len(msg)%2 != 0 {
+							msg = "0" + msg
+						}
+						_, err := c.WriteHEX(msg)
 						logs.PrintErr(err)
 					} else {
 						_, err := c.WriteASCII(msg)
@@ -159,6 +176,9 @@ func handlerDialDeal(c *io.Client, flags *Flags) {
 			}
 		}(c.Ctx())
 	})
+	if run {
+		go c.Run()
+	}
 }
 
 func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
