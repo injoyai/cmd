@@ -252,6 +252,12 @@ func main() {
 					Run:     handlerWebsocketServer,
 				},
 				{
+					Use:     "websocket",
+					Short:   "websocket服务",
+					Example: "in server websocket",
+					Run:     handlerWebsocketServer,
+				},
+				{
 					Flag: []*Flag{
 						{Name: "addr", Short: "a", DefValue: "127.0.0.1:80", Memo: "本地代理地址"},
 					},
@@ -268,7 +274,7 @@ func main() {
 				},
 				{
 					Use:     "stream",
-					Short:   "部署服务",
+					Short:   "流媒体服务",
 					Example: "in server stream",
 					Run:     handlerStreamServer,
 				},
@@ -360,17 +366,23 @@ func main() {
 		},
 
 		&Command{
-			Use:     "course",
+			Use:     "doc",
 			Short:   "教程",
-			Example: "in course",
+			Example: "in doc",
 			Child: []*Command{
 				{
 					Use:     "python",
 					Short:   "教程",
-					Example: "in course python",
-					Run:     handlerCoursePython,
+					Example: "in doc python",
+					Run:     handlerDocPython,
 				},
 			},
+		},
+		&Command{
+			Use:     "kill",
+			Short:   "杀死进程",
+			Example: "in kill 12345",
+			Run:     handlerKill,
 		},
 	)
 
