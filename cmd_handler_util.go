@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
@@ -14,5 +15,9 @@ func handlerKill(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 		logs.PrintErr(shell.Run("taskkill /f /t /pid " + args[0]))
+		return
 	}
+	resp, err := shell.Exec("taskkill /?")
+	logs.PrintErr(err)
+	fmt.Println(resp)
 }
