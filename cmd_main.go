@@ -135,6 +135,17 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
+						{Name: "publish", Memo: "发布"},
+						{Name: "subscribe", Memo: "订阅"},
+						{Name: "qos", DefValue: "0", Memo: "消息质量"},
+					},
+					Use:     "mqtt",
+					Short:   "MQTT连接",
+					Example: "in dial mqtt 127.0.0.1:80 --topic topic",
+					Run:     handlerDialMQTT,
+				},
+				{
+					Flag: []*Flag{
 						{Name: "username", Short: "u", Memo: "用户名"},
 						{Name: "password", Short: "p", Memo: "密码"},
 						{Name: "high", Memo: "高度", DefValue: "32"},
