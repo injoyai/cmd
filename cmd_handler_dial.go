@@ -105,18 +105,15 @@ func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 		go c.Run()
 		reader := bufio.NewReader(os.Stdin)
-		go func() {
-			for {
-				select {
-				case <-c.CtxAll().Done():
-					return
-				default:
-					msg, _ := reader.ReadString('\n')
-					c.WriteString(msg)
-				}
+		for {
+			select {
+			case <-c.CtxAll().Done():
+				return
+			default:
+				msg, _ := reader.ReadString('\n')
+				c.WriteString(msg)
 			}
-		}()
-		break
+		}
 	}
 }
 
