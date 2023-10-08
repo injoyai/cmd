@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/cache"
@@ -23,9 +24,7 @@ func handlerDialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	c := dial.RedialTCP(args[0], func(c *io.Client) {
-		c.Debug(flags.GetBool("debug"))
-	})
+	c := dial.RedialTCP(args[0])
 	handlerDialDeal(c, flags, true)
 	<-c.DoneAll()
 }
@@ -34,9 +33,7 @@ func handlerDialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	c := dial.RedialUDP(args[0], func(c *io.Client) {
-		c.Debug(flags.GetBool("debug"))
-	})
+	c := dial.RedialUDP(args[0])
 	handlerDialDeal(c, flags, true)
 	c.SetPrintWithHEX()
 	c.WriteString(io.Pong)
@@ -58,9 +55,26 @@ func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if !strings.HasPrefix(args[0], "wss://") || !strings.HasPrefix(args[0], "ws://") {
 		args[0] = "ws://" + args[0]
 	}
-	c := dial.RedialWebsocket(args[0], nil, func(c *io.Client) {
-		c.Debug(flags.GetBool("debug"))
-	})
+	c := dial.RedialWebsocket(args[0], nil)
+	handlerDialDeal(c, flags, true)
+	<-c.DoneAll()
+}
+
+func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		logs.Err("请输入连接地址")
+		return
+	}
+	subscribe := flags.GetString("subscribe")
+	publish := flags.GetString("publish")
+	qos := byte(flags.GetInt("qos"))
+	timeout := flags.GetMillisecond("timeout")
+	c := dial.RedialMQTT(subscribe, publish, qos,
+		mqtt.NewClientOptions().
+			AddBroker(args[0]).
+			SetClientID(g.RandString(8)).
+			SetConnectTimeout(timeout),
+	)
 	handlerDialDeal(c, flags, true)
 	<-c.DoneAll()
 }
@@ -128,8 +142,6 @@ func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		StopBits: flags.GetInt("stopBits"),
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
-	}, func(c *io.Client) {
-		c.Debug(flags.GetBool("debug"))
 	})
 	handlerDialDeal(c, flags, true)
 	<-c.DoneAll()
@@ -146,6 +158,7 @@ func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
 	oss.ListenExit(func() { c.CloseAll() })
 	r := bufio.NewReader(os.Stdin)
 	c.SetOptions(func(c *io.Client) {
+		c.Debug(flags.GetBool("debug"))
 		if !flags.GetBool("redial") {
 			c.SetRedialWithNil()
 		}

@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/DrmagicE/gmqtt v0.5.0
+	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/gorilla/websocket v1.5.0
 	github.com/injoyai/base v1.0.5
 	github.com/injoyai/conv v1.0.5
