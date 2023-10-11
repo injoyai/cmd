@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/goutil/str/bar"
 	"io/ioutil"
@@ -49,7 +50,7 @@ func installChromedriver(dir string, reDownload bool, proxy ...string) (string, 
 		if err := bar.Download(url, zipName, proxy...); err != nil {
 			return "", err
 		}
-		if err := DecodeZIP(zipName, dir); err != nil {
+		if err := zip.Decode(zipName, dir); err != nil {
 			return "", err
 		}
 		os.Remove(zipName)

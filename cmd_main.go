@@ -173,7 +173,7 @@ func main() {
 						{Name: "source", Memo: "源头"},
 						{Name: "target", Memo: "目标"},
 						{Name: "shell", Memo: "脚本"},
-						{Name: "type", Memo: "类型"},
+						{Name: "type", Memo: "类型(deploy,file,shell)"},
 					},
 					Use:     "deploy",
 					Short:   "Deploy连接",
