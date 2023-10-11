@@ -173,12 +173,15 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 			case deployDeploy:
 
 				for _, v := range m.File {
-					shell.Stop(filepath.Base(v.Name))
-					fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
-					if err == nil {
-						logs.Debugf("下载文件: %s", v.Name)
-						if err = oss.New(v.Name, fileBytes); err == nil {
-							err = shell.Start(v.Name)
+					dir, name := filepath.Split(v.Name)
+					shell.Stop(name)
+					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
+						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+						logs.Debugf("下载文件: %s", zipPath)
+						if err = oss.New(zipPath, fileBytes); err == nil {
+							err = zip.Decode(zipPath, dir)
+							os.Remove(zipPath)
+							shell.Start(name)
 						}
 					}
 					msg.WriteAny(&resp{
