@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/injoyai/base/bytes/crypt/gzip"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/io"
@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -43,38 +44,44 @@ type Deploy struct {
 	Shell []string       `json:"shell"` //脚本
 }
 
-func (this *Deploy) file(c *io.Client) {
-	for _, v := range this.File {
-		fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
-		if err == nil {
-			err = oss.New(v.Name, fileBytes)
-		}
-		c.WriteAny(&_deployRes{
-			Type:   this.Type,
-			Text:   v.Name,
-			Result: "",
-			Error:  conv.String(err),
-		})
-	}
-}
+//func (this *Deploy) file(c *io.Client) {
+//	for _, v := range this.File {
+//		fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
+//		if err == nil {
+//			err = oss.New(v.Name, fileBytes)
+//		}
+//		c.WriteAny(&_deployRes{
+//			Type:   this.Type,
+//			Text:   v.Name,
+//			Result: "",
+//			Error:  conv.String(err),
+//		})
+//	}
+//}
 
-func (this *Deploy) shell(c *io.Client) {
-	for _, v := range this.Shell {
-		result, err := shell.Exec(v)
-		c.WriteAny(&_deployRes{
-			Type:   this.Type,
-			Text:   v,
-			Result: result,
-			Error:  conv.String(err),
-		})
-	}
-}
+//func (this *Deploy) shell(c *io.Client) {
+//	for _, v := range this.Shell {
+//		result, err := shell.Exec(v)
+//		c.WriteAny(&_deployRes{
+//			Type:   this.Type,
+//			Text:   v,
+//			Result: result,
+//			Error:  conv.String(err),
+//		})
+//	}
+//}
 
 type _deployRes struct {
 	Type   string `json:"shell"`
 	Text   string `json:"text"`
 	Result string `json:"result"`
 	Error  string `json:"error"`
+}
+
+type resp struct {
+	Code int         `json:"code"`           //状态
+	Data interface{} `json:"data,omitempty"` //数据
+	Msg  string      `json:"msg,omitempty"`  //消息
 }
 
 //====================DeployClient====================//
@@ -97,16 +104,22 @@ func handlerDeployClient(addr string, flags *Flags) {
 		//读取文件 target source
 		var file []*_deployFile
 		if len(target) > 0 && len(source) > 0 {
-			bs, err := ioutil.ReadFile(source)
+
+			zipPath := filepath.Clean(source) + ".zip"
+			logs.Debugf("打包文件: %s", zipPath)
+			err := EncodeZIP(source, zipPath)
 			if err != nil {
 				logs.Err(err)
 				return
 			}
-			bs, err = gzip.EncodeGzip(bs)
+			defer os.Remove(zipPath)
+
+			bs, err := ioutil.ReadFile(zipPath)
 			if err != nil {
 				logs.Err(err)
 				return
 			}
+
 			file = append(file, (&_deployFile{
 				Name: target,
 				Data: base64.StdEncoding.EncodeToString(bs),
@@ -135,8 +148,8 @@ func handlerDeployClient(addr string, flags *Flags) {
 	if logs.PrintErr(err) {
 		return
 	}
-	logs.Err(c.Run())
-	os.Exit(-127)
+	c.Run()
+	//os.Exit(-127)
 }
 
 //====================DeployServer====================//
@@ -163,36 +176,33 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 					shell.Stop(filepath.Base(v.Name))
 					fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
 					if err == nil {
-						fileBytes, err = gzip.DecodeGzip(fileBytes)
-						if err == nil {
-							logs.Debugf("下载文件:%s", v.Name)
-							if err = oss.New(v.Name, fileBytes); err == nil {
-								err = shell.Start(v.Name)
-							}
+						logs.Debugf("下载文件: %s", v.Name)
+						if err = oss.New(v.Name, fileBytes); err == nil {
+							err = shell.Start(v.Name)
 						}
 					}
-					msg.WriteAny(&_deployRes{
-						Type:   m.Type,
-						Text:   v.Name,
-						Result: "",
-						Error:  conv.String(err),
+					msg.WriteAny(&resp{
+						Code: conv.SelectInt(err == nil, 200, 500),
+						Msg:  conv.New(err).String("成功"),
 					})
 				}
 
 			case deployFile:
 
 				for _, v := range m.File {
-					fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
-					if err == nil {
-						logs.Debugf("下载文件:%s", v.Name)
-						err = oss.New(v.Name, fileBytes)
+					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
+						zipPath := filepath.Join(v.Name, time.Now().Format("20060102150405.zip"))
+						logs.Debugf("下载文件: %s", zipPath)
+						if err = oss.New(zipPath, fileBytes); err == nil {
+							err = zip.Decode(zipPath, v.Name)
+							os.Remove(zipPath)
+						}
 					}
-					msg.WriteAny(&_deployRes{
-						Type:   m.Type,
-						Text:   v.Name,
-						Result: "",
-						Error:  conv.String(err),
+					msg.WriteAny(&resp{
+						Code: conv.SelectInt(err == nil, 200, 500),
+						Msg:  conv.New(err).String("成功"),
 					})
+
 				}
 
 			case deployShell:
@@ -200,11 +210,10 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 				for _, v := range m.Shell {
 					logs.Debugf("执行脚本:%s", v)
 					result, err := shell.Exec(v)
-					msg.WriteAny(&_deployRes{
-						Type:   m.Type,
-						Text:   v,
-						Result: result,
-						Error:  conv.String(err),
+					msg.WriteAny(&resp{
+						Code: conv.SelectInt(err == nil, 200, 500),
+						Data: result,
+						Msg:  conv.New(err).String("成功"),
 					})
 				}
 

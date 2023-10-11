@@ -150,6 +150,7 @@ func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 func handlerDialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 	handlerDeployClient(args[0], flags)
 }

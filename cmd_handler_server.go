@@ -97,7 +97,7 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 		if err := srv.Init(server.WithHook(server.Hooks{
 			OnConnected: func(ctx context.Context, client server.Client) {
 				if debug {
-					log.Printf("新的客户端连接:%s", client.ClientOptions().ClientID)
+					logs.Infof("[%s] 新的客户端连接...", client.ClientOptions().ClientID)
 				}
 				srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
 					TopicFilter: client.ClientOptions().ClientID,
@@ -106,14 +106,14 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 			},
 			OnMsgArrived: func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 				if debug {
-					log.Printf("发布主题:%s,消息内容:%s", req.Message.Topic, string(req.Message.Payload))
+					logs.Infof("[%s] 发布主题:%s,消息内容:%s", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
 				}
 				return nil
 			},
 		})); err != nil {
 			return err
 		}
-		log.Printf("[信息][:%d] 开启MQTT服务成功...\n", port)
+		logs.Infof("[:%d] 开启MQTT服务成功...\n", port)
 		if err := srv.Run(); err != nil {
 			return err
 		}
