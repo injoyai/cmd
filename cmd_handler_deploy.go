@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -96,7 +97,8 @@ func handlerDeployClient(addr string, flags *Flags) {
 		Type = deployShell
 	}
 	c, err := dial.NewTCP(addr, func(c *io.Client) {
-		c.SetReadWriteWithPkg()
+		c.SetReadWithPkg()
+		c.SetWriteWithNil()
 		c.SetDealFunc(func(msg *io.IMessage) {
 			fmt.Println(msg.String())
 		})
@@ -132,24 +134,14 @@ func handlerDeployClient(addr string, flags *Flags) {
 			Shell: []string{shell},
 		})
 
-		b := bar.New(int64(len(bs)))
-
-		c.SetWriteFunc(func(p []byte) ([]byte, error) {
-			b.Add(int64(len(p)))
-			return io.WriteWithPkg(p)
-		})
-
-		go b.Run()
-
-		c.WriteAny(bs)
+		bs, _ = io.WriteWithPkg(bs)
+		bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs))
 
 	})
-	fmt.Println()
 	if logs.PrintErr(err) {
 		return
 	}
 	c.Run()
-	//os.Exit(-127)
 }
 
 //====================DeployServer====================//
@@ -161,6 +153,7 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 		s.Debug()
 		s.SetReadWriteWithPkg()
 		s.SetDealFunc(func(msg *io.IMessage) {
+			defer msg.Close()
 
 			var m *Deploy
 			err := json.Unmarshal(msg.Bytes(), &m)
@@ -220,11 +213,7 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 						Msg:  conv.New(err).String("成功"),
 					})
 				}
-
 			}
-
-			msg.Close()
-
 		})
 	})
 	if logs.PrintErr(err) {
