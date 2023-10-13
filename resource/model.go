@@ -83,6 +83,10 @@ var (
 			Name: "npc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
+		"frpc": {
+			Name: "frpc.exe",
+			Url:  "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+		},
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
 			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",

@@ -45,33 +45,6 @@ type Deploy struct {
 	Shell []string       `json:"shell"` //脚本
 }
 
-//func (this *Deploy) file(c *io.Client) {
-//	for _, v := range this.File {
-//		fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
-//		if err == nil {
-//			err = oss.New(v.Name, fileBytes)
-//		}
-//		c.WriteAny(&_deployRes{
-//			Type:   this.Type,
-//			Text:   v.Name,
-//			Result: "",
-//			Error:  conv.String(err),
-//		})
-//	}
-//}
-
-//func (this *Deploy) shell(c *io.Client) {
-//	for _, v := range this.Shell {
-//		result, err := shell.Exec(v)
-//		c.WriteAny(&_deployRes{
-//			Type:   this.Type,
-//			Text:   v,
-//			Result: result,
-//			Error:  conv.String(err),
-//		})
-//	}
-//}
-
 type _deployRes struct {
 	Type   string `json:"shell"`
 	Text   string `json:"text"`

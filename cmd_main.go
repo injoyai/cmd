@@ -104,6 +104,7 @@ func main() {
 				{Name: "redial", Short: "r", Memo: "自动重连", DefValue: "true"},
 				{Name: "debug", Short: "d", Memo: "打印日志", DefValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefValue: "500"},
+				{Name: "proxy", Memo: "使用代理", DefValue: "127.0.0.1:1081"},
 			},
 			Use:     "dial",
 			Short:   "连接",
@@ -191,6 +192,20 @@ func main() {
 					Short:   "连接内网穿透服务",
 					Example: "in dial nps",
 					Run:     dialDialNPS,
+				},
+				{
+					Flag: []*Flag{
+						{Name: "serverAddr", Memo: "服务地址"},
+						{Name: "serverPort", Memo: "占用服务端口", DefValue: "10099"},
+						{Name: "localAddr", Memo: "代理本地地址", DefValue: "127.0.0.1:80"},
+						{Name: "name", Memo: "客户端名称", DefValue: "temp"},
+						{Name: "type", Memo: "连接类型", DefValue: "tcp"},
+						{Name: "download", Memo: "重新下载"},
+					},
+					Use:     "frp",
+					Short:   "连接内网穿透服务",
+					Example: "in dial frp",
+					Run:     dialDialFrp,
 				},
 				{
 					Flag: []*Flag{

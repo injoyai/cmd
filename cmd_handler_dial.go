@@ -205,3 +205,35 @@ func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	file.Cover()
 	shell.Run(fmt.Sprintf("npc -server=%s -vkey=%s -type=%s", addr, key, Type))
 }
+
+func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
+	resource.MustDownload("frpc", oss.ExecDir(), flags.GetBool("download"), flags.GetString("proxy"))
+	serverAddr := conv.GetDefaultString("", args...)
+	file := cache.NewFile("dial", "frp")
+	serverAddr = flags.GetString("serverAddr", file.GetString("serverAddr", serverAddr))
+	serverPort := flags.GetString("serverPort", file.GetString("serverPort"))
+	localAddr := flags.GetString("localAddr", file.GetString("localAddr"))
+	name := flags.GetString("name", file.GetString("name"))
+	Type := flags.GetString("type", file.GetString("type", "tcp"))
+	file.Set("serverAddr", serverAddr)
+	file.Set("serverPort", serverPort)
+	file.Set("localAddr", localAddr)
+	file.Set("name", name)
+	file.Set("type", Type)
+	file.Cover()
+	cfgPath := oss.UserInjoyDir("frpc.ini")
+	oss.New(cfgPath, fmt.Sprintf(`
+[common]
+server_addr = %s
+
+[%s]
+type = %s
+local_ip = %s
+remote_port = %s
+`, strings.ReplaceAll(serverAddr, ":", "\nserver_port = "),
+		name,
+		Type,
+		strings.ReplaceAll(localAddr, ":", "\nlocal_port = "),
+		serverPort))
+	shell.Run("frpc -c " + cfgPath)
+}
