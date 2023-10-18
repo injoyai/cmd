@@ -160,11 +160,10 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 				for _, v := range m.File {
 					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
-						dir := filepath.Dir(v.Name)
-						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+						zipPath := filepath.Join(v.Name, time.Now().Format("20060102150405.zip"))
 						logs.Debugf("下载文件: %s", zipPath)
 						if err = oss.New(zipPath, fileBytes); err == nil {
-							err = zip.Decode(zipPath, dir)
+							err = zip.Decode(zipPath, v.Name)
 							os.Remove(zipPath)
 						}
 					}

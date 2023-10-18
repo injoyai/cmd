@@ -210,3 +210,11 @@ func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
 	filename := resource.MustDownload("livego", userDir, flags.GetBool("download"), flags.GetString("proxy"))
 	shell.Run(filename)
 }
+
+//====================FrpServer====================//
+
+func handlerFrpServer(cmd *cobra.Command, args []string, flags *Flags) {
+	userDir := oss.UserInjoyDir()
+	filename := resource.MustDownload("frps", userDir, flags.GetBool("download"), flags.GetString("proxy"))
+	shell.Run(filename)
+}

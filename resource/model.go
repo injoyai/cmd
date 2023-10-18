@@ -87,6 +87,10 @@ var (
 			Name: "frpc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
 		},
+		"frps": {
+			Name: "frps.exe",
+			Url:  "https://github.com/injoyai/cmd/raw/main/resource/frps.exe",
+		},
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
 			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
