@@ -304,6 +304,12 @@ func main() {
 					Example: "in server stream",
 					Run:     handlerStreamServer,
 				},
+				{
+					Use:     "frp",
+					Short:   "流媒体服务",
+					Example: "in server frp",
+					Run:     handlerFrpServer,
+				},
 			},
 		},
 
