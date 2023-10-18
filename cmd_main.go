@@ -306,7 +306,7 @@ func main() {
 				},
 				{
 					Use:     "frp",
-					Short:   "流媒体服务",
+					Short:   "frp服务",
 					Example: "in server frp",
 					Run:     handlerFrpServer,
 				},
