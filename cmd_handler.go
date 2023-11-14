@@ -20,7 +20,6 @@ import (
 )
 
 func handleVersion(cmd *cobra.Command, args []string, flags *Flags) {
-	fmt.Println(version)
 	fmt.Println(details)
 }
 

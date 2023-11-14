@@ -68,7 +68,7 @@ func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 	subscribe := flags.GetString("subscribe")
 	publish := flags.GetString("publish")
 	qos := byte(flags.GetInt("qos"))
-	timeout := flags.GetMillisecond("timeout")
+	timeout := flags.GetMillisecond("timeout", 3000)
 	c := dial.RedialMQTT(subscribe, publish, qos,
 		mqtt.NewClientOptions().
 			AddBroker(args[0]).

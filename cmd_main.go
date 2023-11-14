@@ -391,6 +391,9 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "proxy", Memo: "设置下载代理地址"},
+			},
 			Use:     "upgrade",
 			Short:   "自我升级",
 			Example: "in upgrade",

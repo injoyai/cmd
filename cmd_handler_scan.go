@@ -72,8 +72,10 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 			addr := fmt.Sprintf("%s:%s", ipv4, args[0])
 			c, err := net.DialTimeout("tcp", addr, timeout)
 			if err == nil {
+				bs := make([]byte, 1024)
+				n, _ := c.Read(bs)
 				c.Close()
-				s := fmt.Sprintf("%s   开启\n", addr)
+				s := fmt.Sprintf("%s   开启   %s", addr, string(bs[:n]))
 				if sortResult {
 					list = append(list, g.Map{"i": i, "s": s})
 				} else {

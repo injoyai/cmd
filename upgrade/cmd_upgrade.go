@@ -21,23 +21,20 @@ func main() {
 
 	if len(os.Args) > 1 {
 
-		upgrade := "in_upgrade.exe"
-		upgrade_upgrade := "in_upgrade_upgrade.exe"
-
 		switch os.Args[1] {
 
 		case "version":
 
-			fmt.Println("v1.0.0")
-			fmt.Println("转移仓库版本")
+			fmt.Println("v1.0.1")
+			fmt.Println("v1.0.0 转移仓库版本")
+			fmt.Println("v1.0.1 增加对linux的支持")
 
 		case "upgrade":
 
 			fmt.Println("开始下载...")
 			//下载in_upgrade_upgrade
-			url := "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"
 			filename := filepath.Join(oss.ExecDir(), upgrade_upgrade)
-			for logs.PrintErr(bar.Download(url, filename)) {
+			for logs.PrintErr(bar.Download(upgradeUrl, filename)) {
 				<-time.After(time.Second)
 			}
 			//运行
@@ -71,7 +68,7 @@ func main() {
 			for {
 				bs, err := ioutil.ReadFile(os.Args[1])
 				if !logs.PrintErr(err) {
-					if !logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), "in.exe"), bs)) {
+					if !logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), inName), bs)) {
 						break
 					}
 				}
@@ -82,9 +79,9 @@ func main() {
 
 	} else {
 
-		url := "https://github.com/injoyai/cmd/raw/main/in.exe"
+		url := inUrl
 		path, _ := os.Executable()
-		filename := filepath.Join(filepath.Dir(path), "in.exe")
+		filename := filepath.Join(filepath.Dir(path), inName)
 		for logs.PrintErr(bar.Download(url, filename)) {
 			<-time.After(time.Second)
 		}

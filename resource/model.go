@@ -3,20 +3,41 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/logs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 )
 
 type Entity struct {
-	Key     []string                                           //标识
-	Name    string                                             //文件名称
-	Url     string                                             //下载地址
-	Handler func(url, dir, name string, proxy ...string) error //函数
+	Key             []string                                           //标识
+	Name            string                                             //文件名称
+	Url             string                                             //下载地址
+	Handler         func(url, dir, name string, proxy ...string) error //函数
+	UrlWindowsAmd64 string                                             //windows系统,amd64架构,资源地址
+	UrlLinuxArm7    string                                             //linux系统,arm7架构,资源地址
+	UrlLinuxAmd64   string                                             //linux系统,amd64架构,资源地址
+}
+
+func (this *Entity) GetUrl() string {
+	url := this.Url
+	switch runtime.GOOS {
+	case "windows":
+		url = conv.SelectString(this.UrlWindowsAmd64 != "", this.UrlWindowsAmd64, url)
+	case "linux":
+		switch runtime.GOARCH {
+		case "arm":
+			url = conv.SelectString(this.UrlLinuxArm7 != "", this.UrlLinuxArm7, url)
+		case "amd64":
+			url = conv.SelectString(this.UrlLinuxAmd64 != "", this.UrlLinuxAmd64, url)
+		}
+	}
+	return url
 }
 
 var (
@@ -56,8 +77,9 @@ var (
 			Url:  "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
 		},
 		"in": {
-			Name: "in.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/in.exe",
+			Name:          "in.exe",
+			Url:           "https://github.com/injoyai/cmd/raw/main/in.exe",
+			UrlLinuxAmd64: "https://github.com/injoyai/cmd/raw/main/in",
 		},
 		"influxdb": {
 			Key:  []string{"influx", "influxd"},
@@ -84,8 +106,11 @@ var (
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
 		"frpc": {
-			Name: "frpc.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			Name:            "frpc.exe",
+			Url:             "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			UrlWindowsAmd64: "https://gitee.com/injoyai/file/raw/master/frpc_windows_amd64.exe",
+			UrlLinuxAmd64:   "https://gitee.com/injoyai/file/raw/master/frpc_linux_amd64",
+			UrlLinuxArm7:    "https://gitee.com/injoyai/file/raw/master/frpc_linux_arm7",
 		},
 		"frps": {
 			Name: "frps.exe",
@@ -192,13 +217,17 @@ func Download(resource string, fileDir string, redownload bool, proxy ...string)
 		if oss.Exists(filename) && !redownload {
 			return val.Name, nil
 		}
-		fmt.Println("开始下载...")
+		url := val.GetUrl()
+		if len(url) == 0 {
+			return "", errors.New("资源不存在")
+		}
+		fmt.Println("开始下载:" + url)
 		if val.Handler != nil {
-			if err := val.Handler(val.Url, fileDir, val.Name); err != nil {
+			if err := val.Handler(url, fileDir, val.Name); err != nil {
 				return "", err
 			}
 		} else {
-			err = bar.Download(val.Url, filename, proxy...)
+			err = bar.Download(url, filename, proxy...)
 		}
 		return val.Name, err
 	}

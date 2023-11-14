@@ -10,7 +10,7 @@ import (
 )
 
 func handlerUpgrade(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload("upgrade", oss.ExecDir(), true)
+	resource.MustDownload("upgrade", oss.ExecDir(), true, flags.GetString("proxy"))
 	filename := conv.GetDefaultString("", args...)
 	logs.PrintErr(shell.Run("in_upgrade " + filename))
 }
