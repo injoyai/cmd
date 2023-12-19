@@ -36,7 +36,7 @@ func qlScanEdge(startIP, endIP net.IP) (chan IPSN, context.Context) {
 				c := io.NewClient(cli)
 				c.SetReadIntervalTimeout(time.Second)
 				c.SetCloseWithNil()
-				c.SetDealFunc(func(msg *io.IMessage) {
+				c.SetDealFunc(func(c *io.Client, msg io.Message) {
 					s := str.CropFirst(msg.String(), "{")
 					s = str.CropLast(s, "}")
 					m := conv.NewMap(s)

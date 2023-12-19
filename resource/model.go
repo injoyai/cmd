@@ -87,7 +87,7 @@ var (
 			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
 			Handler: func(url, dir, name string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "influxdb.zip")
-				if err := bar.Download(url, zipFilename, proxy...); err != nil {
+				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
 					return err
 				}
 				if err := zip.Decode(zipFilename, dir); err != nil {
@@ -121,7 +121,7 @@ var (
 			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
 			Handler: func(url, dir, name string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "ffmpeg.zip")
-				if err := bar.Download(url, zipFilename, proxy...); err != nil {
+				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
 					return err
 				}
 				if err := zip.Decode(zipFilename, dir); err != nil {
@@ -227,13 +227,13 @@ func Download(resource string, fileDir string, redownload bool, proxy ...string)
 				return "", err
 			}
 		} else {
-			err = bar.Download(url, filename, proxy...)
+			_, err = bar.Download(url, filename, proxy...)
 		}
 		return val.Name, err
 	}
 	name = filepath.Base(resource)
 	filename := filepath.Join(fileDir, name)
 	fmt.Println("开始下载...")
-	err = bar.Download(resource, filename, proxy...)
+	_, err = bar.Download(resource, filename, proxy...)
 	return
 }

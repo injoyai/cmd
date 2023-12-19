@@ -12,6 +12,7 @@ import (
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/dial"
+	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -72,7 +73,7 @@ func handlerDeployClient(addr string, flags *Flags) {
 	c, err := dial.NewTCP(addr, func(c *io.Client) {
 		c.SetReadWithPkg()
 		c.SetWriteWithNil()
-		c.SetDealFunc(func(msg *io.IMessage) {
+		c.SetDealFunc(func(c *io.Client, msg io.Message) {
 			fmt.Println(msg.String())
 		})
 
@@ -122,11 +123,11 @@ func handlerDeployClient(addr string, flags *Flags) {
 func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	port := flags.GetInt("port", 10088)
-	s, err := dial.NewTCPServer(port, func(s *io.Server) {
+	s, err := listen.NewTCPServer(port, func(s *io.Server) {
 		s.Debug()
 		s.SetReadWriteWithPkg()
-		s.SetDealFunc(func(msg *io.IMessage) {
-			defer msg.Close()
+		s.SetDealFunc(func(c *io.Client, msg io.Message) {
+			defer c.Close()
 
 			var m *Deploy
 			err := json.Unmarshal(msg.Bytes(), &m)
@@ -150,7 +151,7 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 							shell.Start(name)
 						}
 					}
-					msg.WriteAny(&resp{
+					c.WriteAny(&resp{
 						Code: conv.SelectInt(err == nil, 200, 500),
 						Msg:  conv.New(err).String("成功"),
 					})
@@ -167,7 +168,7 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 							os.Remove(zipPath)
 						}
 					}
-					msg.WriteAny(&resp{
+					c.WriteAny(&resp{
 						Code: conv.SelectInt(err == nil, 200, 500),
 						Msg:  conv.New(err).String("成功"),
 					})
@@ -179,7 +180,7 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 				for _, v := range m.Shell {
 					logs.Debugf("执行脚本:%s", v)
 					result, err := shell.Exec(v)
-					msg.WriteAny(&resp{
+					c.WriteAny(&resp{
 						Code: conv.SelectInt(err == nil, 200, 500),
 						Data: result,
 						Msg:  conv.New(err).String("成功"),
