@@ -14,6 +14,7 @@ import (
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/dial"
+	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"github.com/tebeka/selenium"
@@ -51,10 +52,10 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10086)
-	s, err := dial.NewTCPServer(port, func(s *io.Server) {
+	s, err := listen.NewTCPServer(port, func(s *io.Server) {
 		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
-		s.SetPrintWithASCII()
+		s.Logger.SetPrintWithASCII()
 		s.SetKey(fmt.Sprintf(":%d", port))
 	})
 	if err != nil {
@@ -68,10 +69,10 @@ func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
-	s, err := dial.NewUDPServer(port, func(s *io.Server) {
+	s, err := listen.NewUDPServer(port, func(s *io.Server) {
 		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
-		s.SetPrintWithASCII()
+		s.Logger.SetPrintWithASCII()
 		s.SetKey(fmt.Sprintf(":%d", port))
 	})
 	if err != nil {
@@ -179,24 +180,24 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10089)
 	addr := flags.GetString("addr")
-	dial.RunTCPServer(port, func(s *io.Server) {
+	listen.RunTCPServer(port, func(s *io.Server) {
 		s.SetKey(fmt.Sprintf(":%d", port))
 		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
-		s.SetPrintWithBase()
+		s.Logger.SetLevel(io.LevelInfo)
 		s.SetBeforeFunc(func(client *io.Client) error {
-			s.Print(io.Message("新的客户端连接..."), io.TagInfo)
+			s.Logger.Infof("新的客户端连接...")
 			_, err := dial.NewTCP(addr, func(c *io.Client) {
 				c.Debug(false)
 				c.SetDealWithWriter(client)
-				c.SetCloseFunc(func(ctx context.Context, msg *io.IMessage) {
+				c.SetCloseFunc(func(ctx context.Context, c *io.Client, msg io.Message) {
 					client.CloseWithErr(errors.New(msg.String()))
 				})
 				go c.Run()
 				client.SetReadWithWriter(c)
 			})
 			if err != nil {
-				s.Print(io.NewMessage(err.Error()), io.TagErr)
+				s.Logger.Errorf(err.Error())
 			}
 			return err
 		})

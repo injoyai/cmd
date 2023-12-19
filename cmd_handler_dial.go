@@ -114,7 +114,7 @@ func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 		handlerDialDeal(c, flags, false)
 		c.Debug(false)
-		c.SetDealFunc(func(msg *io.IMessage) {
+		c.SetDealFunc(func(c *io.Client, msg io.Message) {
 			fmt.Print(msg.String())
 		})
 		go c.Run()

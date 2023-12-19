@@ -207,16 +207,6 @@ func main() {
 					Example: "in dial frp",
 					Run:     dialDialFrp,
 				},
-				{
-					Flag: []*Flag{
-						{Name: "addr", Short: "a", Memo: "服务地址"},
-						{Name: "sn", Short: "s", Memo: "客户端标识"},
-					},
-					Use:     "proxy",
-					Short:   "连接代理服务",
-					Example: "in dial proxy",
-					Run:     handlerDialProxy,
-				},
 			},
 		},
 

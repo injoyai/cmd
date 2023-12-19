@@ -47,7 +47,7 @@ func installChromedriver(dir string, reDownload bool, proxy ...string) (string, 
 	if list := strings.Split(version, "."); len(list) >= 2 {
 		url := getChromedriverUrl(list[0])
 		zipName := filepath.Join(dir, "chromedriver.zip")
-		if err := bar.Download(url, zipName, proxy...); err != nil {
+		if _, err := bar.Download(url, zipName, proxy...); err != nil {
 			return "", err
 		}
 		if err := zip.Decode(zipName, dir); err != nil {

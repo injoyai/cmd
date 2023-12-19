@@ -67,22 +67,26 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	for i := conv.Uint32(append(gateIPv4, 0)); i <= conv.Uint32(append(gateIPv4, 255)); i++ {
 		ipv4 := net.IPv4(uint8(i>>24), uint8(i>>16), uint8(i>>8), uint8(i))
 		wg.Add(1)
-		go func(ipv4 net.IP, i uint32) {
+		go func(ipv4 net.IP, i uint32, timeout time.Duration) {
 			defer wg.Done()
 			addr := fmt.Sprintf("%s:%s", ipv4, args[0])
 			c, err := net.DialTimeout("tcp", addr, timeout)
 			if err == nil {
 				bs := make([]byte, 1024)
+				c.SetReadDeadline(time.Now().Add(timeout))
 				n, _ := c.Read(bs)
 				c.Close()
 				s := fmt.Sprintf("%s   开启   %s", addr, string(bs[:n]))
+				if s[len(s)-1] != '\n' {
+					s += string('\n')
+				}
 				if sortResult {
 					list = append(list, g.Map{"i": i, "s": s})
 				} else {
 					fmt.Print(s)
 				}
 			}
-		}(ipv4, i)
+		}(ipv4, i, timeout)
 	}
 	wg.Wait()
 	if sortResult {
