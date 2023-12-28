@@ -108,9 +108,9 @@ var (
 		"frpc": {
 			Name:            "frpc.exe",
 			Url:             "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
-			UrlWindowsAmd64: "https://gitee.com/injoyai/file/raw/master/frpc_windows_amd64.exe",
-			UrlLinuxAmd64:   "https://gitee.com/injoyai/file/raw/master/frpc_linux_amd64",
-			UrlLinuxArm7:    "https://gitee.com/injoyai/file/raw/master/frpc_linux_arm7",
+			UrlWindowsAmd64: "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			UrlLinuxAmd64:   "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_amd64",
+			UrlLinuxArm7:    "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_arm7",
 		},
 		"frps": {
 			Name: "frps.exe",

@@ -89,6 +89,10 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 1883)
 	debug := flags.GetBool("debug")
 
+	if logPort := flags.GetInt("logPort", 0); logPort > 0 {
+		logs.WriteToTCPServer(logPort)
+	}
+
 	fmt.Printf("ERROR:%v", func() error {
 		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if err != nil {
