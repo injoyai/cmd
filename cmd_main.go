@@ -86,10 +86,6 @@ func main() {
 		},
 
 		&Command{
-			Flag: []*Flag{
-				{Name: "rate", Short: "r", Memo: "语速"},
-				{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
-			},
 			Use:     "now",
 			Short:   "当前时间",
 			Example: "in now",
