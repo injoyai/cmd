@@ -19,8 +19,12 @@ import (
 	"time"
 )
 
-func handleVersion(cmd *cobra.Command, args []string, flags *Flags) {
+func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(details)
+}
+
+func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
+	fmt.Println(oss.ExecDir())
 }
 
 func handlerSwag(cmd *cobra.Command, args []string, flags *Flags) {
