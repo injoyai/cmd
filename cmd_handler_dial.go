@@ -73,6 +73,8 @@ func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 		mqtt.NewClientOptions().
 			AddBroker(args[0]).
 			SetClientID(g.RandString(8)).
+			SetWriteTimeout(timeout).
+			SetAutoReconnect(false).
 			SetConnectTimeout(timeout),
 	)
 	handlerDialDeal(c, flags, true)
@@ -208,32 +210,50 @@ func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 
 func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload("frpc", oss.ExecDir(), flags.GetBool("download"), flags.GetString("proxy"))
-	serverAddr := conv.GetDefaultString("", args...)
 	file := cache.NewFile("dial", "frp")
-	serverAddr = flags.GetString("serverAddr", file.GetString("serverAddr", serverAddr))
-	serverPort := flags.GetString("serverPort", file.GetString("serverPort"))
-	localAddr := flags.GetString("localAddr", file.GetString("localAddr"))
-	name := flags.GetString("name", file.GetString("name"))
+	if len(args) > 0 && args[0] == "config" {
+		fmt.Println("服务地址: ", file.GetString("serverAddr"))
+		fmt.Println("映射端口: ", file.GetString("port"))
+		fmt.Println("连接方式: ", file.GetString("type"))
+		fmt.Println("连接名称: ", file.GetString("name"))
+	}
+	serverAddr := conv.GetDefaultString(file.GetString("serverAddr"), args...)
+	if len(serverAddr) == 0 {
+		fmt.Println("[错误] 未填写连接地址")
+		return
+	}
+	port := strings.SplitN(flags.GetString("port", file.GetString("port")), "=", 2)
+	if len(port) <= 0 {
+		fmt.Println("[错误] 未填写连接端口")
+		return
+	}
+	localAddr, serverPort := port[0], port[1]
+	if !strings.Contains(localAddr, ":") {
+		localAddr = "127.0.0.1:" + localAddr
+	}
 	Type := flags.GetString("type", file.GetString("type", "tcp"))
-	file.Set("serverAddr", serverAddr)
-	file.Set("serverPort", serverPort)
-	file.Set("localAddr", localAddr)
-	file.Set("name", name)
-	file.Set("type", Type)
-	file.Cover()
-	cfgPath := oss.UserInjoyDir("frpc.ini")
-	oss.New(cfgPath, fmt.Sprintf(`
-[common]
-server_addr = %s
+	name := flags.GetString("name", file.GetString("name"))
 
-[%s]
-type = %s
-local_ip = %s
-remote_port = %s
-`, strings.ReplaceAll(serverAddr, ":", "\nserver_port = "),
+	//保存配置到文件
+	file.Set("serverAddr", serverAddr)
+	file.Set("port", port)
+	file.Set("type", Type)
+	file.Set("name", name)
+	file.Cover()
+
+	cfgPath := oss.UserInjoyDir("frpc.toml")
+	oss.New(cfgPath, fmt.Sprintf(`
+serverAddr = "%s
+
+[[proxies]]
+name = "%s"
+type = "%s"
+localIP = "%s
+remotePort = %s
+`, strings.ReplaceAll(serverAddr, ":", "\"\nserverPort = "),
 		name,
 		Type,
-		strings.ReplaceAll(localAddr, ":", "\nlocal_port = "),
+		strings.ReplaceAll(localAddr, ":", "\"\nlocalPort = "),
 		serverPort))
 	shell.Run("frpc -c " + cfgPath)
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
@@ -80,7 +81,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "rate", Short: "r", Memo: "语速"},
-				{Name: "volume", Short: "v", DefValue: "100", Memo: "音量"},
+				{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
 			},
 			Use:     "now",
 			Short:   "当前时间",
@@ -90,8 +91,8 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "rate", Short: "r", DefValue: "", Memo: "语速"},
-				{Name: "volume", Short: "v", DefValue: "100", Memo: "音量"},
+				{Name: "rate", Short: "r", DefaultValue: "", Memo: "语速"},
+				{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
 			},
 			Use:     "speak",
 			Short:   "文字转语音",
@@ -101,10 +102,10 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "redial", Short: "r", Memo: "自动重连", DefValue: "true"},
-				{Name: "debug", Short: "d", Memo: "打印日志", DefValue: "true"},
-				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefValue: "500"},
-				{Name: "proxy", Memo: "使用代理", DefValue: "127.0.0.1:1081"},
+				{Name: "redial", Short: "r", Memo: "自动重连", DefaultValue: "true"},
+				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
+				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefaultValue: "500"},
+				{Name: "proxy", Memo: "代理地址", DefaultValue: ""},
 			},
 			Use:     "dial",
 			Short:   "连接",
@@ -138,7 +139,7 @@ func main() {
 					Flag: []*Flag{
 						{Name: "publish", Memo: "发布"},
 						{Name: "subscribe", Memo: "订阅"},
-						{Name: "qos", DefValue: "0", Memo: "消息质量"},
+						{Name: "qos", DefaultValue: "0", Memo: "消息质量"},
 					},
 					Use:     "mqtt",
 					Short:   "MQTT连接",
@@ -149,8 +150,8 @@ func main() {
 					Flag: []*Flag{
 						{Name: "username", Short: "u", Memo: "用户名"},
 						{Name: "password", Short: "p", Memo: "密码"},
-						{Name: "high", Memo: "高度", DefValue: "32"},
-						{Name: "wide", Memo: "宽度", DefValue: "300"},
+						{Name: "high", Memo: "高度", DefaultValue: "32"},
+						{Name: "wide", Memo: "宽度", DefaultValue: "300"},
 					},
 					Use:     "ssh",
 					Short:   "SSH连接",
@@ -159,10 +160,10 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "baudRate", Memo: "波特率", DefValue: "9600"},
-						{Name: "dataBits", Memo: "数据位", DefValue: "8"},
-						{Name: "stopBits", Memo: "停止位", DefValue: "1"},
-						{Name: "parity", Memo: "校验", DefValue: "N"},
+						{Name: "baudRate", Memo: "波特率", DefaultValue: "9600"},
+						{Name: "dataBits", Memo: "数据位", DefaultValue: "8"},
+						{Name: "stopBits", Memo: "停止位", DefaultValue: "1"},
+						{Name: "parity", Memo: "校验", DefaultValue: "N"},
 					},
 					Use:     "serial",
 					Short:   "串口连接",
@@ -195,11 +196,9 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "serverAddr", Memo: "服务地址"},
-						{Name: "serverPort", Memo: "占用服务端口", DefValue: "10099"},
-						{Name: "localAddr", Memo: "代理本地地址", DefValue: "127.0.0.1:80"},
-						{Name: "name", Memo: "客户端名称", DefValue: "temp"},
-						{Name: "type", Memo: "连接类型", DefValue: "tcp"},
+						{Name: "port", Short: "p", Memo: "映射关系(本地地址/端口:服务端口)", DefaultValue: "80:80"},
+						{Name: "type", Memo: "连接类型", DefaultValue: "tcp"},
+						{Name: "name", Memo: "客户端名称", DefaultValue: g.RandString(8)},
 						{Name: "download", Memo: "重新下载"},
 					},
 					Use:     "frp",
@@ -213,10 +212,11 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "port", Short: "p", Memo: "监听端口"},
-				{Name: "debug", Short: "d", DefValue: "true", Memo: "打印日志"},
+				{Name: "debug", Short: "d", DefaultValue: "true", Memo: "打印日志"},
 				{Name: "download", Short: "r", Memo: "重新下载"},
 				{Name: "proxy", Memo: "设置下载代理地址"},
 				{Name: "timeout", Short: "t", Memo: "设置超时时间"},
+				{Name: "logPort", Memo: "日志端口,部分服务有效,例MQTT"},
 			},
 			Use:     "server",
 			Short:   "服务",
@@ -275,7 +275,7 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "addr", Short: "a", DefValue: "127.0.0.1:80", Memo: "本地代理地址"},
+						{Name: "addr", Short: "a", DefaultValue: "127.0.0.1:80", Memo: "本地代理地址"},
 					},
 					Use:     "proxy",
 					Short:   "proxy服务",
@@ -305,7 +305,7 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "timeout", Short: "t", Memo: "超时时间(毫秒)", DefValue: "1000"},
+				{Name: "timeout", Short: "t", Memo: "超时时间(毫秒)", DefaultValue: "1000"},
 				{Name: "sort", Short: "s", Memo: "排序"},
 			},
 			Use:     "scan",
@@ -338,7 +338,7 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "open", Short: "o", Memo: "是否打开", DefValue: "false"},
+						{Name: "open", Short: "o", Memo: "是否打开", DefaultValue: "false"},
 					},
 					Use:     "edge",
 					Short:   "网关扫描",

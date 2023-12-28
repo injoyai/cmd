@@ -36,11 +36,11 @@ func (this *Flags) GetVar(key string) *conv.Var {
 }
 
 type Flag struct {
-	Name     string
-	Short    string
-	DefValue string
-	Memo     string
-	Value    string
+	Name         string
+	Short        string
+	DefaultValue string
+	Memo         string
+	Value        string
 }
 
 type Command struct {
@@ -60,7 +60,7 @@ func (this *Command) command(flags ...*Flag) *cobra.Command {
 		this.Command = &cobra.Command{}
 	}
 	for _, v := range this.Flag {
-		this.Command.PersistentFlags().StringVarP(&v.Value, v.Name, v.Short, v.DefValue, v.Memo)
+		this.Command.PersistentFlags().StringVarP(&v.Value, v.Name, v.Short, v.DefaultValue, v.Memo)
 	}
 	flags = append(this.Flag, flags...)
 
