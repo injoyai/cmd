@@ -28,7 +28,14 @@ func main() {
 			Use:     "version",
 			Short:   "查看版本",
 			Example: "in version",
-			Run:     handleVersion,
+			Run:     handlerVersion,
+		},
+
+		&Command{
+			Use:     "where",
+			Short:   "查看软件位置",
+			Example: "in where",
+			Run:     handlerWhere,
 		},
 
 		&Command{
