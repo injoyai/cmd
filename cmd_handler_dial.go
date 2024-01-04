@@ -223,8 +223,11 @@ func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	//todo 用:好点  1. -p 1883 服务1883转到本地1883  2. -p 80:1883 服务1883转到本地80  3. -p 192.168.1.1:80:1883 服务80转到192.168.1.1:1883
+	//  1. -p 1883 服务1883转到本地1883  2. -p 80:1883 服务1883转到本地80  3. -p 192.168.1.1:80:1883 服务80转到192.168.1.1:1883
 	port := strings.Split(flags.GetString("port", file.GetString("port")), ":")
+	if len(port) == 1 {
+		port = append(port, port[0])
+	}
 	if len(port) < 2 {
 		fmt.Println("[错误] 未填写连接端口")
 		return
