@@ -222,12 +222,14 @@ func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[错误] 未填写连接地址")
 		return
 	}
-	port := strings.SplitN(flags.GetString("port", file.GetString("port")), "=", 2)
-	if len(port) <= 0 {
+
+	//todo 用:好点  1. -p 1883 服务1883转到本地1883  2. -p 80:1883 服务1883转到本地80  3. -p 192.168.1.1:80:1883 服务80转到192.168.1.1:1883
+	port := strings.Split(flags.GetString("port", file.GetString("port")), ":")
+	if len(port) < 2 {
 		fmt.Println("[错误] 未填写连接端口")
 		return
 	}
-	localAddr, serverPort := port[0], port[1]
+	localAddr, serverPort := strings.Join(port[:len(port)-1], ":"), port[len(port)-1]
 	if !strings.Contains(localAddr, ":") {
 		localAddr = "127.0.0.1:" + localAddr
 	}

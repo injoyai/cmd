@@ -9,6 +9,7 @@ import (
 	"github.com/DrmagicE/gmqtt/server"
 	"github.com/gorilla/websocket"
 	"github.com/injoyai/cmd/resource"
+	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/frame/in"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
@@ -22,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"time"
 )
 
 //====================SeleniumServer====================//
@@ -102,16 +104,39 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 		if err := srv.Init(server.WithHook(server.Hooks{
 			OnConnected: func(ctx context.Context, client server.Client) {
 				if debug {
-					logs.Infof("[%s] 新的客户端连接...", client.ClientOptions().ClientID)
+					version := "未知"
+					switch client.Version() {
+					case packets.Version31:
+						version = "3.1"
+					case packets.Version311:
+						version = "3.1.1"
+					case packets.Version5:
+						version = "5.0"
+					}
+					logs.Infof("[%s][%s][%s] 新的客户端连接...", client.Connection().RemoteAddr(), client.ClientOptions().ClientID, version)
 				}
-				srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
-					TopicFilter: client.ClientOptions().ClientID,
-					QoS:         packets.Qos0,
-				})
 			},
 			OnMsgArrived: func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 				if debug {
 					logs.Infof("[%s] 发布主题:%s,消息内容:%s", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
+				}
+				return nil
+			},
+			OnSubscribe: func(ctx context.Context, client server.Client, req *server.SubscribeRequest) error {
+				for _, v := range req.Subscribe.Topics {
+					logs.Infof("[%s] 订阅主题:%s", client.ClientOptions().ClientID, v.Name)
+					srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
+						TopicFilter: v.Name,
+						QoS:         v.Qos,
+					})
+					switch v.Name {
+					case "sys/time/get":
+						srv.Publisher().Publish(&gmqtt.Message{
+							QoS:     v.Qos,
+							Topic:   "sys/time/get",
+							Payload: []byte(conv.String(time.Now().UnixMilli())),
+						})
+					}
 				}
 				return nil
 			},
