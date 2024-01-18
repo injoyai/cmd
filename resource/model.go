@@ -154,7 +154,7 @@ var (
 
 		"edge": {
 			Name: "edge.exe",
-			Url:  "https://www.qianlangyun.com:8888/gateway/aiot/-/raw/main/edge/bin/windows/edge.exe?inline=false",
+			Url:  "https://gitlab.qianlangyun.com:8888/gateway/aiot/-/raw/main/edge/bin/windows/edge.exe?inline=false",
 		},
 		"build.sh": {
 			Key:  []string{"build"},
