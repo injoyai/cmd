@@ -25,16 +25,18 @@ func main() {
 
 		case "version":
 
-			fmt.Println("v1.0.1")
-			fmt.Println("v1.0.0 转移仓库版本")
 			fmt.Println("v1.0.1 增加对linux的支持")
+			fmt.Println("v1.0.0 转移仓库版本")
 
 		case "upgrade":
 
 			fmt.Println("开始下载...")
 			//下载in_upgrade_upgrade
 			filename := filepath.Join(oss.ExecDir(), upgrade_upgrade)
-			for logs.PrintErr(bar.Download(upgradeUrl, filename)) {
+			for {
+				if _, err := bar.Download(upgradeUrl, filename); err == nil {
+					break
+				}
 				<-time.After(time.Second)
 			}
 			//运行
@@ -82,7 +84,10 @@ func main() {
 		url := inUrl
 		path, _ := os.Executable()
 		filename := filepath.Join(filepath.Dir(path), inName)
-		for logs.PrintErr(bar.Download(url, filename)) {
+		for {
+			if _, err := bar.Download(url, filename); err == nil {
+				break
+			}
 			<-time.After(time.Second)
 		}
 	}
