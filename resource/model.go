@@ -105,6 +105,19 @@ var (
 			Name: "npc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
+		"chrome": {
+			Name:          "chrome.exe",
+			Url:           "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
+			UrlLinuxAmd64: "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
+			Handler: func(url, dir, name string, proxy ...string) error {
+				zipFilename := filepath.Join(dir, "chrome.zip")
+				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+					return err
+				}
+				defer os.Remove(zipFilename)
+				return zip.Decode(zipFilename, dir)
+			},
+		},
 		"frpc": {
 			Name:            "frpc.exe",
 			Url:             "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
@@ -197,13 +210,15 @@ func init() {
 }
 
 func MustDownload(resource string, fileDir string, redownload bool, proxy ...string) (filename string) {
+	wait := time.Second * 2
 	for {
 		name, err := Download(resource, fileDir, redownload, proxy...)
 		if err == nil {
 			return filepath.Join(fileDir, name)
 		}
 		fmt.Println(err)
-		<-time.After(time.Second)
+		wait += time.Second * 2
+		<-time.After(wait)
 	}
 }
 
@@ -221,7 +236,7 @@ func Download(resource string, fileDir string, redownload bool, proxy ...string)
 		if len(url) == 0 {
 			return "", errors.New("资源不存在")
 		}
-		fmt.Println("开始下载:" + url)
+		fmt.Println("开始下载: " + url)
 		if val.Handler != nil {
 			if err := val.Handler(url, fileDir, val.Name); err != nil {
 				return "", err
@@ -233,7 +248,7 @@ func Download(resource string, fileDir string, redownload bool, proxy ...string)
 	}
 	name = filepath.Base(resource)
 	filename := filepath.Join(fileDir, name)
-	fmt.Println("开始下载...")
+	fmt.Println("开始下载: ", resource)
 	_, err = bar.Download(resource, filename, proxy...)
 	return
 }
