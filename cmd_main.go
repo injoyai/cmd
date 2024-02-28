@@ -108,7 +108,7 @@ func main() {
 				{Name: "redial", Short: "r", Memo: "自动重连", DefaultValue: "true"},
 				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefaultValue: "500"},
-				{Name: "proxy", Memo: "代理地址", DefaultValue: ""},
+				{Name: "proxy", Memo: "代理地址", DefaultValue: global.GetString("proxy")},
 			},
 			Use:     "dial",
 			Short:   "连接",
@@ -215,9 +215,9 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "port", Short: "p", Memo: "监听端口"},
-				{Name: "debug", Short: "d", DefaultValue: "true", Memo: "打印日志"},
+				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "download", Short: "r", Memo: "重新下载"},
-				{Name: "proxy", Memo: "设置下载代理地址"},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 				{Name: "timeout", Short: "t", Memo: "设置超时时间"},
 				{Name: "logPort", Memo: "日志端口,部分服务有效,例MQTT"},
 			},
@@ -354,7 +354,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "download", Short: "d", Memo: "重新下载"},
-				{Name: "proxy", Memo: "设置下载代理地址"},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 			},
 			Use:     "download",
 			Short:   "下载",
@@ -365,6 +365,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "download", Short: "d", Memo: "重新下载"},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 			},
 			Use:     "install",
 			Short:   "install",
@@ -376,6 +377,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "download", Short: "d", Memo: "重新下载"},
+				{Name: "proxy", DefaultValue: global.GetString("proxy"), Memo: "设置下载代理地址"},
 			},
 			Use:     "open",
 			Short:   "打开",
@@ -385,7 +387,7 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "proxy", Memo: "设置下载代理地址"},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 			},
 			Use:     "upgrade",
 			Short:   "自我升级",
@@ -411,6 +413,16 @@ func main() {
 			Short:   "杀死进程",
 			Example: "in kill 12345",
 			Run:     handlerKill,
+		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: null},
+			},
+			Use:     "global",
+			Short:   "全局配置",
+			Example: "in global --proxy http://127.0.0.1:1081",
+			Run:     handlerGlobal,
 		},
 	)
 

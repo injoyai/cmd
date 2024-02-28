@@ -57,7 +57,7 @@ func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	s, err := listen.NewTCPServer(port, func(s *io.Server) {
 		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
-		s.Logger.SetPrintWithASCII()
+		s.Logger.SetPrintWithUTF8()
 		s.SetKey(fmt.Sprintf(":%d", port))
 	})
 	if err != nil {
@@ -74,7 +74,7 @@ func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	s, err := listen.NewUDPServer(port, func(s *io.Server) {
 		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Debug(flags.GetBool("debug"))
-		s.Logger.SetPrintWithASCII()
+		s.Logger.SetPrintWithUTF8()
 		s.SetKey(fmt.Sprintf(":%d", port))
 	})
 	if err != nil {
@@ -158,13 +158,13 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	{
 		fmt.Println("开始运行InfluxDB服务...")
-		filename := resource.MustDownload("influxdb", userDir, false, proxy)
+		filename, _ := resource.MustDownload("influxdb", userDir, false, proxy)
 		shell.Start(filename)
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
 		shell.Stop("edge.exe")
-		filename := resource.MustDownload("edge", userDir, flags.GetBool("download"), proxy)
+		filename, _ := resource.MustDownload("edge", userDir, flags.GetBool("download"), proxy)
 		shell.Run(filename)
 	}
 }
@@ -173,7 +173,7 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := resource.MustDownload("influxdb", userDir,
+	filename, _ := resource.MustDownload("influxdb", userDir,
 		flags.GetBool("download"), flags.GetString("proxy"))
 	shell.Start(filename)
 }
@@ -237,7 +237,7 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := resource.MustDownload("livego", userDir, flags.GetBool("download"), flags.GetString("proxy"))
+	filename, _ := resource.MustDownload("livego", userDir, flags.GetBool("download"), flags.GetString("proxy"))
 	shell.Run(filename)
 }
 
@@ -245,6 +245,6 @@ func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerFrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename := resource.MustDownload("frps", userDir, flags.GetBool("download"), flags.GetString("proxy"))
+	filename, _ := resource.MustDownload("frps", userDir, flags.GetBool("download"), flags.GetString("proxy"))
 	shell.Run(filename)
 }
