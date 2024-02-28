@@ -52,7 +52,8 @@ func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("请输入下载的内容")
 		return
 	}
-	resource.MustDownload(args[0], "./", flags.GetBool("download"))
+	filename, exist := resource.MustDownload(args[0], "./", flags.GetBool("download"), flags.GetString("proxy"))
+	fmt.Println("下载完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
 }
 
 func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
@@ -60,7 +61,8 @@ func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("请输入需要安装的应用")
 		return
 	}
-	resource.MustDownload(args[0], oss.ExecDir(), flags.GetBool("download"))
+	filename, exist := resource.MustDownload(args[0], oss.ExecDir(), flags.GetBool("download"), flags.GetString("proxy"))
+	fmt.Println("安装完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
 }
 
 func handlerGo(cmd *cobra.Command, args []string, flags *Flags) {

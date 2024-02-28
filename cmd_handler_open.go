@@ -11,6 +11,7 @@ import (
 
 func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
+		//打开执行目录
 		shell.Start(oss.ExecDir())
 		return
 	}
@@ -28,7 +29,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	default:
 
 		if resource.All[strings.ToLower(args[0])] != nil {
-			filename := resource.MustDownload(args[0], oss.UserInjoyDir(), flags.GetBool("download"))
+			filename, _ := resource.MustDownload(args[0], oss.UserInjoyDir(), flags.GetBool("redownload"), flags.GetString("proxy"))
 			logs.PrintErr(shell.Start(filename))
 			return
 		}

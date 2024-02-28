@@ -69,14 +69,21 @@ func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 	publish := flags.GetString("publish")
 	qos := byte(flags.GetInt("qos"))
 	timeout := flags.GetMillisecond("timeout", 3000)
-	c := dial.RedialMQTT(subscribe, publish, qos,
-		mqtt.NewClientOptions().
-			AddBroker(args[0]).
-			SetClientID(g.RandString(8)).
-			SetWriteTimeout(timeout).
-			SetAutoReconnect(false).
-			SetConnectTimeout(timeout),
-	)
+	c := dial.RedialMQTT(&dial.MQTTIOConfig{
+		Subscribe: []dial.MQTTSubscribe{{
+			Topic: subscribe,
+			Qos:   qos,
+		}},
+		Publish: []dial.MQTTPublish{{
+			Topic: publish,
+			Qos:   qos,
+		}},
+	}, mqtt.NewClientOptions().
+		AddBroker(args[0]).
+		SetClientID(g.RandString(8)).
+		SetWriteTimeout(timeout).
+		SetAutoReconnect(false).
+		SetConnectTimeout(timeout))
 	handlerDialDeal(c, flags, true)
 	<-c.DoneAll()
 }
@@ -182,7 +189,7 @@ func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
 						_, err := c.WriteHEX(msg)
 						logs.PrintErr(err)
 					} else {
-						_, err := c.WriteASCII(msg)
+						_, err := c.WriteString(msg)
 						logs.PrintErr(err)
 					}
 				}
