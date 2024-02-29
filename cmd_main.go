@@ -6,9 +6,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+/*
+测试地址
+http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8
+
+
+
+*/
+
 func main() {
 
-	logs.DefaultErr.SetWriter(logs.Stdout, logs.Trunk)
+	logs.DefaultErr.SetWriter(logs.Stdout)
 	logs.SetShowColor(false)
 
 	root := &cobra.Command{
@@ -355,6 +363,16 @@ func main() {
 			Flag: []*Flag{
 				{Name: "download", Short: "d", Memo: "重新下载"},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
+				{Name: "name", Short: "n", Memo: "自定义保存名称"},
+				{Name: "retry", DefaultValue: "10", Memo: "失败重试次数"},
+				{Name: "coroutine", Short: "c", DefaultValue: "20", Memo: "协程数量"},
+				{Name: "dir", DefaultValue: global.GetString("dir", "./"), Memo: "协程数量"},
+				{Name: "proxyEnable", DefaultValue: "true", Memo: "是否使用HTTP代理"},
+				{Name: "proxyAddress", DefaultValue: global.GetString("proxy"), Memo: "HTTP代理地址"},
+				{Name: "noticeEnable", DefaultValue: "true", Memo: "是否启用通知"},
+				{Name: "noticeText", DefaultValue: "主人. 您的资源已下载结束", Memo: "通知内容"},
+				{Name: "voiceEnable", DefaultValue: "true", Memo: "是否启用语音"},
+				{Name: "voiceText", DefaultValue: "主人. 您的资源已下载结束", Memo: "语音内容"},
 			},
 			Use:     "download",
 			Short:   "下载",
@@ -418,11 +436,19 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: null},
+				{Name: "dir", Memo: "设置下载目录", DefaultValue: null},
 			},
 			Use:     "global",
 			Short:   "全局配置",
 			Example: "in global --proxy http://127.0.0.1:1081",
 			Run:     handlerGlobal,
+		},
+
+		&Command{
+			Use:     "date",
+			Short:   "时间日期",
+			Example: "in date",
+			Run:     handlerDate,
 		},
 	)
 

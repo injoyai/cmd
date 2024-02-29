@@ -202,7 +202,11 @@ func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
 }
 
 func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload("npc", oss.ExecDir(), flags.GetBool("download"))
+	resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:   "npc",
+		Dir:        oss.ExecDir(),
+		ReDownload: flags.GetBool("download"),
+	})
 	addr := conv.GetDefaultString("", args...)
 	file := cache.NewFile("dial", "nps")
 	addr = flags.GetString("addr", file.GetString("addr", addr))
@@ -216,7 +220,13 @@ func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload("frpc", oss.ExecDir(), flags.GetBool("download"), flags.GetString("proxy"))
+	resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "frpc",
+		Dir:          oss.ExecDir(),
+		ReDownload:   flags.GetBool("download"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
 	file := cache.NewFile("dial", "frp")
 	if len(args) > 0 && args[0] == "config" {
 		fmt.Println("服务地址: ", file.GetString("serverAddr"))

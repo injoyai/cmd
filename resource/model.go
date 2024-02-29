@@ -1,17 +1,13 @@
 package resource
 
 import (
-	"errors"
-	"fmt"
 	"github.com/injoyai/conv"
-	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/logs"
 	"os"
 	"path/filepath"
 	"runtime"
-	"time"
 )
 
 type Entity struct {
@@ -207,48 +203,4 @@ func init() {
 			All[k] = v
 		}
 	}
-}
-
-func MustDownload(resource string, fileDir string, redownload bool, proxy ...string) (filename string, exist bool) {
-	wait := time.Second * 2
-	for {
-		name, exist, err := Download(resource, fileDir, redownload, proxy...)
-		if err == nil {
-			return filepath.Join(fileDir, name), exist
-		}
-		fmt.Println(err)
-		wait += time.Second * 2
-		<-time.After(wait)
-	}
-}
-
-func Download(resource string, fileDir string, redownload bool, proxy ...string) (name string, exist bool, err error) {
-	if len(resource) == 0 {
-		return "", false, errors.New("请输入需要下载的资源")
-	}
-
-	if val, ok := All[resource]; ok {
-		filename := filepath.Join(fileDir, val.Name)
-		if oss.Exists(filename) && !redownload {
-			return val.Name, true, nil
-		}
-		url := val.GetUrl()
-		if len(url) == 0 {
-			return "", false, errors.New("资源不存在")
-		}
-		fmt.Println("开始下载: " + url)
-		if val.Handler != nil {
-			if err := val.Handler(url, fileDir, val.Name); err != nil {
-				return "", false, err
-			}
-		} else {
-			_, err = bar.Download(url, filename, proxy...)
-		}
-		return val.Name, false, err
-	}
-	name = filepath.Base(resource)
-	filename := filepath.Join(fileDir, name)
-	fmt.Println("开始下载: ", resource)
-	_, err = bar.Download(resource, filename, proxy...)
-	return
 }
