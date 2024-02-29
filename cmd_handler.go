@@ -7,6 +7,7 @@ import (
 	"github.com/injoyai/cmd/crud"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/conv"
+	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/other/notice/voice"
@@ -28,7 +29,10 @@ func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func handlerSwag(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload("swag", oss.ExecDir(), false)
+	resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource: "swag",
+		Dir:      oss.ExecDir(),
+	})
 	param := []string{"swag init"}
 	flags.Range(func(key string, val *Flag) bool {
 		param = append(param, fmt.Sprintf(" -%s %s", val.Short, val.Value))
@@ -47,21 +51,18 @@ func handleBuild(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(result)
 }
 
-func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 || len(args[0]) == 0 {
-		fmt.Println("请输入下载的内容")
-		return
-	}
-	filename, exist := resource.MustDownload(args[0], "./", flags.GetBool("download"), flags.GetString("proxy"))
-	fmt.Println("下载完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
-}
-
 func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("请输入需要安装的应用")
 		return
 	}
-	filename, exist := resource.MustDownload(args[0], oss.ExecDir(), flags.GetBool("download"), flags.GetString("proxy"))
+	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     args[0],
+		Dir:          oss.ExecDir(),
+		ReDownload:   flags.GetBool("download"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
 	fmt.Println("安装完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
 }
 
@@ -115,4 +116,8 @@ func handlerDemo(name string, bs []byte) func(cmd *cobra.Command, args []string,
 		oss.New(name, bs)
 		fmt.Println("success")
 	}
+}
+
+func handlerDate(cmd *cobra.Command, args []string, flags *Flags) {
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 }
