@@ -105,6 +105,25 @@ func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+	for i, v := range list {
+		p, err := serial.Open(v, &serial.Mode{
+			BaudRate: 9600,
+			DataBits: 8,
+			Parity:   serial.NoParity,
+			StopBits: 0,
+		})
+		if err != nil {
+			switch {
+			case strings.HasSuffix(err.Error(), " busy"):
+				list[i] = fmt.Sprintf("%s:  占用", v)
+			default:
+				list[i] = fmt.Sprintf("%s:  %s", v, err)
+			}
+		} else {
+			p.Close()
+			list[i] = fmt.Sprintf("%s:  空闲", v)
+		}
+	}
 	fmt.Println(strings.Join(list, "\n"))
 }
 

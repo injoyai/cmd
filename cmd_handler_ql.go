@@ -34,6 +34,7 @@ func qlScanEdge(startIP, endIP net.IP) (chan IPSN, context.Context) {
 			cli, err := net.DialTimeout("tcp", addr, time.Millisecond*100)
 			if err == nil {
 				c := io.NewClient(cli)
+				c.Debug(false)
 				c.SetReadIntervalTimeout(time.Second)
 				c.SetCloseWithNil()
 				c.SetDealFunc(func(c *io.Client, msg io.Message) {
