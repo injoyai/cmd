@@ -114,18 +114,18 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 					case packets.Version5:
 						version = "5.0"
 					}
-					logs.Infof("[%s][%s][%s] 新的客户端连接...", client.Connection().RemoteAddr(), client.ClientOptions().ClientID, version)
+					logs.Infof("[%s][%s][%s] 新的客户端连接...\n", client.Connection().RemoteAddr(), client.ClientOptions().ClientID, version)
 				}
 			},
 			OnMsgArrived: func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 				if debug {
-					logs.Infof("[%s] 发布主题:%s,消息内容:%s", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
+					logs.Infof("[%s] 发布主题:%s,消息内容:%s\n", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
 				}
 				return nil
 			},
 			OnSubscribe: func(ctx context.Context, client server.Client, req *server.SubscribeRequest) error {
 				for _, v := range req.Subscribe.Topics {
-					logs.Infof("[%s] 订阅主题:%s", client.ClientOptions().ClientID, v.Name)
+					logs.Infof("[%s] 订阅主题:%s\n", client.ClientOptions().ClientID, v.Name)
 					srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
 						TopicFilter: v.Name,
 						QoS:         v.Qos,
