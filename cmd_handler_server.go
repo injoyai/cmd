@@ -33,7 +33,7 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	userDir := oss.UserInjoyDir()
 	filename := filepath.Join(userDir, "chromedriver.exe")
-	if !oss.Exists(filename) {
+	if !oss.Exists(filename) || flags.GetBool("download") {
 		if _, err := installChromedriver(userDir, flags.GetBool("download"), flags.GetString("proxy")); err != nil {
 			logs.Err(err)
 			return
@@ -47,20 +47,20 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 	defer ser.Stop()
-	log.Printf("[%d] 开启驱动成功\n", port)
+	logs.Infof("[:%d] 开启驱动成功\n", port)
 	select {}
 }
 
 //====================TCPServer====================//
 
 func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
-	port := flags.GetInt("port", 10086)
-	s, err := listen.NewTCPServer(port, func(s *io.Server) {
-		s.SetTimeout(flags.GetSecond("timeout", -1))
-		s.Debug(flags.GetBool("debug"))
-		s.Logger.SetPrintWithUTF8()
-		s.SetKey(fmt.Sprintf(":%d", port))
-	})
+	s, err := listen.NewTCPServer(
+		flags.GetInt("port", 10086),
+		func(s *io.Server) {
+			s.SetTimeout(flags.GetSecond("timeout", -1))
+			s.Debug(flags.GetBool("debug"))
+			s.Logger.SetPrintWithUTF8()
+		})
 	if err != nil {
 		logs.Err(err)
 		return
@@ -96,7 +96,7 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.WriteToTCPServer(logPort)
 	}
 
-	fmt.Printf("ERROR:%v", func() error {
+	fmt.Printf("ERROR: %v", func() error {
 		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if err != nil {
 			return err
@@ -114,18 +114,18 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 					case packets.Version5:
 						version = "5.0"
 					}
-					logs.Infof("[%s][%s][%s] 新的客户端连接...\n", client.Connection().RemoteAddr(), client.ClientOptions().ClientID, version)
+					logs.Infof("[%s] Address: %s, Version: %s, Message: 新的客户端连接\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), version)
 				}
 			},
 			OnMsgArrived: func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 				if debug {
-					logs.Infof("[%s] 发布主题:%s,消息内容:%s\n", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
+					logs.Infof("[%s] Topic: %s, Message: %s\n", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
 				}
 				return nil
 			},
 			OnSubscribe: func(ctx context.Context, client server.Client, req *server.SubscribeRequest) error {
 				for _, v := range req.Subscribe.Topics {
-					logs.Infof("[%s] 订阅主题:%s\n", client.ClientOptions().ClientID, v.Name)
+					logs.Infof("[%s] Topic: %s\n", client.ClientOptions().ClientID, v.Name)
 					srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
 						TopicFilter: v.Name,
 						QoS:         v.Qos,

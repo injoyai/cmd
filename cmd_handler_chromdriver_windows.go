@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
+	"github.com/injoyai/goutil/oss/win"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/goutil/str/bar"
 	"io/ioutil"
@@ -15,9 +16,12 @@ import (
 
 func installChromedriver(dir string, reDownload bool, proxy ...string) (string, error) {
 
-	appDir := APPDir("chrome.exe")
-	if len(appDir) == 0 {
-		return "", errors.New("需要安装chrome")
+	filenames, err := win.APPPath("chrome.exe")
+	if err != nil {
+		return "", err
+	}
+	if len(filenames) == 0 {
+		return "", errors.New("需要安装Chrome")
 	}
 
 	basename := "chromedriver.exe"
@@ -29,7 +33,7 @@ func installChromedriver(dir string, reDownload bool, proxy ...string) (string, 
 
 	//下载
 	version := ""
-	path := str.CropLast(appDir[0], "\\")
+	path := str.CropLast(filenames[0], "\\")
 	dirs, err := ioutil.ReadDir(path)
 	if err != nil {
 		return "", err

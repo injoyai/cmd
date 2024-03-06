@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
@@ -83,7 +84,7 @@ func handlerDeployClient(addr string, flags *Flags) {
 
 			zipPath := filepath.Clean(source) + ".zip"
 			logs.Debugf("打包文件: %s", zipPath)
-			err := EncodeZIP(source, zipPath)
+			err := tool.EncodeZIP(source, zipPath)
 			if err != nil {
 				logs.Err(err)
 				return

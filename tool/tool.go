@@ -1,8 +1,10 @@
-package main
+package tool
 
 import (
 	"archive/zip"
+	"fmt"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/io"
 	"os"
 )
@@ -93,4 +95,14 @@ func compareZip(file *os.File, zipWriter *zip.Writer, prefix string, top bool) e
 	_, err = io.Copy(writer, file)
 	return err
 
+}
+
+func ShellStart(filename string) error {
+	fmt.Println("打开文件: ", filename)
+	return shell.Start(filename)
+}
+
+func ShellRun(filename string) error {
+	fmt.Println("运行文件: ", filename)
+	return shell.Run(filename)
 }
