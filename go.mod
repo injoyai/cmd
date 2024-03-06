@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/injoyai/base v1.0.7
 	github.com/injoyai/conv v1.1.2
-	github.com/injoyai/goutil v0.0.0-20240227084318-bb55d0f3981b
+	github.com/injoyai/goutil v0.0.0-20240306084250-66d5794925c9
 	github.com/injoyai/io v0.1.8
 	github.com/injoyai/logs v1.0.7
 	github.com/spf13/cobra v1.7.0
