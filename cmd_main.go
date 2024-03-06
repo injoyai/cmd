@@ -439,6 +439,7 @@ func main() {
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: null},
 				{Name: "downloadDir", Memo: "设置下载目录", DefaultValue: null},
+				{Name: "customOpen", Memo: "自定义打开文件", DefaultValue: null},
 			},
 			Use:     "global",
 			Short:   "全局配置",
