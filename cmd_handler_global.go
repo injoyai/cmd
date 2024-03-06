@@ -16,13 +16,14 @@ func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
 		if val.Value != null {
 			global.Set(key, val.Value)
 		}
+
 		return true
 	})
 	global.Cover()
 
 	fmt.Println()
-	global.Range(func(key, value interface{}) bool {
-		fmt.Printf("%s: %s\n", key, value)
+	flags.Range(func(key string, val *Flag) bool {
+		fmt.Printf("%s: %s\n", key, global.GetString(key))
 		return true
 	})
 }

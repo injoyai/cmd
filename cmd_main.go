@@ -369,18 +369,18 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "download", Short: "d", Memo: "重新下载"},
+				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
-				{Name: "name", Short: "n", Memo: "自定义保存名称"},
-				{Name: "retry", DefaultValue: "10", Memo: "失败重试次数"},
-				{Name: "coroutine", Short: "c", DefaultValue: "20", Memo: "协程数量"},
-				{Name: "dir", DefaultValue: global.GetString("dir", "./"), Memo: "协程数量"},
-				{Name: "proxyEnable", DefaultValue: "true", Memo: "是否使用HTTP代理"},
-				{Name: "proxyAddress", DefaultValue: global.GetString("proxy"), Memo: "HTTP代理地址"},
-				{Name: "noticeEnable", DefaultValue: "true", Memo: "是否启用通知"},
-				{Name: "noticeText", DefaultValue: "主人. 您的资源已下载结束", Memo: "通知内容"},
-				{Name: "voiceEnable", DefaultValue: "true", Memo: "是否启用语音"},
-				{Name: "voiceText", DefaultValue: "主人. 您的资源已下载结束", Memo: "语音内容"},
+				{Name: "name", Memo: "自定义保存名称", Short: "n"},
+				{Name: "retry", Memo: "失败重试次数", DefaultValue: "10"},
+				{Name: "coroutine", Memo: "协程数量", Short: "c", DefaultValue: "20"},
+				{Name: "dir", Memo: "下载目录", DefaultValue: global.GetString("downloadDir", "./")},
+				{Name: "proxyEnable", Memo: "是否使用HTTP代理", DefaultValue: "true"},
+				{Name: "proxyAddress", Memo: "HTTP代理地址", DefaultValue: global.GetString("proxy")},
+				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: "true"},
+				{Name: "noticeText", Memo: "通知内容", DefaultValue: "主人. 您的资源已下载结束"},
+				{Name: "voiceEnable", Memo: "是否启用语音", DefaultValue: "true"},
+				{Name: "voiceText", Memo: "语音内容", DefaultValue: "主人. 您的资源已下载结束"},
 			},
 			Use:     "download",
 			Short:   "下载",
@@ -402,8 +402,8 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "download", Short: "d", Memo: "重新下载"},
-				{Name: "proxy", DefaultValue: global.GetString("proxy"), Memo: "设置下载代理地址"},
+				{Name: "download", Memo: "重新下载", Short: "d"},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 			},
 			Use:     "open",
 			Short:   "打开",
@@ -415,6 +415,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
+				{Name: "download", Memo: "重新下载", Short: "d"},
 			},
 			Use:     "upgrade",
 			Short:   "自我升级",
@@ -445,7 +446,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: null},
-				{Name: "dir", Memo: "设置下载目录", DefaultValue: null},
+				{Name: "downloadDir", Memo: "设置下载目录", DefaultValue: null},
 			},
 			Use:     "global",
 			Short:   "全局配置",
