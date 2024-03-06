@@ -17,7 +17,7 @@ func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("请输入下载的内容")
 		return
 	}
-	if args[0] == "test" {
+	if args[0] == "test" || args[0] == "demo" {
 		args[0] = "http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8"
 	}
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
@@ -58,6 +58,13 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.PrintErr(tool.ShellStart(oss.ExecDir()))
 		return
 	}
+
+	//自定义打开
+	if v, ok := global.GetSMap("customOpen")[args[0]]; ok {
+		logs.PrintErr(tool.ShellStart(v))
+		return
+	}
+
 	switch strings.ToLower(args[0]) {
 	case "hosts":
 		if tool.ShellStart("C:\\Windows\\System32\\drivers\\etc\\hosts") != nil {
