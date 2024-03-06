@@ -200,7 +200,7 @@ func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 8200)
 	debug := flags.GetBool("debug")
-	log.Printf("[信息][:%d] 开启Websocket服务成功...\n", port)
+	logs.Infof("[:%d] 开启Websocket服务成功...\n", port)
 	logs.PrintErr(http.ListenAndServe(
 		fmt.Sprintf(":%d", port),
 		in.InitGo(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +214,7 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 				_, msg, err := ws.ReadMessage()
 				in.CheckErr(err)
 				if debug {
-					logs.Debugf("[%s] %s\n", r.URL.Path, string(msg))
+					logs.Infof("Path: %s, Body: %s\n", r.URL.Path, string(msg))
 				}
 			}
 		})),
@@ -276,4 +276,25 @@ func handlerFrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	shell.Run(filename)
+}
+
+//====================HTTPServer====================//
+
+func handlerHTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
+	port := flags.GetInt("port", 8080)
+	logs.Infof("[:%d] 开启HTTP服务成功...\n", port)
+	logs.PrintErr(
+		http.ListenAndServe(
+			fmt.Sprintf(":%d", port),
+			in.InitGo(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer r.Body.Close()
+				body, err := io.ReadAll(r.Body)
+				in.CheckErr(err)
+				if flags.GetBool("debug") {
+					logs.Infof("Path: %s, Body: %s\n", r.URL.Path, string(body))
+				}
+				in.Succ(nil)
+			})),
+		),
+	)
 }

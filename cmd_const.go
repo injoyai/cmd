@@ -2,6 +2,7 @@ package main
 
 const (
 	details = `
+v1.1.3: 增加HTTP服务,修复配置文件
 v1.1.2: 完善自我升级功能,优化
 v1.1.1: 优化download,支持hls
 v1.1.0: 增加in global全局配置

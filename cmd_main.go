@@ -311,6 +311,12 @@ func main() {
 					Example: "in server frp",
 					Run:     handlerFrpServer,
 				},
+				{
+					Use:     "http",
+					Short:   "http服务",
+					Example: "in server http",
+					Run:     handlerHTTPServer,
+				},
 			},
 		},
 

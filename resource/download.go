@@ -122,7 +122,7 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 
 		sum := int64(0)
 		current := int64(0)
-		b := bar.NewWithContext(ctx, int64(len(list)))
+		b := bar.New(int64(len(list)))
 		b.SetFormatter(func(e *bar.Format) string {
 			return fmt.Sprintf("\r%s  %s  %s  %s",
 				e.Bar,
@@ -131,7 +131,6 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 				b.SpeedUnit("speed", current, time.Millisecond*500),
 			)
 		})
-		go b.Run()
 
 		//分片目录
 		cacheDir := op.TempDir()
@@ -158,13 +157,13 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 			}
 			current = resp.GetSize()
 			sum += current
-			b.Add(1)
+			b.Add(1).Flush()
 		})
 		for i, v := range list {
 			filename := fmt.Sprintf("%05d"+op.suffix, i)
 			if doneName[filename] {
 				//过滤已经下载过的分片
-				b.Add(1)
+				b.Add(1).Flush()
 				continue
 			}
 			//继续下载没有下载过的分片
