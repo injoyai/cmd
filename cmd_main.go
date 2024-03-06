@@ -16,7 +16,8 @@ http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_
 
 func main() {
 
-	logs.DefaultErr.SetWriter(logs.Stdout)
+	logs.SetFormatter(logs.TimeFormatter)
+	logs.SetWriter(logs.Stdout)
 	logs.SetShowColor(false)
 
 	root := &cobra.Command{
@@ -44,6 +45,20 @@ func main() {
 			Short:   "查看软件位置",
 			Example: "in where",
 			Run:     handlerWhere,
+		},
+
+		&Command{
+			Use:     "date",
+			Short:   "时间日期",
+			Example: "in date",
+			Run:     handlerDate,
+		},
+
+		&Command{
+			Use:     "now",
+			Short:   "当前时间",
+			Example: "in now",
+			Run:     handlerDate,
 		},
 
 		&Command{
@@ -91,13 +106,6 @@ func main() {
 			Short:   "生成增删改查",
 			Example: "in curd test",
 			Run:     handlerCrud,
-		},
-
-		&Command{
-			Use:     "now",
-			Short:   "当前时间",
-			Example: "in now",
-			Run:     handlerNow,
 		},
 
 		&Command{
@@ -387,7 +395,7 @@ func main() {
 			},
 			Use:     "install",
 			Short:   "install",
-			Long:    "安装应用",
+			Long:    "安装应用,下载到in所在的目录",
 			Example: "in install hfs",
 			Run:     handlerInstall,
 		},
@@ -399,6 +407,7 @@ func main() {
 			},
 			Use:     "open",
 			Short:   "打开",
+			Long:    "打开文件夹或者应用,未输入参数,则打开in的目录",
 			Example: "in open hosts",
 			Run:     handlerOpen,
 		},
@@ -442,13 +451,6 @@ func main() {
 			Short:   "全局配置",
 			Example: "in global --proxy http://127.0.0.1:1081",
 			Run:     handlerGlobal,
-		},
-
-		&Command{
-			Use:     "date",
-			Short:   "时间日期",
-			Example: "in date",
-			Run:     handlerDate,
 		},
 	)
 

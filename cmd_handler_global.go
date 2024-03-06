@@ -2,21 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/injoyai/goutil/cache"
-	"github.com/injoyai/goutil/oss"
+	gg "github.com/injoyai/cmd/global"
 	"github.com/spf13/cobra"
 )
 
-const (
-	null = "null"
+var (
+	global = gg.Global
+	null   = gg.Null
 )
-
-func init() {
-	cache.DefaultDir = oss.UserInjoyDir("data/cache/")
-	global = cache.NewFile("cmd", "global")
-}
-
-var global *cache.File
 
 func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
 	flags.Range(func(key string, val *Flag) bool {

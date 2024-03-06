@@ -3,8 +3,9 @@
 #-ldflags="-X "
 
 name="in"
+date=`date -d -0day +%Y-%m-%d`
 
-GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s" -o ./$name.exe
+GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s -X main.BuildDate=$date" -o ./$name.exe
 echo "Windows编译完成..."
 echo "开始压缩..."
 upx -9 -k "./$name.exe"
@@ -15,7 +16,7 @@ if [ -f "./$name.000" ]; then
   rm "./$name.000"
 fi
 
-GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w" -o ./$name-amd64
+GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./$name-amd64
 echo "Linux编译完成..."
 echo "开始压缩..."
 upx -9 -k "./$name-amd64"
@@ -26,7 +27,7 @@ if [ -f "./$name-amd64.000" ]; then
   rm "./$name-amd64.000"
 fi
 
-GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w" -o ./$name-arm7
+GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./$name-arm7
 echo "Linux编译完成..."
 echo "开始压缩..."
 upx -9 -k "./$name-arm7"

@@ -252,7 +252,11 @@ func (this *Config) GetName() string {
 }
 
 func (this *Config) Filename() string {
-	return filepath.Join(this.Dir, this.GetName()+this.suffix)
+	name := this.GetName()
+	if len(filepath.Ext(name)) == 0 {
+		name += this.suffix
+	}
+	return filepath.Join(this.Dir, name)
 }
 
 func (this *Config) TempDir() string {
