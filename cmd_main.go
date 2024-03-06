@@ -6,14 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-/*
-测试地址
-http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8
-
-
-
-*/
-
 func main() {
 
 	logs.SetFormatter(logs.TimeFormatter)
