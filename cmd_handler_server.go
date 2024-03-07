@@ -117,6 +117,9 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 					logs.Infof("[%s] Address: %s, Version: %s, Message: 新的客户端连接\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), version)
 				}
 			},
+			OnClosed: func(ctx context.Context, client server.Client, err error) {
+				logs.Infof("[%s] Address: %s,  Message: 客户端断开连接,%v\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), err)
+			},
 			OnMsgArrived: func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
 				if debug {
 					logs.Infof("[%s] Topic: %s, Message: %s\n", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
