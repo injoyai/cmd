@@ -67,17 +67,33 @@ func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	subscribe := flags.GetString("subscribe")
 	publish := flags.GetString("publish")
+	retained := flags.GetBool("retained")
 	qos := byte(flags.GetInt("qos"))
 	timeout := flags.GetMillisecond("timeout", 3000)
 	c := dial.RedialMQTT(&dial.MQTTIOConfig{
-		Subscribe: []dial.MQTTSubscribe{{
-			Topic: subscribe,
-			Qos:   qos,
-		}},
-		Publish: []dial.MQTTPublish{{
-			Topic: publish,
-			Qos:   qos,
-		}},
+		Subscribe: func() []dial.MQTTSubscribe {
+			list := []dial.MQTTSubscribe(nil)
+			for _, v := range strings.Split(subscribe, ",") {
+				if len(v) > 0 {
+					list = append(list, dial.MQTTSubscribe{
+						Topic: v,
+						Qos:   qos,
+					})
+				}
+			}
+			return list
+		}(),
+		Publish: func() []dial.MQTTPublish {
+			list := []dial.MQTTPublish(nil)
+			for _, v := range strings.Split(publish, ",") {
+				list = append(list, dial.MQTTPublish{
+					Topic:    v,
+					Qos:      qos,
+					Retained: retained,
+				})
+			}
+			return list
+		}(),
 	}, mqtt.NewClientOptions().
 		AddBroker(args[0]).
 		SetClientID(g.RandString(8)).

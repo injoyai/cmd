@@ -123,19 +123,12 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 		sum := int64(0)
 		current := int64(0)
 		b := bar.New(int64(len(list)))
-		b.SetFormatter(func(e *bar.Format) string {
-			return fmt.Sprintf("\r%s  %s  %s  %s",
-				e.Bar,
-				e.RateSize,
-				oss.SizeString(sum),
-				b.SpeedUnit("speed", current, time.Millisecond*500),
-			)
-		})
+		b.SetFormatter(bar.NewWithM3u8(&current, &sum))
 
 		//分片目录
 		cacheDir := op.TempDir()
 
-		//查看已经下载的分片
+		//获取已经下载的分片
 		doneName := map[string]bool{}
 		oss.RangeFileInfo(cacheDir, func(info fs.FileInfo) (bool, error) {
 			if !info.IsDir() && strings.HasSuffix(info.Name(), op.suffix) {
@@ -175,14 +168,15 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 		if doneResp.Err != nil {
 			return doneResp.Err
 		}
-		//合并视频,删除分片等信息
-		totalFile, err := os.Create(op.Filename())
-		if err != nil {
-			return err
-		}
 
 		//合并视频
 		g.Retry(func() error {
+			//合并视频,删除分片等信息
+			mergeFile, err := os.Create(op.Filename())
+			if err != nil {
+				return err
+			}
+			defer mergeFile.Close()
 			return oss.RangeFileInfo(cacheDir, func(info fs.FileInfo) (bool, error) {
 				if !info.IsDir() && strings.HasSuffix(info.Name(), op.suffix) {
 					f, err := os.Open(filepath.Join(cacheDir, info.Name()))
@@ -190,13 +184,12 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 						return false, err
 					}
 					defer f.Close()
-					_, err = io.Copy(totalFile, f)
+					_, err = io.Copy(mergeFile, f)
 					return err == nil, err
 				}
 				return true, nil
 			})
 		}, 3)
-		totalFile.Close()
 
 		//删除文件夹和分片视频
 		oss.DelDir(cacheDir)
