@@ -75,7 +75,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	case "appdata":
 		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
 	case "startup":
-		logs.PrintErr(tool.ShellStart(oss.UserStartupDir()))
+		logs.PrintErr(tool.ShellStart2(oss.UserStartupDir()))
 	default:
 
 		if resource.All[strings.ToLower(args[0])] != nil {

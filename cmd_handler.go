@@ -20,9 +20,14 @@ import (
 )
 
 func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
-	fmt.Println(details)
+	if len(details) > 10 {
+		details = details[:10]
+	}
+	fmt.Println()
+	fmt.Println(strings.Join(details, "\n"))
 	if len(BuildDate) > 0 {
-		fmt.Println("\n编译时间: " + BuildDate)
+		fmt.Println()
+		fmt.Println("编译日期: " + BuildDate)
 	}
 }
 
