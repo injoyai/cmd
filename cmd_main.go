@@ -444,7 +444,9 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: null},
-				{Name: "customOpen", Memo: "自定义打开文件", DefaultValue: null},
+				{Name: "customOpen", Memo: `自定义打开文件,格式{"c":"C:/","baidu":"https://www.baidu.com"}`, DefaultValue: null},
+				{Name: "setCustomOpen", Memo: "添加自定义打开文件", DefaultValue: null},
+				{Name: "delCustomOpen", Memo: "删除自定义打开文件", DefaultValue: null},
 				{Name: "downloadDir", Memo: "设置下载目录", DefaultValue: null},
 				{Name: "downloadNoticeEnable", Memo: "下载是否启用通知", DefaultValue: null},
 				{Name: "downloadNoticeText", Memo: "下载是否通知内容", DefaultValue: null},
