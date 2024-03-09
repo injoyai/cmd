@@ -9,6 +9,7 @@ import (
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
+	"os"
 	"strings"
 )
 
@@ -76,6 +77,10 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
 	case "startup":
 		logs.PrintErr(tool.ShellStart2(oss.UserStartupDir()))
+	case "gopath":
+		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
+	case "regedit":
+		logs.PrintErr(tool.ShellStart("regedit"))
 	default:
 
 		if resource.All[strings.ToLower(args[0])] != nil {
