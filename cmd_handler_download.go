@@ -7,6 +7,7 @@ import (
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/win"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"os"
@@ -60,7 +61,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	//自定义打开
+	//尝试在自定义中查找
 	if v, ok := global.GetSMap("customOpen")[args[0]]; ok {
 		logs.PrintErr(tool.ShellStart(v))
 		return
@@ -83,6 +84,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.PrintErr(tool.ShellStart("regedit"))
 	default:
 
+		//尝试在内置资源查找
 		if resource.All[strings.ToLower(args[0])] != nil {
 			filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
@@ -95,6 +97,13 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 
+		//尝试在注册表查找
+		if list, _ := win.APPPath(args[0]); len(list) > 0 {
+			logs.PrintErr(tool.ShellStart2(list[0]))
+			return
+		}
+
+		//直接尝试打开
 		logs.PrintErr(tool.ShellStart(args[0]))
 	}
 }

@@ -101,7 +101,7 @@ var (
 			Name: "npc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
-		"chrome": {
+		"chrome104": {
 			Name:          "chrome.exe",
 			Url:           "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
 			UrlLinuxAmd64: "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
