@@ -452,11 +452,27 @@ func main() {
 				{Name: "downloadNoticeText", Memo: "下载是否通知内容", DefaultValue: null},
 				{Name: "downloadVoiceEnable", Memo: "下载是否启用语音", DefaultValue: null},
 				{Name: "downloadVoiceText", Memo: "下载是否语音内容", DefaultValue: null},
+				{Name: "memoHost", Memo: "备忘录主机", DefaultValue: null},
+				{Name: "memoToken", Memo: "备忘录token", DefaultValue: null},
+				//{Name: "set", Short: "s", Memo: "设置"},
+				//{Name: "add", Short: "a", Memo: "添加"},
+				//{Name: "del", Short: "d", Memo: "删除"},
 			},
 			Use:     "global",
 			Short:   "全局配置",
 			Example: "in global --proxy http://127.0.0.1:1081",
 			Run:     handlerGlobal,
+		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "add", Short: "a", Memo: "添加备注"},
+				{Name: "del", Short: "d", Memo: "删除备注"},
+			},
+			Use:     "memo",
+			Short:   "备注",
+			Example: "in memo --add 记得买xx",
+			Run:     handlerMemo,
 		},
 	)
 
