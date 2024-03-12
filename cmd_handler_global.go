@@ -5,6 +5,8 @@ import (
 	gg "github.com/injoyai/cmd/global"
 	"github.com/injoyai/conv"
 	"github.com/spf13/cobra"
+	"sort"
+	"strings"
 )
 
 var (
@@ -37,9 +39,12 @@ func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 	global.Cover()
 
-	fmt.Println()
+	list := []string(nil)
 	flags.Range(func(key string, val *Flag) bool {
-		fmt.Printf("%s: %s\n", key, global.GetString(key))
+		list = append(list, fmt.Sprintf("%s: %s", key, global.GetString(key)))
 		return true
 	})
+	sort.Strings(list)
+	fmt.Println()
+	fmt.Println(strings.Join(list, "\n"))
 }
