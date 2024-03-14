@@ -9,6 +9,7 @@ import (
 	"github.com/DrmagicE/gmqtt/server"
 	"github.com/gorilla/websocket"
 	"github.com/injoyai/cmd/resource"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/frame/in"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
@@ -170,7 +171,7 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
-		shell.Run(filename)
+		logs.PrintErr(tool.ShellRun(filename))
 	}
 }
 
@@ -245,7 +246,7 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================StreamServer====================//
 
-func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
+func handlerLivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "livego",
@@ -254,7 +255,7 @@ func handlerStreamServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
-	shell.Run(filename)
+	logs.PrintErr(tool.ShellRun(filename))
 }
 
 //====================FrpServer====================//
@@ -268,7 +269,7 @@ func handlerFrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
-	shell.Run(filename)
+	logs.PrintErr(tool.ShellRun(filename))
 }
 
 //====================HTTPServer====================//

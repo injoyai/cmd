@@ -300,10 +300,10 @@ func main() {
 					Run:     handlerDeployServer,
 				},
 				{
-					Use:     "stream",
+					Use:     "livego",
 					Short:   "流媒体服务",
-					Example: "in server stream",
-					Run:     handlerStreamServer,
+					Example: "in server livego",
+					Run:     handlerLivegoServer,
 				},
 				{
 					Use:     "frp",
@@ -324,6 +324,7 @@ func main() {
 			Flag: []*Flag{
 				{Name: "timeout", Short: "t", Memo: "超时时间(毫秒)", DefaultValue: "1000"},
 				{Name: "sort", Short: "s", Memo: "排序"},
+				{Name: "find", Short: "f", Memo: "过滤数据"},
 			},
 			Use:     "scan",
 			Short:   "扫描",
@@ -355,12 +356,24 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "open", Short: "o", Memo: "是否打开", DefaultValue: "false"},
+						{Name: "open", Short: "o", Memo: "是否打开"},
 					},
 					Use:     "edge",
 					Short:   "网关扫描",
 					Example: "in scan edge",
 					Run:     handlerScanEdge,
+				},
+				{
+					Use:     "netstat",
+					Short:   "网络占用情况",
+					Example: "in scan netstat -f 8200",
+					Run:     handlerScanNetstat,
+				},
+				{
+					Use:     "task",
+					Short:   "扫描运行的进程",
+					Example: "in scan task -f xx.exe",
+					Run:     handlerScanTask,
 				},
 			},
 		},

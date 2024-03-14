@@ -6,11 +6,11 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/injoyai/cmd/resource"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/cache"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/dial"
@@ -232,7 +232,8 @@ func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	file.Set("key", key)
 	file.Set("type", Type)
 	file.Cover()
-	shell.Run(fmt.Sprintf("npc -server=%s -vkey=%s -type=%s", addr, key, Type))
+	filename := fmt.Sprintf("npc -server=%s -vkey=%s -type=%s", addr, key, Type)
+	logs.PrintErr(tool.ShellRun(filename))
 }
 
 func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
@@ -293,5 +294,6 @@ remotePort = %s
 		Type,
 		strings.ReplaceAll(localAddr, ":", "\"\nlocalPort = "),
 		serverPort))
-	shell.Run("frpc -c " + cfgPath)
+	filename := "frpc -c " + cfgPath
+	logs.PrintErr(tool.ShellRun(filename))
 }
