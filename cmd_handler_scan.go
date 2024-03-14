@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/injoyai/base/sort"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/ip"
@@ -19,6 +20,22 @@ import (
 	"sync"
 	"time"
 )
+
+func handlerScanNetstat(cmd *cobra.Command, args []string, flags *Flags) {
+	s := "netstat -ano"
+	if find := flags.GetString("find"); len(find) > 0 {
+		s += fmt.Sprintf(` | findstr "%s"`, find)
+	}
+	logs.PrintErr(tool.ShellRun(s))
+}
+
+func handlerScanTask(cmd *cobra.Command, args []string, flags *Flags) {
+	s := "tasklist"
+	if find := flags.GetString("find"); len(find) > 0 {
+		s += fmt.Sprintf(` | findstr "%s"`, find)
+	}
+	logs.PrintErr(tool.ShellRun(s))
+}
 
 func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))

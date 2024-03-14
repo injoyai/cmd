@@ -98,8 +98,12 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 }
 
 func downloadOther(ctx context.Context, op *Config) error {
-	_, err := bar.Download(op.Resource, op.Filename(), op.Proxy())
-	return err
+	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
+	//以防出现下载失败,直接覆盖了源文件
+	if _, err := bar.Download(op.Resource, op.TempFilename(), op.Proxy()); err != nil {
+		return err
+	}
+	return os.Rename(op.TempFilename(), op.Filename())
 }
 
 func downloadM3u8(ctx context.Context, op *Config) error {
@@ -249,6 +253,14 @@ func (this *Config) Filename() string {
 		name += this.suffix
 	}
 	return filepath.Join(this.Dir, name)
+}
+
+func (this *Config) TempFilename() string {
+	name := this.GetName()
+	if len(filepath.Ext(name)) == 0 {
+		name += this.suffix
+	}
+	return filepath.Join(this.Dir, name+".temp")
 }
 
 func (this *Config) TempDir() string {
