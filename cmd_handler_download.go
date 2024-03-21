@@ -63,6 +63,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 
 	//尝试在自定义中查找
 	if v, ok := global.GetSMap("customOpen")[args[0]]; ok {
+		fmt.Print("自定义")
 		logs.PrintErr(tool.ShellStart(v))
 		return
 	}
@@ -80,7 +81,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.PrintErr(tool.ShellStart2(oss.UserStartupDir()))
 	case "gopath":
 		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
-	case "regedit":
+	case "regedit", "注册表":
 		logs.PrintErr(tool.ShellStart("regedit"))
 	default:
 
@@ -93,14 +94,42 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 				ProxyEnable:  true,
 				ProxyAddress: flags.GetString("proxy"),
 			})
+			fmt.Print("内置资源")
 			logs.PrintErr(tool.ShellStart(filename))
 			return
 		}
 
 		//尝试在注册表查找
 		if list, _ := win.APPPath(args[0]); len(list) > 0 {
+			fmt.Print("注册表")
 			logs.PrintErr(tool.ShellStart2(list[0]))
 			return
+		}
+
+		//尝试从环境变量查找
+		if v, ok := os.LookupEnv(args[0]); ok {
+			list := strings.Split(v, ";")
+			switch {
+			case len(list) == 1:
+				fmt.Print("环境变量")
+				logs.PrintErr(tool.ShellStart(list[0]))
+				return
+			case len(list) > 1:
+				for i, v := range list {
+					fmt.Printf("%d. %s\n", i+1, v)
+				}
+				fmt.Println("请选择要打开的序号: ")
+				for {
+					n := g.InputVar().Int()
+					if n > 0 && n <= len(list) {
+						fmt.Print("环境变量")
+						logs.PrintErr(tool.ShellStart(list[n-1]))
+						break
+					}
+					fmt.Println("请输入正确的序号")
+				}
+				return
+			}
 		}
 
 		//直接尝试打开
