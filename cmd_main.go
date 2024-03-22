@@ -117,6 +117,7 @@ func main() {
 				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefaultValue: "500"},
 				{Name: "proxy", Memo: "代理地址", DefaultValue: global.GetString("proxy")},
+				{Name: "printType", Memo: "打印类型", DefaultValue: "utf8"},
 			},
 			Use:     "dial",
 			Short:   "连接",

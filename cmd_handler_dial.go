@@ -35,7 +35,6 @@ func handlerDialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	c := dial.RedialUDP(args[0])
 	handlerDialDeal(c, flags, true)
-	c.SetPrintWithHEX()
 	c.WriteString(io.Pong)
 	<-c.DoneAll()
 }
@@ -185,6 +184,12 @@ func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
 	r := bufio.NewReader(os.Stdin)
 	c.SetOptions(func(c *io.Client) {
 		c.Debug(flags.GetBool("debug"))
+		switch strings.ToLower(flags.GetString("printType")) {
+		case "utf8", "ascii":
+			c.SetPrintWithUTF8()
+		case "hex":
+			c.SetPrintWithHEX()
+		}
 		if !flags.GetBool("redial") {
 			c.SetRedialWithNil()
 		}
