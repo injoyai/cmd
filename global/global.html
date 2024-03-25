@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全局配置</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .label-container {
+            width: 120px; /* 调整参数名称的宽度 */
+            text-align: left; /* 参数名称左对齐 */
+        }
+
+        .input-container {
+            flex: 1; /* 自动填充剩余空间 */
+            margin-left: 20px; /* 增加输入框与参数名称之间的距离 */
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px); /* 调整输入框的宽度 */
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin: 5px 0; /* 上下间距 */
+        }
+
+        .checkbox-label {
+            margin-right: 10px;
+        }
+
+        .checkbox-input {
+            vertical-align: middle;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px; /* 设置行与行之间的垂直间距 */
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <form id="configForm">
+        <!-- Configs will be dynamically generated here -->
+    </form>
+    <button type="button" onclick="saveConfig()">保存配置</button>
+</div>
+
+<script>
+    // 配置信息对象数组
+    var configs = [
+        {name: "参数1", key: "param1", type: "string", value: "value1"},
+        {name: "参数2", key: "param2", type: "boolean", value: "value1"},
+        {
+            name: "参数3", key: "param3", type: "object", value: [
+                {name: "参数3.1", key: "param3.1", type: "string", value: "value3.1"},
+                {name: "参数3.2", key: "param3.2", type: "boolean", value: "value3.2"},
+            ]
+        }
+    ];
+
+    loadConfig(configs)
+
+
+    function loadConfig(configs) {
+        // 根据配置信息对象数组动态生成配置列表
+        var form = document.getElementById("configForm");
+        configs.forEach(function (config) {
+            var formRow = document.createElement("div");
+            formRow.className = "form-row";
+
+            var labelContainer = document.createElement("div");
+            labelContainer.className = "label-container";
+            formRow.appendChild(labelContainer);
+
+            var label = document.createElement("label");
+            label.textContent = config.name + ":";
+            labelContainer.appendChild(label);
+
+            var inputContainer = document.createElement("div");
+            inputContainer.className = "input-container";
+            formRow.appendChild(inputContainer);
+
+            var input;
+            if (config.type === "bool") {
+                var checkboxLabel = document.createElement("label");
+                checkboxLabel.className = "checkbox-label";
+                inputContainer.appendChild(checkboxLabel);
+
+                var checkboxInput = document.createElement("input");
+                checkboxInput.type = "checkbox";
+                checkboxInput.className = "checkbox-input";
+                checkboxInput.name = config.key;
+                checkboxInput.value = config.value;
+                checkboxLabel.appendChild(checkboxInput);
+
+                checkboxLabel.appendChild(document.createTextNode("是"));
+            } else if (config.type === "object") {
+                // 如果参数类型是对象，则生成一个子级配置表单
+                var subConfigForm = document.createElement("form");
+                subConfigForm.className = "sub-config-form";
+                config.value.forEach(function (subConfig) {
+                    var subFormRow = document.createElement("div");
+                    subFormRow.className = "form-row";
+
+                    var subLabelContainer = document.createElement("div");
+                    subLabelContainer.className = "label-container";
+                    subFormRow.appendChild(subLabelContainer);
+
+                    var subLabel = document.createElement("input");
+                    subLabel.type = "text";
+                    subLabel.value = subConfig.key;
+                    subLabelContainer.appendChild(subLabel);
+
+                    var subInputContainer = document.createElement("div");
+                    subInputContainer.className = "input-container";
+                    subFormRow.appendChild(subInputContainer);
+
+                    var subInput = document.createElement("input");
+                    subInput.type = "text";
+                    subInput.value = subConfig.value;
+                    subInputContainer.appendChild(subInput);
+
+                    //移除参数
+                    var removeButton = document.createElement("button");
+                    removeButton.className = "remove-field-button";
+                    removeButton.textContent = "-";
+                    removeButton.onclick = function () {
+                        subFormRow.parentNode.removeChild(subFormRow);
+                    };
+                    subFormRow.appendChild(removeButton);
+
+                    subConfigForm.appendChild(subFormRow);
+                });
+
+                var addButton = document.createElement("button");
+                addButton.className = "add-field-button";
+                addButton.textContent = "+";
+                addButton.onclick = function () {
+                    var subFormRow = document.createElement("div");
+                    subFormRow.className = "form-row";
+
+                    var subLabelContainer = document.createElement("div");
+                    subLabelContainer.className = "label-container";
+                    subFormRow.appendChild(subLabelContainer);
+
+                    var subLabel = document.createElement("input");
+                    subLabel.type = "text";
+                    subLabel.value = "";
+                    subLabelContainer.appendChild(subLabel);
+
+                    var subInputContainer = document.createElement("div");
+                    subInputContainer.className = "input-container";
+                    subFormRow.appendChild(subInputContainer);
+
+                    var subInput = document.createElement("input");
+                    subInput.type = "text";
+                    subInput.value = "";
+                    subInputContainer.appendChild(subInput);
+
+                    var removeButton = document.createElement("button");
+                    removeButton.className = "remove-field-button";
+                    removeButton.textContent = "-";
+                    removeButton.onclick = function () {
+                        subFormRow.parentNode.removeChild(subFormRow);
+                    };
+                    subFormRow.appendChild(removeButton);
+                    subConfigForm.appendChild(subFormRow);
+                };
+                inputContainer.appendChild(addButton);
+
+                inputContainer.appendChild(subConfigForm);
+            } else {
+                input = document.createElement("input");
+                input.type = "text";
+                input.name = config.key;
+                input.value = config.value;
+                inputContainer.appendChild(input);
+            }
+
+            form.appendChild(formRow);
+        });
+    }
+
+    // 保存配置的函数
+    function saveConfig() {
+        var formData = new FormData(document.getElementById("configForm"));
+
+        console.log(formData.values())
+        var configObject = {};
+        for (var pair of formData.entries()) {
+            console.log(pair)
+            configObject[pair[0]] = pair[1];
+        }
+
+        saveToFile(configObject);
+        console.log(configObject)
+    }
+
+    // function saveConfig() {
+    //     var configObject = {};
+    //     saveConfigRecursive(configs, configObject);
+    //     saveToFile(configObject);
+    //     console.log(configObject);
+    // }
+    //
+    // function saveConfigRecursive(configs, configObject) {
+    //     configs.forEach(function (config) {
+    //         if (config.type === "object") {
+    //             configObject[config.key] = {};
+    //             config.value.forEach(function (subConfig) {
+    //                 configObject[config.key][subConfig.key] = subConfig.value;
+    //             });
+    //         } else {
+    //             configObject[config.key] = config.value;
+    //         }
+    //     });
+    // }
+
+    function saveToFile(config) {
+        // bind到go
+    }
+
+
+</script>
+
+</body>
+</html>

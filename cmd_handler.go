@@ -20,7 +20,7 @@ import (
 )
 
 func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(details) > 10 {
+	if !flags.GetBool("all") && len(details) > 10 {
 		details = details[:10]
 	}
 	fmt.Println()

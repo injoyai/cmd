@@ -26,6 +26,7 @@ func main() {
 	addCommand(
 
 		&Command{
+			Flag:    []*Flag{{Name: "all", Short: "a", Memo: "全部版本记录"}},
 			Use:     "version",
 			Short:   "查看版本",
 			Example: "in version",
@@ -393,6 +394,7 @@ func main() {
 				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("downloadNoticeText", "主人. 您的资源已下载结束")},
 				{Name: "voiceEnable", Memo: "是否启用语音", DefaultValue: global.GetString("downloadVoiceEnable", "true")},
 				{Name: "voiceText", Memo: "语音内容", DefaultValue: global.GetString("downloadVoiceText", "主人. 您的资源已下载结束")},
+				{Name: "gui", Memo: "图形化界面"},
 			},
 			Use:     "download",
 			Short:   "下载",
@@ -471,6 +473,7 @@ func main() {
 				//{Name: "set", Short: "s", Memo: "设置"},
 				//{Name: "add", Short: "a", Memo: "添加"},
 				//{Name: "del", Short: "d", Memo: "删除"},
+				{Name: "gui", Short: "g", Memo: "图形化界面"},
 			},
 			Use:     "global",
 			Short:   "全局配置",
