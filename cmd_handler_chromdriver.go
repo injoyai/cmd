@@ -3,9 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
-	"github.com/injoyai/goutil/oss/win"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/goutil/str/bar"
 	"io/ioutil"
@@ -16,7 +16,7 @@ import (
 
 func installChromedriver(dir string, reDownload bool, proxy ...string) (string, error) {
 
-	filenames, err := win.APPPath("chrome.exe")
+	filenames, err := tool.APPPath("chrome.exe")
 	if err != nil {
 		return "", err
 	}

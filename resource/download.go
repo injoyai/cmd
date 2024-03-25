@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/injoyai/cmd/resource/m3u8"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -83,7 +84,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	//提示消息
 	if op.NoticeEnable {
-		notice.NewWindows().Publish(&notice.Message{
+		tool.PublishNotice(&notice.Message{
 			Title:   "下载完成",
 			Content: op.NoticeText,
 		})
