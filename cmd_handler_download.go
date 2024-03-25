@@ -15,11 +15,17 @@ import (
 
 func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 || len(args[0]) == 0 {
-		fmt.Println("请输入下载的内容")
+		fmt.Println("未输入下载的内容")
 		return
 	}
-	if args[0] == "test" || args[0] == "demo" {
+	switch args[0] {
+	case "test", "demo":
+		//示例下载地址
 		args[0] = "http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8"
+	case "gui":
+		//打开图形化界面
+		handlerOpen(cmd, []string{"downloader"}, flags)
+		return
 	}
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],

@@ -15,6 +15,12 @@ var (
 )
 
 func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
+
+	if flags.GetBool("gui") || (len(args) > 0 && args[0] == "gui") {
+		gg.RunGUI()
+		return
+	}
+
 	flags.Range(func(key string, val *Flag) bool {
 		if val.Value == null {
 			return true
