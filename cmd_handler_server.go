@@ -285,7 +285,7 @@ func handlerHTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 				body, err := io.ReadAll(r.Body)
 				in.CheckErr(err)
 				if flags.GetBool("debug") {
-					logs.Infof("Path: %s, Body: %s\n", r.URL.Path, string(body))
+					logs.Infof("Path: %s, Body: %s\n", r.URL, string(body))
 				}
 				in.Succ(nil)
 			})),

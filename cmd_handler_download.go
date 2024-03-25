@@ -7,7 +7,6 @@ import (
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/goutil/oss/win"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"os"
@@ -100,7 +99,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 
 		//尝试在注册表查找
-		if list, _ := win.APPPath(args[0]); len(list) > 0 {
+		if list, _ := tool.APPPath(args[0]); len(list) > 0 {
 			fmt.Print("注册表")
 			logs.PrintErr(tool.ShellStart2(list[0]))
 			return
