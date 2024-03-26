@@ -2,6 +2,7 @@ package main
 
 var (
 	details = []string{
+		"v1.1.9: 增加全局配置和下载的图形化界面,通过in global/download gui打开",
 		"v1.1.8: 增加open尝试从环境变量查找,增加对linux的支持",
 		"v1.1.7: 修改下载先到缓存再重命名,增加scan netstat/task",
 		"v1.1.6: 增加远程备忘录,基于memos接口",

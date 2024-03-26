@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>全局配置</title>
     <style>
         body {
@@ -53,7 +53,7 @@
         }
 
         button {
-            background-color: #4CAF50;
+            background-color: #4caf50;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -71,11 +71,9 @@
             align-items: center;
             margin-bottom: 10px; /* 设置行与行之间的垂直间距 */
         }
-
     </style>
 </head>
 <body>
-
 <div class="container">
     <form id="configForm">
         <!-- Configs will be dynamically generated here -->
@@ -84,19 +82,6 @@
 </div>
 
 <script>
-    // 配置信息对象数组
-    var configs = [
-        {name: "参数1", key: "param1", type: "string", value: "value1"},
-        {name: "参数2", key: "param2", type: "boolean", value: "value1"},
-        {
-            name: "参数3", key: "param3", type: "object", value: [
-                {name: "参数3.1", key: "param3.1", type: "string", value: "value3.1"},
-                {name: "参数3.2", key: "param3.2", type: "boolean", value: "value3.2"},
-            ]
-        }
-    ];
-
-    loadConfig(configs)
 
 
     function loadConfig(configs) {
@@ -128,7 +113,7 @@
                 checkboxInput.type = "checkbox";
                 checkboxInput.className = "checkbox-input";
                 checkboxInput.name = config.key;
-                checkboxInput.value = config.value;
+                checkboxInput.checked = config.value;
                 checkboxLabel.appendChild(checkboxInput);
 
                 checkboxLabel.appendChild(document.createTextNode("是"));
@@ -136,73 +121,17 @@
                 // 如果参数类型是对象，则生成一个子级配置表单
                 var subConfigForm = document.createElement("form");
                 subConfigForm.className = "sub-config-form";
+                // 设置 data-key 属性为参数的键
+                subConfigForm.setAttribute("data-key", config.key);
                 config.value.forEach(function (subConfig) {
-                    var subFormRow = document.createElement("div");
-                    subFormRow.className = "form-row";
-
-                    var subLabelContainer = document.createElement("div");
-                    subLabelContainer.className = "label-container";
-                    subFormRow.appendChild(subLabelContainer);
-
-                    var subLabel = document.createElement("input");
-                    subLabel.type = "text";
-                    subLabel.value = subConfig.key;
-                    subLabelContainer.appendChild(subLabel);
-
-                    var subInputContainer = document.createElement("div");
-                    subInputContainer.className = "input-container";
-                    subFormRow.appendChild(subInputContainer);
-
-                    var subInput = document.createElement("input");
-                    subInput.type = "text";
-                    subInput.value = subConfig.value;
-                    subInputContainer.appendChild(subInput);
-
-                    //移除参数
-                    var removeButton = document.createElement("button");
-                    removeButton.className = "remove-field-button";
-                    removeButton.textContent = "-";
-                    removeButton.onclick = function () {
-                        subFormRow.parentNode.removeChild(subFormRow);
-                    };
-                    subFormRow.appendChild(removeButton);
-
-                    subConfigForm.appendChild(subFormRow);
+                    addObjectNature(subConfigForm, subConfig.key, subConfig.value)
                 });
 
                 var addButton = document.createElement("button");
                 addButton.className = "add-field-button";
                 addButton.textContent = "+";
                 addButton.onclick = function () {
-                    var subFormRow = document.createElement("div");
-                    subFormRow.className = "form-row";
-
-                    var subLabelContainer = document.createElement("div");
-                    subLabelContainer.className = "label-container";
-                    subFormRow.appendChild(subLabelContainer);
-
-                    var subLabel = document.createElement("input");
-                    subLabel.type = "text";
-                    subLabel.value = "";
-                    subLabelContainer.appendChild(subLabel);
-
-                    var subInputContainer = document.createElement("div");
-                    subInputContainer.className = "input-container";
-                    subFormRow.appendChild(subInputContainer);
-
-                    var subInput = document.createElement("input");
-                    subInput.type = "text";
-                    subInput.value = "";
-                    subInputContainer.appendChild(subInput);
-
-                    var removeButton = document.createElement("button");
-                    removeButton.className = "remove-field-button";
-                    removeButton.textContent = "-";
-                    removeButton.onclick = function () {
-                        subFormRow.parentNode.removeChild(subFormRow);
-                    };
-                    subFormRow.appendChild(removeButton);
-                    subConfigForm.appendChild(subFormRow);
+                    addObjectNature(subConfigForm, "", "")
                 };
                 inputContainer.appendChild(addButton);
 
@@ -219,47 +148,93 @@
         });
     }
 
-    // 保存配置的函数
-    function saveConfig() {
-        var formData = new FormData(document.getElementById("configForm"));
+    function addObjectNature(parent, key, value) {
+        var childContainer = document.createElement("div");
+        childContainer.className = "form-row";
+        parent.appendChild(childContainer);
 
-        console.log(formData.values())
-        var configObject = {};
-        for (var pair of formData.entries()) {
-            console.log(pair)
-            configObject[pair[0]] = pair[1];
-        }
+        //key
+        var childKeyContainer = document.createElement("div");
+        childKeyContainer.className = "label-container";
+        childContainer.appendChild(childKeyContainer);
+        var childKey = document.createElement("input");
+        childKey.type = "text";
+        childKey.name = key;
+        childKey.value = key;
+        childKeyContainer.appendChild(childKey);
 
-        saveToFile(configObject);
-        console.log(configObject)
+        //value
+        var childValueContainer = document.createElement("div");
+        childValueContainer.className = "input-container";
+        childContainer.appendChild(childValueContainer);
+        var childValue = document.createElement("input");
+        childValue.type = "text";
+        childValue.name = "_child";
+        childValue.value = value;
+        childValueContainer.appendChild(childValue);
+
+        //-按钮
+        var removeButton = document.createElement("button");
+        removeButton.className = "remove-field-button";
+        removeButton.textContent = "-";
+        removeButton.onclick = function () {
+            parent.removeChild(childContainer);
+        };
+        childContainer.appendChild(removeButton);
+
     }
 
-    // function saveConfig() {
-    //     var configObject = {};
-    //     saveConfigRecursive(configs, configObject);
-    //     saveToFile(configObject);
-    //     console.log(configObject);
-    // }
-    //
-    // function saveConfigRecursive(configs, configObject) {
-    //     configs.forEach(function (config) {
-    //         if (config.type === "object") {
-    //             configObject[config.key] = {};
-    //             config.value.forEach(function (subConfig) {
-    //                 configObject[config.key][subConfig.key] = subConfig.value;
-    //             });
-    //         } else {
-    //             configObject[config.key] = config.value;
-    //         }
-    //     });
-    // }
+    function saveConfig() {
+        var form = document.getElementById("configForm");
+        var configObject = {};
+
+
+        //父级
+        form.querySelectorAll("input").forEach(function (input) {
+            if (input.name !== "_child") {
+                if (input.className === "checkbox-input") {
+                    configObject[input.name] = input.checked
+                } else {
+                    configObject[input.name] = input.value
+                }
+            }
+        })
+
+        //子级 object
+        form.querySelectorAll(".sub-config-form").forEach(function (subForm) {
+            key = subForm.getAttribute("data-key")
+            console.log("subForm: ", subForm)
+            childObject = {}
+            subForm.querySelectorAll(".form-row").forEach(function (formRow) {
+                key2 = null
+                value2 = null
+                formRow.querySelectorAll(".label-container").forEach(function (labelContainer) {
+                    labelContainer.querySelectorAll("input").forEach(function (input) {
+                        key2 = input.value
+                    })
+                })
+                formRow.querySelectorAll(".input-container").forEach(function (labelContainer) {
+                    labelContainer.querySelectorAll("input").forEach(function (input) {
+                        value2 = input.value
+                    })
+                })
+                if (key2 !== null) {
+                    childObject[key2] = value2
+                    console.log(key2, ": ", value2)
+                }
+            })
+            configObject[key] = childObject
+        })
+
+
+        //console.log(configObject);
+        // 保存配置到文件或其他地方
+        saveToFile(configObject);
+    }
 
     function saveToFile(config) {
         // bind到go
     }
-
-
 </script>
-
 </body>
 </html>

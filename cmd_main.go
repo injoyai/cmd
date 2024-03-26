@@ -26,7 +26,6 @@ func main() {
 	addCommand(
 
 		&Command{
-			Flag:    []*Flag{{Name: "all", Short: "a", Memo: "全部版本记录"}},
 			Use:     "version",
 			Short:   "查看版本",
 			Example: "in version",
@@ -397,7 +396,8 @@ func main() {
 				{Name: "gui", Memo: "图形化界面"},
 			},
 			Use:     "download",
-			Short:   "下载",
+			Short:   "下载资源",
+			Long:    "使用in download gui来打开图形化界面",
 			Example: "in download hfs",
 			Run:     handlerDownload,
 		},
@@ -470,13 +470,10 @@ func main() {
 				{Name: "downloadVoiceText", Memo: "下载是否语音内容", DefaultValue: null},
 				{Name: "memoHost", Memo: "备忘录主机", DefaultValue: null},
 				{Name: "memoToken", Memo: "备忘录token", DefaultValue: null},
-				//{Name: "set", Short: "s", Memo: "设置"},
-				//{Name: "add", Short: "a", Memo: "添加"},
-				//{Name: "del", Short: "d", Memo: "删除"},
-				{Name: "gui", Short: "g", Memo: "图形化界面"},
 			},
 			Use:     "global",
 			Short:   "全局配置",
+			Long:    "使用in global gui来打开图形化界面",
 			Example: "in global --proxy http://127.0.0.1:1081",
 			Run:     handlerGlobal,
 		},
