@@ -2,6 +2,7 @@ package global
 
 import (
 	"github.com/injoyai/goutil/cache"
+	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 )
 
@@ -33,7 +34,7 @@ func GetConfigs() []Nature {
 		case "bool":
 			natures[i].Value = Global.GetBool(natures[i].Key)
 		case "object":
-			object := []Nature(nil)
+			object := Natures(nil)
 			for k, v := range Global.GetGMap(natures[i].Key) {
 				object = append(object, Nature{
 					Name:  k,
@@ -49,9 +50,26 @@ func GetConfigs() []Nature {
 	return natures
 }
 
+func SaveConfigs(m g.Map) error {
+	for k, v := range m {
+		Global.Set(k, v)
+	}
+	return Global.Save()
+}
+
 type Nature struct {
 	Name  string      `json:"name"`
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
 	Type  string      `json:"type"`
+}
+
+type Natures []Nature
+
+func (this Natures) Map() g.Map {
+	m := g.Map{}
+	for _, v := range this {
+		m[v.Key] = v.Value
+	}
+	return m
 }

@@ -1,33 +1,37 @@
 package global
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/logs"
 	"github.com/injoyai/lorca"
 )
 
+//go:embed global.html
+var html string
+
 func RunGUI() {
 	lorca.Run(&lorca.Config{
 		Width:   720,
 		Height:  860,
-		Html:    "./global/global.html",
+		Html:    html,
 		Options: nil,
 	}, func(app lorca.APP) error {
 
 		configs := GetConfigs()
-		logs.Debugf("%#v", configs)
 
 		//加载配置数据
 		app.Eval(fmt.Sprintf(`loadConfig(%s)`, conv.String(configs)))
 
 		//获取保存数据
 		app.Bind("saveToFile", func(config interface{}) {
-			//s := app.Eval(`document.getElementById("configForm")`)
-			//logs.Debug(s.String())
-			logs.Debug(config)
-			//logs.Debug(app.GetValueByID("configForm"))
-			app.Eval(`alert("配置已保存！");`)
+			if err := SaveConfigs(conv.GMap(config)); err != nil {
+				logs.Err(err)
+				app.Eval(fmt.Sprintf(`alert("%v");`, err))
+			} else {
+				app.Eval(`alert("保存成功");`)
+			}
 		})
 
 		return nil
