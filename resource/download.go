@@ -92,7 +92,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	//播放声音
 	if op.VoiceEnable {
-		notice.NewVoice(nil).Speak(op.VoiceText)
+		notice.DefaultVoice.Speak(op.VoiceText)
 	}
 
 	return op.Filename(), false, nil
@@ -146,16 +146,24 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 		t := task.NewDownload()
 		t.SetCoroutine(op.Coroutine)
 		t.SetRetry(op.Retry)
-		t.SetDoneItem(func(ctx context.Context, resp *task.DownloadItemResp) {
+		t.SetDoneItem(func(ctx context.Context, resp *task.DownloadItemResp) (int64, error) {
 			if resp.Err == nil {
 				//保存分片到文件夹,5位长度,最大99999分片,大于99999视频会乱序
 				filename := fmt.Sprintf("%05d"+op.suffix, resp.Index)
 				filename = filepath.Join(cacheDir, filename)
-				g.Retry(func() error { return oss.New(filename, resp.Bytes) }, 3)
+				g.Retry(func() error {
+					bs, err := io.ReadAll(resp.Reader)
+					if err != nil {
+						return err
+					}
+					current = int64(len(bs))
+					return oss.New(filename, bs)
+				}, 3)
 			}
-			current = resp.GetSize()
+			//current = resp.GetSize()
 			sum += current
 			b.Add(1).Flush()
+			return current, resp.Err
 		})
 		for i, v := range list {
 			filename := fmt.Sprintf("%05d"+op.suffix, i)

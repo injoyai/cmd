@@ -9,9 +9,9 @@ import (
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/goutil/other/notice/voice"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"log"
@@ -69,7 +69,7 @@ func handlerDate(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerSpeak(cmd *cobra.Command, args []string, flags *Flags) {
 	msg := fmt.Sprint(conv.Interfaces(args)...)
-	voice.Speak(msg)
+	notice.DefaultVoice.Speak(msg)
 }
 
 func handlerKill(cmd *cobra.Command, args []string, flags *Flags) {

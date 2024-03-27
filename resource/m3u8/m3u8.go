@@ -1,6 +1,7 @@
 package m3u8
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"github.com/injoyai/base/bytes/crypt/aes"
@@ -8,6 +9,7 @@ import (
 	"github.com/injoyai/goutil/net/http"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/goutil/task"
+	"github.com/injoyai/io"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -199,6 +201,18 @@ func NewTask(url string) ([]*task.Download, error) {
 type item struct {
 	decrypt
 	url string
+}
+
+func (this *item) GetReader(ctx context.Context) (io.ReadCloser, error) {
+	bs, err := http.GetBytes(this.url)
+	if err != nil {
+		return nil, err
+	}
+	bs, err = this.Decrypt(bs)
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(bytes.NewReader(bs)), nil
 }
 
 func (this *item) GetBytes(ctx context.Context, f func(p *http.Plan)) ([]byte, error) {
