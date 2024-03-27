@@ -24,19 +24,29 @@ func handlerDialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	c := dial.RedialTCP(args[0])
-	handlerDialDeal(c, flags, true)
-	<-c.DoneAll()
+	<-dial.RedialTCP(args[0], func(c *io.Client) {
+		handlerDialDeal(c, flags, true)
+	}).DoneAll()
 }
 
 func handlerDialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	c := dial.RedialUDP(args[0])
-	handlerDialDeal(c, flags, true)
-	c.WriteString(io.Pong)
-	<-c.DoneAll()
+	<-dial.RedialUDP(args[0], func(c *io.Client) {
+		handlerDialDeal(c, flags, true)
+		c.WriteString(io.Pong)
+	}).DoneAll()
+}
+
+func handlerDialLog(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("[错误] 未填写连接地址")
+	}
+	<-dial.RedialTCP(args[0], func(c *io.Client) {
+		c.SetLogger(&_log{})
+		handlerDialDeal(c, flags, true)
+	}).DoneAll()
 }
 
 func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
@@ -54,9 +64,9 @@ func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if !strings.HasPrefix(args[0], "wss://") || !strings.HasPrefix(args[0], "ws://") {
 		args[0] = "ws://" + args[0]
 	}
-	c := dial.RedialWebsocket(args[0], nil)
-	handlerDialDeal(c, flags, true)
-	<-c.DoneAll()
+	<-dial.RedialWebsocket(args[0], nil, func(c *io.Client) {
+		handlerDialDeal(c, flags, true)
+	}).DoneAll()
 }
 
 func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
@@ -98,8 +108,9 @@ func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 		SetClientID(g.RandString(8)).
 		SetWriteTimeout(timeout).
 		SetAutoReconnect(false).
-		SetConnectTimeout(timeout))
-	handlerDialDeal(c, flags, true)
+		SetConnectTimeout(timeout), func(c *io.Client) {
+		handlerDialDeal(c, flags, true)
+	})
 	<-c.DoneAll()
 }
 
@@ -159,16 +170,16 @@ func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	c := dial.RedialSerial(&dial.SerialConfig{
+	<-dial.RedialSerial(&dial.SerialConfig{
 		Address:  args[0],
 		BaudRate: flags.GetInt("baudRate"),
 		DataBits: flags.GetInt("dataBits"),
 		StopBits: flags.GetInt("stopBits"),
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
-	})
-	handlerDialDeal(c, flags, true)
-	<-c.DoneAll()
+	}, func(c *io.Client) {
+		handlerDialDeal(c, flags, true)
+	}).DoneAll()
 }
 
 func handlerDialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
@@ -302,3 +313,26 @@ remotePort = %s
 	filename := "frpc -c " + cfgPath
 	logs.PrintErr(tool.ShellRun(filename))
 }
+
+/*
+
+
+
+ */
+
+type _log struct{}
+
+func (l _log) Readf(format string, v ...interface{}) {
+	if len(format) > 0 && format[len(format)-1] == '\n' {
+		format = format[:len(format)-1]
+	}
+	fmt.Printf(format, v...)
+}
+
+func (l _log) Writef(format string, v ...interface{}) {}
+
+func (l _log) Infof(format string, v ...interface{}) { logs.Infof(format, v...) }
+
+func (l _log) Errorf(format string, v ...interface{}) { logs.Errorf(format, v...) }
+
+func (l _log) Printf(format string, v ...interface{}) {}

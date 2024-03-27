@@ -2,6 +2,7 @@ package main
 
 var (
 	details = []string{
+		"v1.2.0: 增加日志客户端,使用in dial log host:port进行连接,优化where,尝试从注册表和环境变量查找",
 		"v1.1.9: 增加全局配置和下载的图形化界面,通过in global/download gui打开",
 		"v1.1.8: 增加open尝试从环境变量查找,增加对linux的支持",
 		"v1.1.7: 修改下载先到缓存再重命名,增加scan netstat/task",
