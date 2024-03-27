@@ -16,15 +16,15 @@ if [ -f "./$name.000" ]; then
   rm "./$name.000"
 fi
 
-GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./$name-amd64
+GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./$name
 echo "Linux编译完成..."
 echo "开始压缩..."
-upx -9 -k "./$name-amd64"
-if [ -f "../$name-amd64.~" ]; then
-  rm "../$name-amd64.~"
+upx -9 -k "./$name"
+if [ -f "../$name.~" ]; then
+  rm "../$name.~"
 fi
-if [ -f "./$name-amd64.000" ]; then
-  rm "./$name-amd64.000"
+if [ -f "./$name.000" ]; then
+  rm "./$name.000"
 fi
 
 GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./$name-arm7
