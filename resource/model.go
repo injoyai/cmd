@@ -40,15 +40,15 @@ var (
 	All = map[string]*Entity{
 		"hfs": {
 			Name: "hfs.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/hfs.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/hfs.exe", //"https://github.com/injoyai/cmd/raw/main/resource/hfs.exe",
 		},
 		"swag": {
 			Name: "swag.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/swag.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/swag.exe", //"https://github.com/injoyai/cmd/raw/main/resource/swag.exe",
 		},
 		"win_active": {
 			Name: "win_active.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/win_active.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/win_active.exe", //"https://github.com/injoyai/cmd/raw/main/resource/win_active.exe",
 		},
 		"downloader": {
 			Key:  []string{"download"},
@@ -57,25 +57,29 @@ var (
 		},
 		"rsrc": {
 			Name: "rsrc.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/rsrc.exe", //"https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
 		},
 		"nac": {
 			Name: "nac.syso",
-			Url:  "https://github.com/injoyai/cmd/raw/main/nac/nac.syso",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/nac/nac.syso", //"https://github.com/injoyai/cmd/raw/main/nac/nac.syso",
 		},
 		"upx": {
 			Name: "upx.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/upx.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/upx.exe", //"https://github.com/injoyai/cmd/raw/main/resource/upx.exe",
+		},
+		"npc": {
+			Name: "npc.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/npc.exe", //"https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
 		"upgrade": {
 			Key:  []string{"in_upgrade"},
 			Name: "in_upgrade.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe", //"https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
 		},
 		"in": {
 			Name:          "in.exe",
-			Url:           "https://github.com/injoyai/cmd/raw/main/in.exe",
-			UrlLinuxAmd64: "https://github.com/injoyai/cmd/raw/main/in",
+			Url:           "https://gitee.com/injoyai/cmd/raw/main/in.exe", //"https://github.com/injoyai/cmd/raw/main/in.exe",
+			UrlLinuxAmd64: "https://gitee.com/injoyai/cmd/raw/main/in",     //"https://github.com/injoyai/cmd/raw/main/in",
 		},
 		"influxdb": {
 			Key:  []string{"influx", "influxd"},
@@ -97,10 +101,6 @@ var (
 				return nil
 			},
 		},
-		"npc": {
-			Name: "npc.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
-		},
 		"chrome104": {
 			Name:          "chrome.exe",
 			Url:           "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
@@ -116,14 +116,14 @@ var (
 		},
 		"frpc": {
 			Name:            "frpc.exe",
-			Url:             "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
-			UrlWindowsAmd64: "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
-			UrlLinuxAmd64:   "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_amd64",
-			UrlLinuxArm7:    "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_arm7",
+			Url:             "https://gitee.com/injoyai/cmd/raw/main/resource/frpc.exe",         // "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			UrlWindowsAmd64: "https://gitee.com/injoyai/cmd/raw/main/resource/frpc.exe",         //"https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			UrlLinuxAmd64:   "https://gitee.com/injoyai/cmd/raw/main/resource/frpc_linux_amd64", // "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_amd64",
+			UrlLinuxArm7:    "https://gitee.com/injoyai/cmd/raw/main/resource/frpc_linux_arm7",  //"https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_arm7",
 		},
 		"frps": {
 			Name: "frps.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/frps.exe",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/frps.exe", //"https://github.com/injoyai/cmd/raw/main/resource/frps.exe",
 		},
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
@@ -150,7 +150,7 @@ var (
 		"livego": {
 			Key:  []string{"stream"},
 			Name: "livego.exe",
-			Url:  "https://github.com/injoyai/livego/releases/latest/download/win_amd64.exe",
+			Url:  "https://gitee.com/injoyai/livego/releases/latest/download/win_amd64.exe", //"https://github.com/injoyai/livego/releases/latest/download/win_amd64.exe",
 		},
 		"mingw64": {
 			Url:     "https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z",
@@ -168,31 +168,31 @@ var (
 		"build.sh": {
 			Key:  []string{"build"},
 			Name: "build.sh",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/build.sh",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/build.sh", //"https://github.com/injoyai/cmd/raw/main/resource/build.sh",
 		},
 		"dockerfile": {
 			Name: "dockerfile",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/dockerfile",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/dockerfile", // "https://github.com/injoyai/cmd/raw/main/resource/dockerfile",
 		},
 		"service.service": {
 			Key:  []string{"service"},
 			Name: "service.service",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/service.service",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/service.service", //"https://github.com/injoyai/cmd/raw/main/resource/service.service",
 		},
 		"install_minio.sh": {
 			Key:  []string{"install_minio"},
 			Name: "install_minio.sh",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/install_minio.sh",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/install_minio.sh", //"https://github.com/injoyai/cmd/raw/main/resource/install_minio.sh",
 		},
 		"install_nodered.sh": {
 			Key:  []string{"install_nodered"},
 			Name: "install_nodered.sh",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/install_nodered.sh",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/install_nodered.sh", //"https://github.com/injoyai/cmd/raw/main/resource/install_nodered.sh",
 		},
 		"install_v2raya.sh": {
 			Key:  []string{"install_v2raya"},
 			Name: "install_v2raya.sh",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/install_v2raya.sh",
+			Url:  "https://gitee.com/injoyai/cmd/raw/main/resource/install_v2raya.sh", //"https://github.com/injoyai/cmd/raw/main/resource/install_v2raya.sh",
 		},
 	}
 )
