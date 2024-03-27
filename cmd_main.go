@@ -136,6 +136,12 @@ func main() {
 					Run:     handlerDialUDP,
 				},
 				{
+					Use:     "log",
+					Short:   "日志连接",
+					Example: "in dial log 127.0.0.1:80 -r false",
+					Run:     handlerDialLog,
+				},
+				{
 					Use:     "ws",
 					Short:   "Websocket连接",
 					Example: "in dial ws 127.0.0.1:80 -r false",

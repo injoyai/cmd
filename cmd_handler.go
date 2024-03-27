@@ -15,6 +15,7 @@ import (
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -32,7 +33,27 @@ func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
-	fmt.Println(oss.ExecDir())
+	if len(args) == 0 {
+		fmt.Println(oss.ExecDir())
+		return
+	}
+
+	//尝试在注册表查找
+	if list, _ := tool.APPPath(args[0]); len(list) > 0 {
+		fmt.Println(list[0])
+	}
+
+	//尝试在环境变量查找
+	for _, v := range os.Environ() {
+		list := strings.SplitN(v, "=", 2)
+		if len(list) == 2 {
+			for _, ss := range strings.Split(list[1], ";") {
+				if strings.Contains(ss, args[0]) {
+					fmt.Println(ss)
+				}
+			}
+		}
+	}
 }
 
 func handlerCrud(cmd *cobra.Command, args []string, flags *Flags) {
