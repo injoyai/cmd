@@ -8,9 +8,9 @@ import (
 
 func main() {
 
-	logs.SetFormatter(logs.TimeFormatter)
-	logs.SetWriter(logs.Stdout)
-	logs.SetShowColor(false)
+	logs.SetFormatter(logs.TimeFormatter) //输出格式只有时间
+	logs.SetWriter(logs.Stdout)           //标准输出,不写入文件
+	logs.SetShowColor(false)              //不显示颜色
 
 	root := &cobra.Command{
 		Use:   "in",
@@ -22,6 +22,16 @@ func main() {
 			root.AddCommand(v.command())
 		}
 	}
+
+	//command.Command{
+	//	Command:cobra.Command{
+	//		Use:   "in",
+	//		Short: "Cli工具",
+	//	},
+	//	Child: []&cobra.Command{
+	//
+	//	},
+	//}
 
 	addCommand(
 
@@ -409,6 +419,26 @@ func main() {
 		},
 
 		&Command{
+			Use:   "upload",
+			Short: "上传资源",
+			Child: []*Command{
+				{
+					Flag: []*Flag{
+						{Name: "endpoint", Short: "e", Memo: "请求地址", DefaultValue: global2.GetString("uploadMinio.endpoint")},
+						{Name: "access", Short: "a", Memo: "AccessKey", DefaultValue: global2.GetString("uploadMinio.access")},
+						{Name: "secret", Short: "s", Memo: "SecretKey", DefaultValue: global2.GetString("uploadMinio.secret")},
+						{Name: "bucket", Short: "b", Memo: "桶名称", DefaultValue: global2.GetString("uploadMinio.bucket")},
+						{Name: "rename", Short: "r", Memo: "使用随机名称", DefaultValue: global2.GetString("uploadMinio.rename")},
+					},
+					Use:     "minio",
+					Short:   "上传资源到minio",
+					Example: "in upload minio ./xx.png",
+					Run:     handlerUploadMinio,
+				},
+			},
+		},
+
+		&Command{
 			Flag: []*Flag{
 				{Name: "download", Short: "d", Memo: "重新下载"},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
@@ -435,7 +465,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
-				{Name: "download", Memo: "重新下载", Short: "d"},
+				{Name: "download", Memo: "重新下载升级程序", Short: "d"},
 			},
 			Use:     "upgrade",
 			Short:   "自我升级",
@@ -459,7 +489,7 @@ func main() {
 		&Command{
 			Use:     "kill",
 			Short:   "杀死进程",
-			Example: "in kill 12345",
+			Example: "in kill 12345(进程id)",
 			Run:     handlerKill,
 		},
 

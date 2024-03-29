@@ -111,11 +111,10 @@
 
                 var checkboxInput = document.createElement("input");
                 checkboxInput.type = "checkbox";
-                checkboxInput.className = "checkbox-input";
+                checkboxInput.className = "checkbox-label";
                 checkboxInput.name = config.key;
                 checkboxInput.checked = config.value;
                 checkboxLabel.appendChild(checkboxInput);
-
                 checkboxLabel.appendChild(document.createTextNode("是"));
             } else if (config.type === "object") {
                 // 如果参数类型是对象，则生成一个子级配置表单
@@ -124,17 +123,27 @@
                 // 设置 data-key 属性为参数的键
                 subConfigForm.setAttribute("data-key", config.key);
                 config.value.forEach(function (subConfig) {
-                    addObjectNature(subConfigForm, subConfig.key, subConfig.value)
+                    addObjectNature(subConfigForm, subConfig.key, subConfig.value, )
                 });
 
                 var addButton = document.createElement("button");
                 addButton.className = "add-field-button";
                 addButton.textContent = "+";
                 addButton.onclick = function () {
-                    addObjectNature(subConfigForm, "", "")
+                    addObjectNature(subConfigForm, "", "", )
                 };
                 inputContainer.appendChild(addButton);
 
+                inputContainer.appendChild(subConfigForm);
+            } else if (config.type === "object2") {
+                // 如果参数类型是对象，则生成一个子级配置表单
+                var subConfigForm = document.createElement("form");
+                subConfigForm.className = "sub-config-form";
+                // 设置 data-key 属性为参数的键
+                subConfigForm.setAttribute("data-key", config.key);
+                config.value.forEach(function (subConfig) {
+                    addObjectNature2(subConfigForm, subConfig)
+                });
                 inputContainer.appendChild(subConfigForm);
             } else {
                 input = document.createElement("input");
@@ -184,6 +193,43 @@
 
     }
 
+    function addObjectNature2(parent,nature) {
+        var childContainer = document.createElement("div");
+        childContainer.className = "form-row";
+        parent.appendChild(childContainer);
+
+        //key
+        var childKeyContainer = document.createElement("div");
+        childKeyContainer.className = "label-container";
+        childContainer.appendChild(childKeyContainer);
+        var childKey = document.createElement("label");
+        childKey.textContent = nature.name + ":";
+        childKey.type = "text";
+        childKey.name = nature.key;
+        childKey.value = nature.key;
+        childKeyContainer.appendChild(childKey);
+
+        //value
+        var childValueContainer = document.createElement("div");
+        childValueContainer.className = "input-container";
+        childContainer.appendChild(childValueContainer);
+        if (nature.type==="bool"){
+            var childValue = document.createElement("input");
+            childValue.type = "checkbox";
+            childValue.className = "checkbox-label";
+            childValue.name = "_child";
+            childValue.checked = nature.value;
+            childValueContainer.appendChild(childValue);
+            childValueContainer.appendChild(document.createTextNode("是"));
+        }else {
+            var childValue = document.createElement("input");
+            childValue.type = "text";
+            childValue.name = "_child";
+            childValue.value = nature.value;
+            childValueContainer.appendChild(childValue);
+        }
+    }
+
     function saveConfig() {
         var form = document.getElementById("configForm");
         var configObject = {};
@@ -206,21 +252,24 @@
             console.log("subForm: ", subForm)
             childObject = {}
             subForm.querySelectorAll(".form-row").forEach(function (formRow) {
-                key2 = null
-                value2 = null
+                var key2 = null
+                var value2 = null
                 formRow.querySelectorAll(".label-container").forEach(function (labelContainer) {
-                    labelContainer.querySelectorAll("input").forEach(function (input) {
+                    labelContainer.querySelectorAll("input,label").forEach(function (input) {
                         key2 = input.value
                     })
                 })
                 formRow.querySelectorAll(".input-container").forEach(function (labelContainer) {
                     labelContainer.querySelectorAll("input").forEach(function (input) {
-                        value2 = input.value
+                        if (input.type==="checkbox") {
+                            value2=input.checked
+                        }else{
+                            value2 = input.value
+                        }
                     })
                 })
                 if (key2 !== null) {
                     childObject[key2] = value2
-                    console.log(key2, ": ", value2)
                 }
             })
             configObject[key] = childObject

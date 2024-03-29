@@ -26,6 +26,7 @@ func RunGUI() {
 
 		//获取保存数据
 		app.Bind("saveToFile", func(config interface{}) {
+			fmt.Println(config)
 			if err := SaveConfigs(conv.GMap(config)); err != nil {
 				logs.Err(err)
 				app.Eval(fmt.Sprintf(`alert("%v");`, err))
