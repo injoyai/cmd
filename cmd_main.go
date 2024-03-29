@@ -240,8 +240,8 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "port", Short: "p", Memo: "监听端口"},
-				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
-				{Name: "download", Short: "r", Memo: "重新下载"},
+				{Name: "debug", Memo: "打印日志", DefaultValue: "true"},
+				{Name: "download", Short: "d", Memo: "重新下载"},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 				{Name: "timeout", Short: "t", Memo: "设置超时时间"},
 				{Name: "logPort", Memo: "日志端口,部分服务有效,例MQTT"},
