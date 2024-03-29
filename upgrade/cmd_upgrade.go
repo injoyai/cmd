@@ -66,9 +66,8 @@ func main() {
 
 							//下载
 							filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
-								Resource:     upgradeUrl,
+								Resource:     "upgrade",
 								Dir:          oss.ExecDir(),
-								Name:         upgrade_upgrade,
 								ProxyEnable:  true,
 								ProxyAddress: global.Global.GetString("proxy"),
 								ReDownload:   true,
@@ -87,12 +86,12 @@ func main() {
 						},
 						Run: func(cmd *cobra.Command, args []string, flag *command.Flags) {
 							fn := func() error {
-								f, err := os.Open(filepath.Join(oss.ExecDir(), upgrade_upgrade))
+								f, err := os.Open(filepath.Join(oss.ExecDir(), upgradeUpgradeName))
 								if err != nil {
 									return err
 								}
 								defer f.Close()
-								for logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), upgrade), f)) {
+								for logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), upgradeName), f)) {
 									<-time.After(time.Second)
 								}
 								return nil
@@ -126,9 +125,8 @@ func main() {
 	} else {
 
 		resource.MustDownload(g.Ctx(), &resource.Config{
-			Resource:     inUrl,
+			Resource:     "in",
 			Dir:          oss.ExecDir(),
-			Name:         inName,
 			ProxyEnable:  true,
 			ProxyAddress: global.Global.GetString("proxy"),
 			ReDownload:   true,
