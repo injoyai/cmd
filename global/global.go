@@ -19,9 +19,16 @@ var Global *cache.File
 
 func GetConfigs() []Nature {
 	natures := []Nature{
+		{Key: "proxy", Name: "默认代理地址"},
 		{Key: "memoHost", Name: "备注请求地址"},
 		{Key: "memoToken", Name: "备注API秘钥"},
-		{Key: "proxy", Name: "默认代理地址"},
+		{Key: "uploadMinio", Name: "Minio上传配置", Type: "object2", Value: []Nature{
+			{Name: "请求地址", Key: "endpoint"},
+			{Name: "AccessKey", Key: "access"},
+			{Name: "SecretKey", Key: "secret"},
+			{Name: "存储桶", Key: "bucket"},
+			{Name: "随机名称", Key: "rename", Type: "bool"},
+		}},
 		{Key: "downloadDir", Name: "默认下载地址"},
 		{Key: "downloadNoticeEnable", Name: "默认启用通知", Type: "bool"},
 		{Key: "downloadNoticeText", Name: "默认通知内容"},
@@ -43,6 +50,19 @@ func GetConfigs() []Nature {
 				})
 			}
 			natures[i].Value = object
+		case "object2":
+			if natures[i].Value == nil {
+				natures[i].Value = []Nature{}
+			}
+			ls := natures[i].Value.([]Nature)
+			for k, v := range Global.GetGMap(natures[i].Key) {
+				for j := range ls {
+					if ls[j].Key == k {
+						ls[j].Value = v
+						continue
+					}
+				}
+			}
 		default:
 			natures[i].Value = Global.GetString(natures[i].Key)
 		}

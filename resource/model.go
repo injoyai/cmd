@@ -74,12 +74,13 @@ var (
 		"upgrade": {
 			Key:  []string{"in_upgrade"},
 			Name: "in_upgrade.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/in_upgrade.exe", //"https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
 		},
 		"in": {
 			Name:          "in.exe",
-			Url:           "https://github.com/injoyai/cmd/raw/main/in.exe",
-			UrlLinuxAmd64: "https://github.com/injoyai/cmd/raw/main/in",
+			Url:           "https://oss.qianlangyun.com/qianlang-store/in.exe", //"https://github.com/injoyai/cmd/raw/main/in.exe",
+			UrlLinuxAmd64: "https://oss.qianlangyun.com/qianlang-store/in",     //"https://github.com/injoyai/cmd/raw/main/in",
+			UrlLinuxArm7:  "https://oss.qianlangyun.com/qianlang-store/in7",
 		},
 		"influxdb": {
 			Key:  []string{"influx", "influxd"},
@@ -102,9 +103,8 @@ var (
 			},
 		},
 		"chrome104": {
-			Name:          "chrome.exe",
-			Url:           "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
-			UrlLinuxAmd64: "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
+			Name: "chrome.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/chrome.zip", //https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
 			Handler: func(url, dir, name string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "chrome.zip")
 				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
@@ -163,7 +163,7 @@ var (
 
 		"edge": {
 			Name: "edge.exe",
-			Url:  "https://gitlab.qianlangyun.com:8888/gateway/aiot/-/raw/main/edge/bin/windows/edge.exe?inline=false",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/edge.exe",
 		},
 		"build.sh": {
 			Key:  []string{"build"},

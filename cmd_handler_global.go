@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	global = gg.Global
-	null   = gg.Null
+	global  = gg.Global
+	global2 = conv.NewMap(gg.Global.GMap())
+	null    = gg.Null
 )
 
 func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {

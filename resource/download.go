@@ -44,7 +44,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		op.Resource = val.GetUrl()
 		if val.Handler != nil {
 			download = func(ctx context.Context, op *Config) error {
-				return val.Handler(op.Resource, op.Dir, op.Name)
+				return val.Handler(op.Resource, op.Dir, op.Filename())
 			}
 		}
 	}
