@@ -55,6 +55,23 @@ var (
 			Name: "downloader.exe",
 			Url:  "https://github.com/injoyai/downloader/releases/latest/download/downloader.exe",
 		},
+		"ipinfo": {
+			Key:  []string{"ipinfo"},
+			Name: "ipinfo.exe",
+			Url:  "https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip",
+			Handler: func(url, dir, filename string, proxy ...string) error {
+				zipFilename := filepath.Join(dir, "ipinfo.zip")
+				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+					return err
+				}
+				if err := zip.Decode(zipFilename, dir); err != nil {
+					return err
+				}
+				logs.PrintErr(os.Remove(zipFilename))
+				logs.PrintErr(os.Rename(filepath.Join(dir, "/ipinfo_3.3.1_windows_amd64.exe"), filename))
+				return nil
+			},
+		},
 		"rsrc": {
 			Name: "rsrc.exe",
 			Url:  "https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
@@ -86,7 +103,7 @@ var (
 			Key:  []string{"influx", "influxd"},
 			Name: "influxd.exe",
 			Url:  "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip",
-			Handler: func(url, dir, name string, proxy ...string) error {
+			Handler: func(url, dir, filename string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "influxdb.zip")
 				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
 					return err
@@ -97,7 +114,7 @@ var (
 				logs.PrintErr(os.Remove(zipFilename))
 
 				folder := "/influxdb-1.8.10-1"
-				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "/influxd.exe"), filepath.Join(dir, name)))
+				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "/influxd.exe"), filename))
 				logs.PrintErr(os.RemoveAll(filepath.Join(dir, folder)))
 				return nil
 			},
@@ -105,7 +122,7 @@ var (
 		"chrome104": {
 			Name: "chrome.exe",
 			Url:  "https://oss.qianlangyun.com/qianlang-store/chrome.zip", //https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
-			Handler: func(url, dir, name string, proxy ...string) error {
+			Handler: func(url, dir, filename string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "chrome.zip")
 				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
 					return err
@@ -128,7 +145,7 @@ var (
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
 			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
-			Handler: func(url, dir, name string, proxy ...string) error {
+			Handler: func(url, dir, filename string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "ffmpeg.zip")
 				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
 					return err

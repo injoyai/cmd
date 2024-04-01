@@ -104,9 +104,8 @@ func downloadOther(ctx context.Context, op *Config) error {
 	if _, err := bar.Download(op.Resource, op.TempFilename(), op.Proxy()); err != nil {
 		return err
 	}
-	if err := os.Remove(op.Filename()); err != nil {
-		return err
-	}
+	//可能源文件不存在
+	os.Remove(op.Filename())
 	return os.Rename(op.TempFilename(), op.Filename())
 }
 

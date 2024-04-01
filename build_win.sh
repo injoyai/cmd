@@ -12,4 +12,6 @@ if [ -f "./$name.000" ]; then
   rm "./$name.000"
 fi
 
+cmd.exe /c "in_upgrade ./$name.exe"
+
 sleep 2

@@ -149,6 +149,13 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================EdgeServer====================//
 
 func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) > 0 {
+		switch args[0] {
+		case "stop":
+			shell.Stop("edge.exe")
+			return
+		}
+	}
 	proxy := flags.GetString("proxy")
 	userDir := oss.UserInjoyDir()
 	{
@@ -220,13 +227,16 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10089)
 	addr := flags.GetString("addr")
+	debug := flags.GetBool("debug")
 	listen.RunTCPServer(port, func(s *io.Server) {
 		s.SetKey(fmt.Sprintf(":%d", port))
 		s.SetTimeout(flags.GetSecond("timeout", -1))
-		s.Debug(flags.GetBool("debug"))
-		s.Logger.SetLevel(io.LevelInfo)
+		s.Debug(false)
+		s.SetLevel(io.LevelError)
 		s.SetBeforeFunc(func(client *io.Client) error {
-			s.Logger.Infof("新的客户端连接...")
+			if debug {
+				logs.Infof("代理 [%s >>> %s]\n", client.GetKey(), addr)
+			}
 			_, err := dial.NewTCP(addr, func(c *io.Client) {
 				c.Debug(false)
 				c.SetDealWithWriter(client)
@@ -236,8 +246,8 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 				go c.Run()
 				client.SetReadWithWriter(c)
 			})
-			if err != nil {
-				s.Logger.Errorf(err.Error())
+			if err != nil && err != io.EOF && debug {
+				logs.Err(err)
 			}
 			return err
 		})
