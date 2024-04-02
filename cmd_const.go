@@ -2,6 +2,7 @@ package main
 
 var (
 	details = []string{
+		"v1.3.0: 优化scan,增加对所有网卡的支持",
 		"v1.2.1: 增加文件上传,minio的支持,切换个别软件源到minio",
 		"v1.2.0: 增加日志客户端,使用in dial log host:port进行连接,优化where,尝试从注册表和环境变量查找",
 		"v1.1.9: 增加全局配置和下载的图形化界面,通过in global/download gui打开",
