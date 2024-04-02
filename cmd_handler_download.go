@@ -10,6 +10,7 @@ import (
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -57,6 +58,15 @@ func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	fmt.Println("安装完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
+}
+
+func handlerUninstall(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("请输入需要卸载的应用")
+		return
+	}
+	err := os.Remove(filepath.Join(oss.ExecDir(), args[0]))
+	fmt.Println("卸载结果: ", conv.New(err).String("成功"))
 }
 
 func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
