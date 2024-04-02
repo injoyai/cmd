@@ -465,6 +465,14 @@ func main() {
 		},
 
 		&Command{
+			Use:     "uninstall",
+			Short:   "uninstall",
+			Long:    "卸载应用,删除in所在的目录的程序",
+			Example: "in uninstall hfs",
+			Run:     handlerUninstall,
+		},
+
+		&Command{
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
