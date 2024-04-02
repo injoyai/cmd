@@ -424,7 +424,6 @@ func main() {
 				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("downloadNoticeText", "主人. 您的资源已下载结束")},
 				{Name: "voiceEnable", Memo: "是否启用语音", DefaultValue: global.GetString("downloadVoiceEnable", "true")},
 				{Name: "voiceText", Memo: "语音内容", DefaultValue: global.GetString("downloadVoiceText", "主人. 您的资源已下载结束")},
-				{Name: "gui", Memo: "图形化界面"},
 			},
 			Use:     "download",
 			Short:   "下载资源",

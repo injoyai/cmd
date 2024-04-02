@@ -33,7 +33,7 @@ func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
 		Coroutine:    flags.GetUint("coroutine"),
 		Retry:        flags.GetUint("retry"),
 		Name:         flags.GetString("name"),
-		ReDownload:   flags.GetBool("download"),
+		ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 		NoticeEnable: flags.GetBool("noticeEnable"),
@@ -52,7 +52,7 @@ func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
-		ReDownload:   flags.GetBool("download"),
+		ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -97,7 +97,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 			filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),
-				ReDownload:   flags.GetBool("download"),
+				ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 				ProxyEnable:  true,
 				ProxyAddress: flags.GetString("proxy"),
 			})

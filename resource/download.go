@@ -39,8 +39,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	var download func(ctx context.Context, op *Config) error
 
 	if val, ok := All[op.Resource]; ok {
-		op.Name = strings.Split(val.Name, ".")[0]
-		op.suffix = filepath.Ext(val.Name)
+		if len(op.Name) == 0 {
+			op.Name = strings.Split(val.Name, ".")[0]
+			op.suffix = filepath.Ext(val.Name)
+		}
 		op.Resource = val.GetUrl()
 		if val.Handler != nil {
 			download = func(ctx context.Context, op *Config) error {
@@ -102,6 +104,7 @@ func downloadOther(ctx context.Context, op *Config) error {
 	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
 	//以防出现下载失败,直接覆盖了源文件
 	if _, err := bar.Download(op.Resource, op.TempFilename(), op.Proxy()); err != nil {
+		os.Remove(op.TempFilename())
 		return err
 	}
 	//可能源文件不存在
