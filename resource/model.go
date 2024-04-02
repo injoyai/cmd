@@ -40,15 +40,15 @@ var (
 	All = map[string]*Entity{
 		"hfs": {
 			Name: "hfs.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/hfs.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/hfs.exe", //  "https://github.com/injoyai/cmd/raw/main/resource/hfs.exe",
 		},
 		"swag": {
 			Name: "swag.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/swag.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/swag.exe", // "https://github.com/injoyai/cmd/raw/main/resource/swag.exe",
 		},
 		"win_active": {
 			Name: "win_active.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/win_active.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/win_active.exe", //"https://github.com/injoyai/cmd/raw/main/resource/win_active.exe",
 		},
 		"downloader": {
 			Key:  []string{"download"},
@@ -74,19 +74,19 @@ var (
 		},
 		"rsrc": {
 			Name: "rsrc.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/rsrc.exe", // "https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
 		},
 		"nac": {
 			Name: "nac.syso",
-			Url:  "https://github.com/injoyai/cmd/raw/main/nac/nac.syso",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/nac.syso", //"https://github.com/injoyai/cmd/raw/main/nac/nac.syso",
 		},
 		"upx": {
 			Name: "upx.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/upx.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/upx.exe", //"https://github.com/injoyai/cmd/raw/main/resource/upx.exe",
 		},
 		"npc": {
 			Name: "npc.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/npc.exe", //"https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
 		"upgrade": {
 			Key:  []string{"in_upgrade"},
@@ -133,14 +133,14 @@ var (
 		},
 		"frpc": {
 			Name:            "frpc.exe",
-			Url:             "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			Url:             "https://oss.qianlangyun.com/qianlang-store/frpc.exe", //"https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
 			UrlWindowsAmd64: "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
 			UrlLinuxAmd64:   "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_amd64",
 			UrlLinuxArm7:    "https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_arm7",
 		},
 		"frps": {
 			Name: "frps.exe",
-			Url:  "https://github.com/injoyai/cmd/raw/main/resource/frps.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/frps.exe", // "https://github.com/injoyai/cmd/raw/main/resource/frps.exe",
 		},
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
