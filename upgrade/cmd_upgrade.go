@@ -19,6 +19,7 @@ import (
 
 const (
 	details = `
+v1.0.3: 升级下载方式
 v1.0.2: 整理代码
 v1.0.1: 增加对linux的支持
 v1.0.0: 转移仓库版本`
@@ -67,6 +68,7 @@ func main() {
 							//下载
 							filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 								Resource:     "upgrade",
+								Name:         upgradeUpgradeName,
 								Dir:          oss.ExecDir(),
 								ProxyEnable:  true,
 								ProxyAddress: global.Global.GetString("proxy"),

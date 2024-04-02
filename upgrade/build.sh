@@ -25,4 +25,8 @@ if [ -f "./$name.000" ]; then
   rm "./$name.000"
 fi
 
+
+cmd.exe /c "in upload minio ./in_upgrade.exe"
+cmd.exe /c "in upload minio ./in_upgrade"
+
 sleep 5

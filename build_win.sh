@@ -1,6 +1,6 @@
 name="in"
-date=`date -d -0day +%Y-%m-%d`
-
+date=`date "+%Y-%m-%d"`
+echo $date
 GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s -X main.BuildDate=$date" -o ./$name.exe
 echo "Windows编译完成..."
 echo "开始压缩..."

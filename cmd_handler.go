@@ -33,14 +33,18 @@ func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 {
+	if len(args) == 0 || args[0] != "self" {
 		fmt.Println(oss.ExecDir())
 		return
 	}
 
+	var find bool
+
 	//尝试在注册表查找
-	if list, _ := tool.APPPath(args[0]); len(list) > 0 {
-		fmt.Println(list[0])
+	list, _ := tool.APPPath(args[0])
+	for _, v := range list {
+		find = true
+		fmt.Println(v)
 	}
 
 	//尝试在环境变量查找
@@ -49,11 +53,17 @@ func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
 		if len(list) == 2 {
 			for _, ss := range strings.Split(list[1], ";") {
 				if strings.Contains(ss, args[0]) {
+					find = true
 					fmt.Println(ss)
 				}
 			}
 		}
 	}
+
+	if !find {
+		fmt.Println("未找到")
+	}
+
 }
 
 func handlerCrud(cmd *cobra.Command, args []string, flags *Flags) {
