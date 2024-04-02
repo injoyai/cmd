@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/injoyai/base/sort"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
@@ -37,35 +36,92 @@ func handlerScanTask(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellRun(s))
 }
 
+func handlerScanNetwork(cmd *cobra.Command, args []string, flags *Flags) {
+	is, err := net.Interfaces()
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	for _, v := range is {
+		fmt.Printf("\n%s(%s):\n", v.Name, v.HardwareAddr.String())
+		ips, err := v.Addrs()
+		if err != nil {
+			logs.Err(err)
+			return
+		}
+		for _, vv := range ips {
+			fmt.Printf("  - %s \n", vv.String())
+		}
+	}
+}
+
 func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))
 	sortResult := flags.GetBool("sort")
-	list := []g.Map(nil)
-	gateIPv4 := []byte(net.ParseIP(ip.GetLocal())[12:15])
-	wg := sync.WaitGroup{}
-	for i := conv.Uint32(append(gateIPv4, 0)); i <= conv.Uint32(append(gateIPv4, 255)); i++ {
-		ipv4 := net.IPv4(uint8(i>>24), uint8(i>>16), uint8(i>>8), uint8(i))
-		wg.Add(1)
-		go func(ipv4 net.IP, i uint32) {
-			defer wg.Done()
-			used, err := ip.Ping(ipv4.String(), timeout)
-			if err == nil {
-				s := fmt.Sprintf("%s: %s\n", ipv4, used.String())
-				if sortResult {
-					list = append(list, g.Map{"i": i, "s": s})
-				} else {
-					fmt.Print(s)
-				}
-			}
-		}(ipv4, i)
+	network := flags.GetString("network")
+
+	is, err := net.Interfaces()
+	if err != nil {
+		logs.Err(err)
+		return
 	}
-	wg.Wait()
-	if sortResult {
-		logs.PrintErr(sort.New(func(i, j interface{}) bool {
-			return i.(g.Map)["i"].(uint32) < j.(g.Map)["i"].(uint32)
-		}).Bind(&list))
-		for _, m := range list {
-			fmt.Print(m["s"])
+
+	i := 0
+	for _, v := range is {
+		if v.Flags&(1<<net.FlagLoopback) == 1 || v.Flags&(1<<net.FlagUp) == 0 {
+			continue
+		}
+		if len(network) > 0 && network != "all" && !strings.Contains(v.Name, network) {
+			continue
+		}
+
+		addrs, err := v.Addrs()
+		if err != nil {
+			logs.Err(err)
+			return
+		}
+
+		i++
+		fmt.Printf("\n%d: %s (%s):\n", i, v.Name, v.HardwareAddr)
+
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+				ipv4 := ipnet.IP.To4()[:3]
+				start := net.IP{ipv4[0], ipv4[1], ipv4[2], 0}
+				end := net.IP{ipv4[0], ipv4[1], ipv4[2], 255}
+
+				list := g.Maps(nil)
+				wg := sync.WaitGroup{}
+				ip.RangeFunc(start, end, func(ipv4 net.IP) bool {
+
+					wg.Add(1)
+					go func(ipv4 net.IP) {
+						defer wg.Done()
+						used, err := ip.Ping(ipv4.String(), timeout)
+						if err == nil {
+							s := fmt.Sprintf("  - %s: %s\n", ipv4, used.String())
+							if sortResult {
+								list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
+							} else {
+								fmt.Print(s)
+							}
+						}
+					}(ipv4)
+
+					return true
+				})
+
+				wg.Wait()
+				if sortResult {
+					list.Sort(func(i, j int) bool {
+						return list[i]["i"].(uint32) < list[j]["i"].(uint32)
+					})
+					for _, m := range list {
+						fmt.Print(m["s"])
+					}
+				}
+
+			}
 		}
 	}
 }
@@ -79,42 +135,81 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 		log.Println("[错误]", "缺少端口")
 		return
 	}
+
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))
 	sortResult := flags.GetBool("sort")
-	list := []g.Map(nil)
-	gateIPv4 := []byte(net.ParseIP(ip.GetLocal())[12:15])
-	wg := sync.WaitGroup{}
-	for i := conv.Uint32(append(gateIPv4, 0)); i <= conv.Uint32(append(gateIPv4, 255)); i++ {
-		ipv4 := net.IPv4(uint8(i>>24), uint8(i>>16), uint8(i>>8), uint8(i))
-		wg.Add(1)
-		go func(ipv4 net.IP, i uint32, timeout time.Duration) {
-			defer wg.Done()
-			addr := fmt.Sprintf("%s:%s", ipv4, args[0])
-			c, err := net.DialTimeout("tcp", addr, timeout)
-			if err == nil {
-				bs := make([]byte, 1024)
-				c.SetReadDeadline(time.Now().Add(timeout))
-				n, _ := c.Read(bs)
-				c.Close()
-				s := fmt.Sprintf("%s   开启   %s", addr, string(bs[:n]))
-				if s[len(s)-1] != '\n' {
-					s += string('\n')
-				}
-				if sortResult {
-					list = append(list, g.Map{"i": i, "s": s})
-				} else {
-					fmt.Print(s)
-				}
-			}
-		}(ipv4, i, timeout)
+	network := flags.GetString("network")
+
+	is, err := net.Interfaces()
+	if err != nil {
+		logs.Err(err)
+		return
 	}
-	wg.Wait()
-	if sortResult {
-		logs.PrintErr(sort.New(func(i, j interface{}) bool {
-			return i.(g.Map)["i"].(uint32) < j.(g.Map)["i"].(uint32)
-		}).Bind(&list))
-		for _, m := range list {
-			fmt.Print(m["s"])
+
+	i := 0
+	for _, v := range is {
+		if v.Flags&(1<<net.FlagLoopback) == 1 || v.Flags&(1<<net.FlagUp) == 0 {
+			continue
+		}
+		if len(network) > 0 && network != "all" && !strings.Contains(v.Name, network) {
+			continue
+		}
+
+		addrs, err := v.Addrs()
+		if err != nil {
+			logs.Err(err)
+			return
+		}
+
+		i++
+		fmt.Printf("\n%d: %s (%s):\n", i, v.Name, v.HardwareAddr)
+
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+				ipv4 := ipnet.IP.To4()[:3]
+				start := net.IP{ipv4[0], ipv4[1], ipv4[2], 0}
+				end := net.IP{ipv4[0], ipv4[1], ipv4[2], 255}
+
+				list := g.Maps(nil)
+				wg := sync.WaitGroup{}
+				ip.RangeFunc(start, end, func(ipv4 net.IP) bool {
+
+					wg.Add(1)
+					go func(ipv4 net.IP, timeout time.Duration) {
+						defer wg.Done()
+						addr := fmt.Sprintf("%s:%s", ipv4, args[0])
+						c, err := net.DialTimeout("tcp", addr, timeout)
+						if err == nil {
+							bs := make([]byte, 1024)
+							c.SetReadDeadline(time.Now().Add(timeout))
+							n, _ := c.Read(bs)
+							c.Close()
+							s := fmt.Sprintf("  - %s   开启   %s", addr, string(bs[:n]))
+							if s[len(s)-1] != '\n' {
+								s += string('\n')
+							}
+							if sortResult {
+								list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
+							} else {
+								fmt.Print(s)
+							}
+						}
+					}(ipv4, timeout)
+
+					return true
+				})
+
+				wg.Wait()
+				if sortResult {
+					list.Sort(func(i, j int) bool {
+						return list[i]["i"].(uint32) < list[j]["i"].(uint32)
+					})
+					for _, m := range list {
+						fmt.Print(m["s"])
+					}
+				}
+
+			}
 		}
 	}
 }

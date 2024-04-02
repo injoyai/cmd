@@ -98,3 +98,18 @@ func handlerUpgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 	logs.PrintErr(tool.ShellStart("in_upgrade " + strings.Join(args, " ")))
 }
+
+func handlerIP(cmd *cobra.Command, args []string, flags *Flags) {
+	for i := range args {
+		if args[i] == "self" {
+			args[i] = "myip"
+		}
+	}
+	resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "ipinfo",
+		Dir:          oss.ExecDir(),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
+	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
+}

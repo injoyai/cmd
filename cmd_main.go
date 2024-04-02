@@ -342,11 +342,24 @@ func main() {
 				{Name: "timeout", Short: "t", Memo: "超时时间(毫秒)", DefaultValue: "1000"},
 				{Name: "sort", Short: "s", Memo: "排序"},
 				{Name: "find", Short: "f", Memo: "过滤数据"},
+				{Name: "network", Short: "n", DefaultValue: "以太网", Memo: "网卡名称"},
 			},
 			Use:     "scan",
 			Short:   "扫描",
 			Example: "in scan icmp",
 			Child: []*Command{
+				{
+					Use:     "network",
+					Short:   "network(网卡)",
+					Example: "in scan network",
+					Run:     handlerScanNetwork,
+				},
+				{
+					Use:     "net",
+					Short:   "net(网卡)",
+					Example: "in scan net",
+					Run:     handlerScanNetwork,
+				},
 				{
 					Use:     "icmp",
 					Short:   "ping(当前网段)",
@@ -523,6 +536,17 @@ func main() {
 			Short:   "备注",
 			Example: "in memo --add 记得买xx",
 			Run:     handlerMemo,
+		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "add", Short: "a", Memo: "添加备注"},
+				{Name: "del", Short: "d", Memo: "删除备注"},
+			},
+			Use:     "ip",
+			Short:   "ip",
+			Example: "in ip self/8.8.8.8",
+			Run:     handlerIP,
 		},
 	)
 
