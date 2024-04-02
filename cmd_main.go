@@ -2,12 +2,14 @@ package main
 
 import (
 	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 
+	oss.New(oss.UserInjoyDir())           //默认缓存文件夹
 	logs.SetFormatter(logs.TimeFormatter) //输出格式只有时间
 	logs.SetWriter(logs.Stdout)           //标准输出,不写入文件
 	logs.SetShowColor(false)              //不显示颜色
