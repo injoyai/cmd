@@ -71,6 +71,8 @@ func handlerDeployClient(addr string, flags *Flags) {
 		Type = deployShell
 	}
 	c, err := dial.NewTCP(addr, func(c *io.Client) {
+		c.Debug()
+		c.SetLevel(io.LevelInfo)
 		c.SetReadWithPkg()
 		c.SetWriteWithNil()
 		c.SetDealFunc(func(c *io.Client, msg io.Message) {
@@ -125,6 +127,7 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
 	s, err := listen.NewTCPServer(port, func(s *io.Server) {
 		s.Debug()
+		s.SetLevel(io.LevelInfo)
 		s.SetReadWriteWithPkg()
 		s.SetDealFunc(func(c *io.Client, msg io.Message) {
 			defer c.Close()
@@ -144,11 +147,13 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 					shell.Stop(name)
 					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
 						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
-						logs.Debugf("下载文件: %s", zipPath)
-						if err = oss.New(zipPath, fileBytes); err == nil {
+						err = oss.New(zipPath, fileBytes)
+						logs.Infof("下载文件(%s),结果: %s\n", zipPath, conv.New(err).String("成功"))
+						if err == nil {
 							err = zip.Decode(zipPath, dir)
+							logs.Infof("解压文件(%s)到(%s),结果: %s\n", zipPath, dir, conv.New(err).String("成功"))
 							os.Remove(zipPath)
-							shell.Start(name)
+							shell.Start(v.Name)
 						}
 					}
 					c.WriteAny(&resp{
