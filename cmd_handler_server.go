@@ -174,7 +174,7 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "edge",
 			Dir:          userDir,
-			ReDownload:   flags.GetBool("download"),
+			ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
