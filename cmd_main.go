@@ -17,6 +17,7 @@ func main() {
 	root := &cobra.Command{
 		Use:   "in",
 		Short: "Cli工具",
+		Run:   handler,
 	}
 
 	addCommand := func(cmd ...ICommand) {

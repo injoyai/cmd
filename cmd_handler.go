@@ -1,125 +1,66 @@
 package main
 
 import (
-	"fmt"
-	_ "github.com/DrmagicE/gmqtt/persistence"
-	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
-	"github.com/injoyai/cmd/resource"
-	"github.com/injoyai/cmd/resource/crud"
-	"github.com/injoyai/cmd/tool"
+	"github.com/getlantern/systray"
+	"github.com/getlantern/systray/example/icon"
+	gg "github.com/injoyai/cmd/global"
 	"github.com/injoyai/conv"
-	"github.com/injoyai/goutil/g"
-	"github.com/injoyai/goutil/notice"
-	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/goutil/oss/shell"
+	"github.com/injoyai/io"
+	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"log"
-	"os"
-	"strings"
-	"time"
 )
 
-func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
-	if (len(args) == 0 || args[0] != "all") && len(details) > 10 {
-		details = details[:10]
-	}
-	fmt.Println()
-	fmt.Println(strings.Join(details, "\n"))
-	if len(BuildDate) > 0 {
-		fmt.Println()
-		fmt.Println("编译日期: " + BuildDate)
-	}
+func handler(cmd *cobra.Command, args []string) {
+	systray.Run(onReady, onExit)
 }
 
-func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 || args[0] != "self" {
-		fmt.Println(oss.ExecDir())
-		return
-	}
+func onReady() {
 
-	var find bool
-
-	//尝试在注册表查找
-	list, _ := tool.APPPath(args[0])
-	for _, v := range list {
-		find = true
-		fmt.Println(v)
-	}
-
-	//尝试在环境变量查找
-	for _, v := range os.Environ() {
-		list := strings.SplitN(v, "=", 2)
-		if len(list) == 2 {
-			for _, ss := range strings.Split(list[1], ";") {
-				if strings.Contains(ss, args[0]) {
-					find = true
-					fmt.Println(ss)
-				}
+	go listen.RunTCPServer(10089, func(s *io.Server) {
+		s.Debug(false)
+		s.SetDealFunc(func(c *io.Client, msg io.Message) {
+			m := conv.NewMap(msg.Bytes())
+			switch m.GetString("type") {
+			case "shell":
+			case "file":
+			case "":
 			}
-		}
-	}
+		})
 
-	if !find {
-		fmt.Println("未找到")
-	}
-
-}
-
-func handlerCrud(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 {
-		log.Printf("[错误] %s", "请输入模块名称 例: in curd test")
-	}
-	logs.PrintErr(crud.New(args[0]))
-}
-
-func handlerDate(cmd *cobra.Command, args []string, flags *Flags) {
-	fmt.Println(time.Now().String())
-}
-
-func handlerSpeak(cmd *cobra.Command, args []string, flags *Flags) {
-	msg := fmt.Sprint(conv.Interfaces(args)...)
-	notice.DefaultVoice.Speak(msg)
-}
-
-func handlerKill(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) > 0 {
-		if strings.HasPrefix(args[0], `"`) && strings.HasSuffix(args[0], `"`) {
-			filename := "taskkill /f /t /im " + args[0]
-			logs.PrintErr(tool.ShellRun(filename))
-			return
-		}
-		filename := "taskkill /f /t /pid " + args[0]
-		logs.PrintErr(tool.ShellRun(filename))
-		return
-	}
-	resp, err := shell.Exec("taskkill /?")
-	logs.PrintErr(err)
-	fmt.Println(resp)
-}
-
-func handlerUpgrade(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload(g.Ctx(), &resource.Config{
-		Resource:     "upgrade",
-		Dir:          oss.ExecDir(),
-		ReDownload:   flags.GetBool("download"),
-		ProxyEnable:  true,
-		ProxyAddress: flags.GetString("proxy"),
 	})
-	logs.PrintErr(tool.ShellStart("in_upgrade " + strings.Join(args, " ")))
+
+	systray.SetIcon(icon.Data)
+	systray.SetTitle("Awesome App")
+	systray.SetTooltip("in")
+
+	mServer := systray.AddMenuItem("服务", "服务")
+	mConfig := systray.AddMenuItem("配置", "配置")
+	go func() {
+		for range mConfig.ClickedCh {
+			gg.RunGUI()
+		}
+	}()
+	mProxy := mServer.AddSubMenuItem("代理服务", "代理服务")
+	mMQTT := mServer.AddSubMenuItem("MQTT服务", "MQTT服务")
+	mMQTT.AddSubMenuItemCheckbox("开启", "开启", true)
+	mProxy.Disable()
+	go func() {
+		<-mServer.ClickedCh
+	}()
+
+	mQuit := systray.AddMenuItem("退出", "退出程序")
+	//mQuit.SetIcon(icon.Data)
+	go func() {
+		<-mQuit.ClickedCh
+		systray.Quit()
+	}()
+
+	// Sets the icon of a menu item. Only available on Mac and Windows.
+
 }
 
-func handlerIP(cmd *cobra.Command, args []string, flags *Flags) {
-	for i := range args {
-		if args[i] == "self" {
-			args[i] = "myip"
-		}
-	}
-	resource.MustDownload(g.Ctx(), &resource.Config{
-		Resource:     "ipinfo",
-		Dir:          oss.ExecDir(),
-		ProxyEnable:  true,
-		ProxyAddress: flags.GetString("proxy"),
-	})
-	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
+func onExit() {
+	// clean up here
+	logs.Debug("退出")
 }
