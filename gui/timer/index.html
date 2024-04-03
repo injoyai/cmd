@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>定时器管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .timer {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .timer-header {
+      background-color: #f0f0f0;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .timer-details {
+      padding: 10px;
+      display: none;
+    }
+
+    .timer-expanded .timer-details {
+      display: block;
+    }
+
+    .btn-container {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-container button {
+      margin-right: 5px;
+    }
+
+    .btn {
+      background-color: #4caf50;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-danger {
+      background-color: #f44336;
+    }
+
+    .btn:hover {
+      background-color: #45a049;
+    }
+
+    .indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .indicator-on {
+      background-color: green;
+    }
+
+    .indicator-off {
+      background-color: red;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>定时器管理</h1>
+  <div id="timerList">
+    <!-- 定时器列表将动态加载到这里 -->
+  </div>
+  <button onclick="addTimer()" class="btn">新增定时器</button>
+</div>
+
+<script>
+  let timerCount = 0;
+
+  function addTimer() {
+    timerCount++;
+    const timerDiv = document.createElement('div');
+    timerDiv.classList.add('timer');
+    timerDiv.innerHTML = `
+            <div class="timer-header" onclick="toggleTimerDetails(${timerCount})">
+                <span>定时器 ${timerCount}</span>
+                <span id="timer_status_${timerCount}" class="timer-status"><span class="indicator indicator-on"></span>启用</span>
+            </div>
+            <div class="timer-details" id="timer_details_${timerCount}">
+                <div><input placeholder="Cron表达式" id="cron_${timerCount}" style="width: 100%;"></div>
+                <textarea placeholder="脚本内容" rows="4" id="script_${timerCount}" style="width: 100%;"></textarea>
+                <div class="btn-container">
+                    <button onclick="saveTimer(${timerCount})" class="btn">保存</button>
+                    <button onclick="toggleTimerStatus(event, ${timerCount})" class="btn btn-toggle">启用/禁用</button>
+                    <button onclick="removeTimer(${timerCount})" class="btn btn-danger">删除</button>
+                </div>
+            </div>
+        `;
+    document.getElementById('timerList').appendChild(timerDiv);
+  }
+
+  function toggleTimerDetails(timerId) {
+    const timerDetails = document.getElementById(`timer_details_${timerId}`);
+    timerDetails.classList.toggle('timer-expanded');
+  }
+
+  function toggleTimerStatus(event, timerId) {
+    event.stopPropagation();
+    const statusElement = document.getElementById(`timer_status_${timerId}`);
+    const indicator = statusElement.previousElementSibling;
+
+    if (statusElement.textContent === '状态：启用') {
+      statusElement.textContent = '状态：禁用';
+      indicator.classList.remove('indicator-on');
+      indicator.classList.add('indicator-off');
+    } else {
+      statusElement.textContent = '状态：启用';
+      indicator.classList.remove('indicator-off');
+      indicator.classList.add('indicator-on');
+    }
+  }
+
+  function removeTimer(timerId) {
+    const confirmation = confirm("确定要删除此定时器吗？");
+    if (confirmation) {
+      const timerDiv = document.getElementById('timer_' + timerId);
+      timerDiv.parentNode.removeChild(timerDiv);
+    }
+  }
+
+  function saveTimer(timerId) {
+    const cronExpression = document.getElementById(`cron_${timerId}`).value;
+    const scriptContent = document.getElementById(`script_${timerId}`).value;
+    // 在这里添加保存定时器的逻辑
+    alert(`定时器 ${timerId} 已保存`);
+  }
+</script>
+
+</body>
+</html>
