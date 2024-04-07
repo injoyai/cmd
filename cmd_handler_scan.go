@@ -359,7 +359,7 @@ func qlScanEdge(startIP, endIP net.IP) (chan IPSN, context.Context) {
 	return ch, ctx
 }
 
-func rangeIPv4(network string, fn func(ipv4 net.IP) bool) error {
+func rangeIPv4(network string, fn func(ipv4 net.IP, self bool) bool) error {
 	is, err := net.Interfaces()
 	if err != nil {
 		return err
@@ -380,11 +380,13 @@ func rangeIPv4(network string, fn func(ipv4 net.IP) bool) error {
 
 		for _, addr := range addrs {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				ipv4 := ipnet.IP.To4()[:3]
+				ipv4 := ipnet.IP.To4()
 				ip.RangeFunc(
 					net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
 					net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
-					fn,
+					func(ip net.IP) bool {
+						return fn(ip, ip.String() == ipv4.String())
+					},
 				)
 			}
 		}
