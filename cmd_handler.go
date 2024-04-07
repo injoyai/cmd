@@ -126,7 +126,6 @@ func (this *gui) broadcast(s *io.Server, data []byte) error {
 			logs.Debug("自己的IP: ", ipv4.String())
 		}
 		if !self {
-			logs.Debug("发送至: ", ipv4.String())
 			s.Listener().(*listen.UDPServer).WriteToUDP(data, &net.UDPAddr{
 				IP:   ipv4,
 				Port: this.port,
