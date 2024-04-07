@@ -220,26 +220,66 @@ func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+
+	sortResult := flags.GetBool("sort")
+	result := g.Maps{}
+	wg := sync.WaitGroup{}
 	for i, v := range list {
-		p, err := serial.Open(v, &serial.Mode{
-			BaudRate: 9600,
-			DataBits: 8,
-			Parity:   serial.NoParity,
-			StopBits: 0,
-		})
-		if err != nil {
-			switch {
-			case strings.HasSuffix(err.Error(), " busy"):
-				list[i] = fmt.Sprintf("%s:  占用", v)
-			default:
-				list[i] = fmt.Sprintf("%s:  %s", v, err)
+		wg.Add(1)
+		go func(i int, v string) {
+			defer wg.Done()
+			p, err := serial.Open(v, &serial.Mode{
+				BaudRate: 9600,
+				DataBits: 8,
+				Parity:   serial.NoParity,
+				StopBits: 0,
+			})
+			if err != nil {
+				switch {
+				case strings.HasSuffix(err.Error(), " busy"):
+					if sortResult {
+						result = append(result, g.Map{
+							"index": i,
+							"msg":   fmt.Sprintf("%s:  占用", v),
+						})
+					} else {
+						fmt.Printf("%s:  占用\n", v)
+					}
+					list[i] = fmt.Sprintf("%s:  占用", v)
+				default:
+					if sortResult {
+						result = append(result, g.Map{
+							"index": i,
+							"msg":   fmt.Sprintf("%s:  %s", v, err),
+						})
+					} else {
+						fmt.Printf("%s:  %s\n", v, err)
+					}
+				}
+			} else {
+				p.Close()
+				if sortResult {
+					result = append(result, g.Map{
+						"index": i,
+						"msg":   fmt.Sprintf("%s:  空闲", v),
+					})
+				} else {
+					fmt.Printf("%s:  空闲\n", v)
+				}
 			}
-		} else {
-			p.Close()
-			list[i] = fmt.Sprintf("%s:  空闲", v)
+		}(i, v)
+	}
+
+	wg.Wait()
+	if sortResult {
+		result.Sort(func(i, j int) bool {
+			return conv.Int(result[i]["index"]) < conv.Int(result[j]["index"])
+		})
+		for _, v := range result {
+			fmt.Println(v["msg"])
 		}
 	}
-	fmt.Println(strings.Join(list, "\n"))
+
 }
 
 func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
