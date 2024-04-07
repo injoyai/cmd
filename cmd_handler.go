@@ -169,13 +169,15 @@ func (this *gui) edge(c *io.Client, m *conv.Map) {
 
 	case "open", "run", "start":
 
-		handlerEdgeServer(&cobra.Command{}, []string{}, &Flags{})
+		handlerEdgeServer(&cobra.Command{}, []string{}, newFlags([]*Flag{
+			{Name: "runType", Value: "start"},
+		}))
 
 		this.Succ(c)
 
 	case "close", "stop", "shutdown":
 
-		handlerEdgeServer(&cobra.Command{}, []string{"stop"}, &Flags{})
+		handlerEdgeServer(&cobra.Command{}, []string{"stop"}, newFlags(nil))
 
 		this.Succ(c)
 
