@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/getlantern/systray"
 	"github.com/getlantern/systray/example/icon"
@@ -15,11 +14,10 @@ import (
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"net"
-	"time"
 )
 
 func handler(cmd *cobra.Command, args []string) {
-	port := 10088
+	port := 10089
 	gui := &gui{port: port}
 	gui.Run()
 }
@@ -39,6 +37,18 @@ func (this *gui) onReady() {
 		s.Debug(true)
 		s.SetReadWriteWithPkg()
 		s.SetDealFunc(func(c *io.Client, msg io.Message) {
+
+			p, err := io.DecodePkg(msg)
+			if err != nil {
+				return
+			}
+
+			msg = p.Data
+
+			//logs.Debug(s.GetClientLen())
+
+			logs.Debug(msg.String())
+
 			m := conv.NewMap(msg.Bytes())
 			switch m.GetString("type") {
 
@@ -65,25 +75,14 @@ func (this *gui) onReady() {
 			case "broadcast":
 				//广播所有ipv4
 
-				s.WriteClientAll(m.GetBytes("data"))
+				data := m.GetBytes("data")
+				this.broadcast(s, data)
 
 			}
 
 		})
 
-		s.Timer(time.Second*30, func(s *io.Server) {
-			rangeIPv4("", func(ipv4 net.IP) bool {
-				key := ipv4.String()
-				if s.GetClient(key) == nil {
-					s.DialClient(func(ctx context.Context) (io.ReadWriteCloser, string, error) {
-						c, err := net.DialTimeout("udp", key, time.Millisecond*100)
-						return c, key, err
-					})
-				}
-				return true
-			})
-			s.WriteClientAll([]byte(io.Ping))
-		})
+		this.broadcast(s, []byte(io.Ping))
 
 	})
 
@@ -120,6 +119,17 @@ func (this *gui) onExit() {
 	logs.Debug("退出")
 }
 
+func (this *gui) broadcast(s *io.Server, data []byte) error {
+	data = io.NewPkg(0, data).Bytes()
+	return rangeIPv4("", func(ipv4 net.IP) bool {
+		s.Listener().(*listen.UDPServer).WriteToUDP(data, &net.UDPAddr{
+			IP:   ipv4,
+			Port: this.port,
+		})
+		return true
+	})
+}
+
 func (this *gui) Succ(c *io.Client) {
 	c.WriteAny(g.Map{
 		"type": "response",
@@ -137,12 +147,13 @@ func (this *gui) Fail(c *io.Client, err error) {
 }
 
 func (this *gui) edge(c *io.Client, m *conv.Map) {
+
 	switch m.GetString("data.type") {
 	case "upgrade_notice":
-
+		logs.Debug(m.GetString("data.type"))
 		noticeMsg := fmt.Sprintf("主人. 发现网关新版本(%s). 是否马上升级?", m.GetString("data.version"))
 
-		//notice.DefaultVoice.Speak(noticeMsg)
+		notice.DefaultVoice.Speak(noticeMsg)
 
 		//显示通知和是否升级按钮按钮
 		notice.DefaultWindows.Publish(&notice.Message{
