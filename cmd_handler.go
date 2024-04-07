@@ -121,11 +121,17 @@ func (this *gui) onExit() {
 
 func (this *gui) broadcast(s *io.Server, data []byte) error {
 	data = io.NewPkg(0, data).Bytes()
-	return rangeIPv4("", func(ipv4 net.IP) bool {
-		s.Listener().(*listen.UDPServer).WriteToUDP(data, &net.UDPAddr{
-			IP:   ipv4,
-			Port: this.port,
-		})
+	return rangeIPv4("", func(ipv4 net.IP, self bool) bool {
+		if self {
+			logs.Debug("自己的IP: ", ipv4.String())
+		}
+		if !self {
+			logs.Debug("发送至: ", ipv4.String())
+			s.Listener().(*listen.UDPServer).WriteToUDP(data, &net.UDPAddr{
+				IP:   ipv4,
+				Port: this.port,
+			})
+		}
 		return true
 	})
 }
@@ -150,7 +156,6 @@ func (this *gui) edge(c *io.Client, m *conv.Map) {
 
 	switch m.GetString("data.type") {
 	case "upgrade_notice":
-		logs.Debug(m.GetString("data.type"))
 		noticeMsg := fmt.Sprintf("主人. 发现网关新版本(%s). 是否马上升级?", m.GetString("data.version"))
 
 		notice.DefaultVoice.Speak(noticeMsg)
@@ -169,9 +174,7 @@ func (this *gui) edge(c *io.Client, m *conv.Map) {
 
 	case "open", "run", "start":
 
-		handlerEdgeServer(&cobra.Command{}, []string{}, newFlags([]*Flag{
-			{Name: "runType", Value: "start"},
-		}))
+		handlerEdgeServer(&cobra.Command{}, []string{}, newFlagRunType())
 
 		this.Succ(c)
 

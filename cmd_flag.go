@@ -19,6 +19,10 @@ func newFlags(list []*Flag) *Flags {
 	return f
 }
 
+func newFlagRunType() *Flags {
+	return newFlags([]*Flag{{Name: "runType", Value: "start"}})
+}
+
 func (this *Flags) Range(fn func(key string, val *Flag) bool) {
 	for k, v := range this.m {
 		if !fn(k, v) {
