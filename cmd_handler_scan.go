@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/ip"
-	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/io"
 	"github.com/injoyai/logs"
@@ -86,9 +84,11 @@ func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 
 		for _, addr := range addrs {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				ipv4 := ipnet.IP.To4()[:3]
+				ipv4 := ipnet.IP.To4()
 				start := net.IP{ipv4[0], ipv4[1], ipv4[2], 0}
 				end := net.IP{ipv4[0], ipv4[1], ipv4[2], 255}
+
+				fmt.Printf("  - %s\n", ipv4)
 
 				list := g.Maps(nil)
 				wg := sync.WaitGroup{}
@@ -128,6 +128,10 @@ func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerScanSSH(cmd *cobra.Command, args []string, flags *Flags) {
 	handlerScanPort(cmd, []string{"22"}, flags)
+}
+
+func handlerScanRtsp(cmd *cobra.Command, args []string, flags *Flags) {
+	handlerScanPort(cmd, []string{"554"}, flags)
 }
 
 func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
@@ -283,21 +287,65 @@ func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
-	ipv4 := ip.GetLocal()
-	startIP := append(net.ParseIP(ipv4)[:15], 0)
-	endIP := append(net.ParseIP(ipv4)[:15], 255)
-	ch, ctx := qlScanEdge(startIP, endIP)
-	for i := 1; ; i++ {
-		select {
-		case <-ctx.Done():
-			return
-		case data := <-ch:
-			fmt.Printf("%v: %v\t%s(%s)\n", data.IP, data.SN, data.Model, data.Version)
-			if flags.GetBool("open") {
-				logs.PrintErr(shell.OpenBrowser(fmt.Sprintf("http://%s:10001", data.IP)))
+	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 100))
+	sortResult := flags.GetBool("sort")
+	network := flags.GetString("network")
+
+	RangeNetwork(network, func(inter *Interfaces) {
+		result := g.Maps{}
+		wg := sync.WaitGroup{}
+		inter.Range(func(ipv4 net.IP, self bool) bool {
+			wg.Add(1)
+			go func(ipv4 net.IP) {
+				defer wg.Done()
+				addr := fmt.Sprintf("%s:10002", ipv4.String())
+				cli, err := net.DialTimeout("tcp", addr, timeout)
+				if err == nil {
+					c := io.NewClient(cli)
+					c.Debug(false)
+					c.SetReadIntervalTimeout(time.Second)
+					c.SetCloseWithNil()
+					c.SetDealFunc(func(c *io.Client, msg io.Message) {
+						defer c.Close()
+						s := str.CropFirst(msg.String(), "{")
+						s = str.CropLast(s, "}")
+						m := conv.NewMap(s)
+						switch m.GetString("type") {
+						case "REGISTER":
+							gm := m.GetGMap("data")
+							gm["_realIP"] = strings.Split(addr, ":")[0]
+							info := fmt.Sprintf(
+								"  - %v: %v\t%s(%s)",
+								conv.String(gm["_realIP"]),
+								conv.String(gm["sn"]),
+								conv.String(gm["model"]),
+								conv.String(gm["version"]))
+							if !sortResult {
+								fmt.Println(info)
+								return
+							}
+							result = append(result, g.Map{
+								"index": conv.Uint32([]byte(ipv4)),
+								"msg":   info,
+							})
+
+						}
+					})
+					c.Run()
+				}
+			}(ipv4)
+			return true
+		})
+		wg.Wait()
+		if sortResult {
+			result.Sort(func(i, j int) bool {
+				return conv.Int(result[i]["index"]) < conv.Int(result[j]["index"])
+			})
+			for _, v := range result {
+				fmt.Println(v["msg"])
 			}
 		}
-	}
+	})
 }
 
 /*
@@ -306,74 +354,21 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 
  */
 
-type IPSN struct {
-	IP      string
-	SN      string
-	Model   string
-	Version string
-}
-
-func qlScanEdge(startIP, endIP net.IP) (chan IPSN, context.Context) {
-	ctx, cancel := context.WithCancel(context.Background())
-	ch := make(chan IPSN)
-	start := []byte(startIP[12:16])
-	end := []byte(endIP[12:16])
-	wg := sync.WaitGroup{}
-	for i := conv.Uint32(start); i <= conv.Uint32(end); i++ {
-		wg.Add(1)
-		go func(ctx context.Context, cancel context.CancelFunc, ch chan IPSN, i uint32) {
-			defer wg.Done()
-			v := net.IPv4(byte(i>>24), byte(i>>16), byte(i>>8), byte(i))
-			addr := fmt.Sprintf("%s:10002", v)
-			cli, err := net.DialTimeout("tcp", addr, time.Millisecond*100)
-			if err == nil {
-				c := io.NewClient(cli)
-				c.Debug(false)
-				c.SetReadIntervalTimeout(time.Second)
-				c.SetCloseWithNil()
-				c.SetDealFunc(func(c *io.Client, msg io.Message) {
-					s := str.CropFirst(msg.String(), "{")
-					s = str.CropLast(s, "}")
-					m := conv.NewMap(s)
-					switch m.GetString("type") {
-					case "REGISTER":
-						gm := m.GetGMap("data")
-						gm["_realIP"] = strings.Split(addr, ":")[0]
-						ch <- IPSN{
-							SN:      conv.String(gm["sn"]),
-							IP:      conv.String(gm["_realIP"]),
-							Model:   conv.String(gm["model"]),
-							Version: conv.String(gm["version"]),
-						}
-						c.Close()
-					}
-				})
-				c.Run()
-			}
-		}(ctx, cancel, ch, i)
-	}
-	go func() {
-		wg.Wait()
-		cancel()
-	}()
-	return ch, ctx
-}
-
-func RangeIPv4(network string, fn func(ipv4 net.IP, self bool) bool) error {
+func RangeIPv4(network string, fn func(net net.Interface, ipv4 net.IP, self bool) bool) error {
 	is, err := net.Interfaces()
 	if err != nil {
 		return err
 	}
-	for _, v := range is {
+	for _, inter := range is {
 
-		if v.Flags&(1<<net.FlagLoopback) == 1 || v.Flags&(1<<net.FlagUp) == 0 {
+		if inter.Flags&(1<<net.FlagLoopback) == 1 || inter.Flags&(1<<net.FlagUp) == 0 {
 			continue
 		}
-		if len(network) > 0 && network != "all" && !strings.Contains(v.Name, network) {
+		if len(network) > 0 && network != "all" && !strings.Contains(inter.Name, network) {
 			continue
 		}
 
-		addrs, err := v.Addrs()
+		addrs, err := inter.Addrs()
 		if err != nil {
 			return err
 		}
@@ -385,10 +380,59 @@ func RangeIPv4(network string, fn func(ipv4 net.IP, self bool) bool) error {
 					net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
 					net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
 					func(ip net.IP) bool {
-						return fn(ip, ip.String() == ipv4.String())
+						return fn(inter, ip, ip.String() == ipv4.String())
 					},
 				)
 			}
+		}
+	}
+	return nil
+}
+
+func RangeNetwork(network string, fn func(inter *Interfaces)) error {
+	inters, err := net.Interfaces()
+	if err != nil {
+		return err
+	}
+	for i, inter := range inters {
+		if inter.Flags&(1<<net.FlagLoopback) == 1 || inter.Flags&(1<<net.FlagUp) == 0 {
+			continue
+		}
+		if len(network) > 0 && network != "all" && !strings.Contains(inter.Name, network) {
+			continue
+		}
+		fn(&Interfaces{
+			Index:     i,
+			Interface: inter,
+		})
+	}
+	return nil
+}
+
+type Interfaces struct {
+	Index int
+	net.Interface
+}
+
+func (this *Interfaces) Print() {
+	fmt.Printf("\n%d: %s (%s):\n", this.Index, this.Name, this.HardwareAddr)
+}
+
+func (this *Interfaces) Range(fn func(ipv4 net.IP, self bool) bool) error {
+	addrs, err := this.Addrs()
+	if err != nil {
+		return err
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+			ipv4 := ipnet.IP.To4()
+			ip.RangeFunc(
+				net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
+				net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
+				func(ip net.IP) bool {
+					return fn(ip, ip.String() == ipv4.String())
+				},
+			)
 		}
 	}
 	return nil

@@ -391,7 +391,7 @@ func main() {
 				{Name: "timeout", Short: "t", Memo: "超时时间(毫秒)", DefaultValue: "1000"},
 				{Name: "sort", Short: "s", Memo: "排序"},
 				{Name: "find", Short: "f", Memo: "过滤数据"},
-				{Name: "network", Short: "n", DefaultValue: "以太网", Memo: "网卡名称"},
+				{Name: "network", Short: "n", DefaultValue: "", Memo: "网卡名称"},
 			},
 			Use:     "scan",
 			Short:   "扫描",
@@ -426,6 +426,12 @@ func main() {
 					Short:   "SSH服务扫描(当前网段)",
 					Example: "in scan ssh",
 					Run:     handlerScanSSH,
+				},
+				{
+					Use:     "rtsp",
+					Short:   "RTSP服务扫描(当前网段)",
+					Example: "in scan rtsp",
+					Run:     handlerScanRtsp,
 				},
 				{
 					Use:     "serial",
