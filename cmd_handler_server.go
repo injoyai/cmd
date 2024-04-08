@@ -23,6 +23,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
@@ -302,4 +303,38 @@ func handlerHTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 			})),
 		),
 	)
+}
+
+//====================InServer====================//
+
+func handlerInServer(cmd *cobra.Command, args []string, flags *Flags) {
+	name := "in_server.exe"
+
+	if len(args) > 0 {
+		switch args[0] {
+		case "stop":
+			logs.PrintErr(shell.Stop(name))
+			return
+		}
+	}
+
+	fmt.Println("开始运行Edge服务...")
+	shell.Stop(name)
+	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "server",
+		Dir:          oss.UserInjoyDir(),
+		ReDownload:   flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
+	logs.PrintErr(tool.ShellStart(filename))
+
+	if len(args) > 0 && args[0] == "startup" {
+		if err := os.Rename(oss.UserInjoyDir(name), oss.UserStartupDir(name)); err != nil {
+			logs.Err(err)
+			return
+		}
+		logs.Info("设置开机自启成功")
+	}
+
 }

@@ -46,6 +46,20 @@ func main() {
 		},
 
 		&Command{
+			Use:     "run",
+			Short:   "开始运行in服务",
+			Example: "in run",
+			Run:     handlerRun,
+		},
+
+		&Command{
+			Use:     "stop",
+			Short:   "开始运行in服务",
+			Example: "in stop",
+			Run:     handlerStop,
+		},
+
+		&Command{
 			Use:     "where",
 			Short:   "查看软件位置",
 			Example: "in where",
@@ -121,7 +135,37 @@ func main() {
 			Use:     "speak",
 			Short:   "文字转语音",
 			Example: "in speak 哈哈哈",
-			Run:     handlerSpeak,
+			Run:     handlerPushSpeak,
+		},
+
+		&Command{
+			Use:     "push",
+			Short:   "发生通知信息",
+			Example: "in push voice 哈哈哈",
+			Child: []*Command{
+				{
+					Flag: []*Flag{
+						{Name: "rate", Short: "r", DefaultValue: "", Memo: "语速"},
+						{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
+					},
+					Use:     "speak",
+					Short:   "文字转语音",
+					Example: "in push speak 哈哈哈",
+					Run:     handlerPushSpeak,
+				},
+				{
+					Use:     "udp",
+					Short:   "广播到udp",
+					Example: "in push udp 哈哈哈",
+					Run:     handlerPushUDP,
+				},
+				{
+					Use:     "server",
+					Short:   "广播到server",
+					Example: "in push server {}",
+					Run:     handlerPushServer,
+				},
+			},
 		},
 
 		&Command{
@@ -252,6 +296,7 @@ func main() {
 			Use:     "server",
 			Short:   "服务",
 			Example: "in server tcp",
+			Run:     handlerInServer,
 			Child: []*Command{
 				{
 					Flag: []*Flag{

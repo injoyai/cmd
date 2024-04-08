@@ -93,6 +93,11 @@ var (
 			Name: "in_upgrade.exe",
 			Url:  "https://oss.qianlangyun.com/qianlang-store/in_upgrade.exe", //"https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
 		},
+		"server": {
+			Key:  []string{"in_server"},
+			Name: "in_server.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/in_server.exe", //"https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
+		},
 		"in": {
 			Name:          "in.exe",
 			Url:           "https://oss.qianlangyun.com/qianlang-store/in.exe", //"https://github.com/injoyai/cmd/raw/main/in.exe",
