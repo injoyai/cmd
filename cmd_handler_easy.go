@@ -148,14 +148,16 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	RangeIPv4("", func(inter net.Interface, ipv4 net.IP, self bool) bool {
-		if !self {
-			c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
-			if err == nil {
-				c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+	RangeNetwork("", func(inter *Interfaces) {
+		inter.RangeIPv4(func(ipv4 net.IP, self bool) bool {
+			if !self {
+				c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
+				if err == nil {
+					c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+				}
 			}
-		}
-		return true
+			return true
+		})
 	})
 }
 

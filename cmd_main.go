@@ -416,6 +416,7 @@ func main() {
 					Run:     handlerScanICMP,
 				},
 				{
+					Flag:    []*Flag{{Name: "type", DefaultValue: "tcp", Memo: "扫描类型"}},
 					Use:     "port",
 					Short:   "端口扫描(当前网段)",
 					Example: "in scan port",
