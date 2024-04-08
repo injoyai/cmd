@@ -149,26 +149,38 @@ var (
 		},
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
-			Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
-			Handler: func(url, dir, filename string, proxy ...string) error {
-				zipFilename := filepath.Join(dir, "ffmpeg.zip")
-				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
-					return err
-				}
-				if err := zip.Decode(zipFilename, dir); err != nil {
-					return err
-				}
-				logs.PrintErr(os.Remove(zipFilename))
-
-				folder := "/ffmpeg-5.1.2-essentials_build/bin"
-				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffmpeg.exe"), filepath.Join(dir, "ffmpeg.exe")))
-				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffplay.exe"), filepath.Join(dir, "ffplay.exe")))
-				logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffprobe.exe"), filepath.Join(dir, "ffprobe.exe")))
-
-				logs.PrintErr(os.RemoveAll(filepath.Join(dir, "ffmpeg-5.1.2-essentials_build")))
-				return nil
-			},
+			Url:  "https://oss.qianlangyun.com/qianlang-store/ffmpeg.exe",
 		},
+		"ffplay": {
+			Name: "ffplay.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/ffmpeg.exe",
+		},
+		"ffprobe": {
+			Name: "ffplay.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/ffmpeg.exe",
+		},
+		//"ffmpeg": {
+		//	Name: "ffmpeg.exe",
+		//	Url:  "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.1.2-essentials_build.zip",
+		//	Handler: func(url, dir, filename string, proxy ...string) error {
+		//		zipFilename := filepath.Join(dir, "ffmpeg.zip")
+		//		if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		//			return err
+		//		}
+		//		if err := zip.Decode(zipFilename, dir); err != nil {
+		//			return err
+		//		}
+		//		logs.PrintErr(os.Remove(zipFilename))
+		//
+		//		folder := "/ffmpeg-5.1.2-essentials_build/bin"
+		//		logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffmpeg.exe"), filepath.Join(dir, "ffmpeg.exe")))
+		//		logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffplay.exe"), filepath.Join(dir, "ffplay.exe")))
+		//		logs.PrintErr(os.Rename(filepath.Join(dir, folder, "ffprobe.exe"), filepath.Join(dir, "ffprobe.exe")))
+		//
+		//		logs.PrintErr(os.RemoveAll(filepath.Join(dir, "ffmpeg-5.1.2-essentials_build")))
+		//		return nil
+		//	},
+		//},
 		"livego": {
 			Key:  []string{"stream"},
 			Name: "livego.exe",
