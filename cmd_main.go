@@ -135,7 +135,7 @@ func main() {
 			Use:     "speak",
 			Short:   "文字转语音",
 			Example: "in speak 哈哈哈",
-			Run:     handlerPushSpeak,
+			Run:     handlerPushVoice,
 		},
 
 		&Command{
@@ -148,10 +148,10 @@ func main() {
 						{Name: "rate", Short: "r", DefaultValue: "", Memo: "语速"},
 						{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
 					},
-					Use:     "speak",
+					Use:     "voice",
 					Short:   "文字转语音",
-					Example: "in push speak 哈哈哈",
-					Run:     handlerPushSpeak,
+					Example: "in push voice 哈哈哈",
+					Run:     handlerPushVoice,
 				},
 				{
 					Use:     "udp",
@@ -160,6 +160,7 @@ func main() {
 					Run:     handlerPushUDP,
 				},
 				{
+					Flag:    []*Flag{{Name: "test", DefaultValue: "false", Memo: "测试"}},
 					Use:     "server",
 					Short:   "广播到server",
 					Example: "in push server {}",

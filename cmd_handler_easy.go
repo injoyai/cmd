@@ -139,6 +139,15 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err("未填写发送内容")
 		return
 	}
+
+	if flags.GetBool("test") {
+		c, err := net.DialTimeout("udp", ":10067", time.Millisecond*100)
+		if err == nil {
+			c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+		}
+		return
+	}
+
 	RangeIPv4("", func(ipv4 net.IP, self bool) bool {
 		if !self {
 			c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
@@ -150,7 +159,7 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
-func handlerPushSpeak(cmd *cobra.Command, args []string, flags *Flags) {
+func handlerPushVoice(cmd *cobra.Command, args []string, flags *Flags) {
 	msg := fmt.Sprint(conv.Interfaces(args)...)
 	notice.DefaultVoice.Speak(msg)
 }

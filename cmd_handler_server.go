@@ -310,16 +310,12 @@ func handlerHTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 func handlerInServer(cmd *cobra.Command, args []string, flags *Flags) {
 	name := "in_server.exe"
 
-	if len(args) > 0 {
-		switch args[0] {
-		case "stop":
-			logs.PrintErr(shell.Stop(name))
-			return
-		}
+	shell.Stop(name)
+	if len(args) > 0 && args[0] == "stop" {
+		return
 	}
 
 	fmt.Println("开始运行Edge服务...")
-	shell.Stop(name)
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),
