@@ -291,9 +291,10 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
 
+	//hasMap := maps.NewSafe()
+	result := g.Maps{}
+	wg := sync.WaitGroup{}
 	RangeNetwork(network, func(inter *Interfaces) {
-		result := g.Maps{}
-		wg := sync.WaitGroup{}
 		inter.Range(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
 			go func(ipv4 net.IP) {
@@ -312,14 +313,13 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 						m := conv.NewMap(s)
 						switch m.GetString("type") {
 						case "REGISTER":
-							gm := m.GetGMap("data")
-							gm["_realIP"] = strings.Split(addr, ":")[0]
 							info := fmt.Sprintf(
-								"  - %v: %v\t%s(%s)",
-								conv.String(gm["_realIP"]),
-								conv.String(gm["sn"]),
-								conv.String(gm["model"]),
-								conv.String(gm["version"]))
+								"  - %v: \t%v\t%s(%s)",
+								strings.Split(addr, ":")[0],
+								m.GetString("data.sn"),
+								m.GetString("data.model"),
+								m.GetString("data.version"))
+							//if _, has := hasMap.GetAndSet(m.GetString("data.sn"), true); !has {
 							if !sortResult {
 								fmt.Println(info)
 								return
@@ -328,7 +328,7 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 								"index": conv.Uint32([]byte(ipv4)),
 								"msg":   info,
 							})
-
+							//}
 						}
 					})
 					c.Run()
@@ -336,16 +336,16 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 			}(ipv4)
 			return true
 		})
-		wg.Wait()
-		if sortResult {
-			result.Sort(func(i, j int) bool {
-				return conv.Int(result[i]["index"]) < conv.Int(result[j]["index"])
-			})
-			for _, v := range result {
-				fmt.Println(v["msg"])
-			}
-		}
 	})
+	wg.Wait()
+	if sortResult {
+		result.Sort(func(i, j int) bool {
+			return conv.Int(result[i]["index"]) < conv.Int(result[j]["index"])
+		})
+		for _, v := range result {
+			fmt.Println(v["msg"])
+		}
+	}
 }
 
 /*
