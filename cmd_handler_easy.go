@@ -12,9 +12,11 @@ import (
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
+	"github.com/injoyai/io"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -30,6 +32,15 @@ func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println()
 		fmt.Println("编译日期: " + BuildDate)
 	}
+}
+
+func handlerRun(cmd *cobra.Command, args []string, flags *Flags) {
+	tool.ShellStart("in install server")
+	tool.ShellStart("in_server")
+}
+
+func handlerStop(cmd *cobra.Command, args []string, flags *Flags) {
+	tool.ShellStart("in kill in_server")
 }
 
 func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
@@ -77,11 +88,6 @@ func handlerDate(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(time.Now().String())
 }
 
-func handlerSpeak(cmd *cobra.Command, args []string, flags *Flags) {
-	msg := fmt.Sprint(conv.Interfaces(args)...)
-	notice.DefaultVoice.Speak(msg)
-}
-
 func handlerKill(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) > 0 {
 		if strings.HasPrefix(args[0], `"`) && strings.HasSuffix(args[0], `"`) {
@@ -126,4 +132,43 @@ func handlerIP(cmd *cobra.Command, args []string, flags *Flags) {
 
 func handlerDocPython(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(`配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
+}
+
+func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		logs.Err("未填写发送内容")
+		return
+	}
+	RangeIPv4("", func(ipv4 net.IP, self bool) bool {
+		if !self {
+			c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
+			if err == nil {
+				c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+			}
+		}
+		return true
+	})
+}
+
+func handlerPushSpeak(cmd *cobra.Command, args []string, flags *Flags) {
+	msg := fmt.Sprint(conv.Interfaces(args)...)
+	notice.DefaultVoice.Speak(msg)
+}
+
+func handlerPushUDP(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		logs.Err("未填写发送内容")
+		return
+	}
+
+	addr := flags.GetString("addr", ":10067")
+	c, err := net.DialTimeout("udp", addr, time.Millisecond*100)
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	if _, err := c.Write([]byte(args[0])); err != nil {
+		logs.Err(err)
+		return
+	}
 }

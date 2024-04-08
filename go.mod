@@ -6,6 +6,7 @@ require (
 	github.com/DrmagicE/gmqtt v0.5.0
 	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/getlantern/systray v1.2.2
+	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4 // indirect
 	github.com/gorilla/websocket v1.5.0
 	github.com/injoyai/base v1.0.7
 	github.com/injoyai/conv v1.1.2

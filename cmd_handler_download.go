@@ -100,6 +100,8 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.PrintErr(tool.ShellStart("regedit"))
 	case "edge":
 		handlerEdgeServer(cmd, args, flags)
+	case "server":
+		handlerInServer(cmd, args, flags)
 	default:
 
 		//尝试在内置资源查找
