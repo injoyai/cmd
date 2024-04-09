@@ -24,12 +24,11 @@ func init() {
 }
 
 func main() {
-	httpPort := 10066
-	udpPort := 10067
 
 	gui := &gui{
-		httpPort: httpPort,
-		udpPort:  udpPort,
+		httpPort: 10066,
+		udpPort:  10067,
+		tcpPort:  10068,
 	}
 	gui.Run()
 }
@@ -37,6 +36,7 @@ func main() {
 type gui struct {
 	httpPort int
 	udpPort  int
+	tcpPort  int
 }
 
 func (this *gui) Run() {
@@ -53,87 +53,99 @@ func (this *gui) httpServer() error {
 	}))
 }
 
-func (this *gui) udpServer() error {
-	ips, _ := GetSelfIP()
-	ipMap := map[string]bool{}
-	for _, v := range ips {
-		ipMap[v.String()] = true
-	}
-	first := true
+func (this *gui) tcpServer() error {
+	return listen.RunTCPServer(this.tcpPort, func(s *io.Server) {
+		s.Debug(true)
+		s.SetReadWriteWithPkg()
+		s.SetDealFunc(this.deal)
+	})
+}
 
+func (this *gui) udpServer() error {
 	return listen.RunUDPServer(this.udpPort, func(s *io.Server) {
 		s.Debug(true)
 		s.SetReadWriteWithPkg()
-		s.SetDealFunc(func(c *io.Client, msg io.Message) {
-
-			if ipMap[strings.Split(c.GetKey(), ":")[0]] && !first {
-				return
-			}
-			first = false
-
-			p, err := io.DecodePkg(msg)
-			if err != nil {
-				return
-			}
-
-			msg = p.Data
-
-			m := conv.NewMap(msg.Bytes())
-			Type := m.GetString("type")
-			if m.GetInt("code") > 0 {
-				Type = "response"
-			}
-			switch Type {
-
-			case "response":
-				//响应
-
-			case "deploy":
-				//部署
-				err = deployV1(m.GetBytes("data"))
-
-			case "shell":
-				//执行脚本
-
-				switch m.GetString("data.type") {
-				case "run":
-					err = shell.Run(m.GetString("data"))
-				default: //"start"
-					err = shell.Start(m.GetString("data"))
-				}
-
-			case "file":
-
-			case "edge":
-				//edge服务
-				err = this.edge(c, m)
-
-			case "write":
-				//发送给一个客户端
-
-				_, err = s.WriteClient(m.GetString("data.key"), m.GetBytes("data.data"))
-
-			case "broadcast":
-				//广播所有ipv4
-
-				data := m.GetBytes("data")
-				err = this.broadcast(s, data)
-
-			default:
-
-				err = fmt.Errorf("未知类型: %s", Type)
-
-			}
-
-			c.WriteAny(io.Model{
-				Type: Type,
-				Code: conv.SelectInt(err == nil, 200, 500),
-				UID:  m.GetString("uid"),
-				Msg:  conv.New(err).String("成功"),
-			})
-
-		})
+		s.SetDealFunc(this.deal)
 	})
+}
+
+func (this *gui) deal(c *io.Client, msg io.Message) {
+
+	ips, _ := GetSelfIP()
+	for _, v := range ips {
+		if v.String() != ip.GetLocal() && v.String() == strings.Split(c.GetKey(), ":")[0] {
+			return
+		}
+	}
+
+	p, err := io.DecodePkg(msg)
+	if err == nil {
+		msg = p.Data
+	}
+
+	m := conv.NewMap(msg.Bytes())
+	Type := m.GetString("type")
+	if m.GetInt("code") > 0 {
+		Type = "response"
+	}
+	switch Type {
+
+	case "response":
+		//响应
+
+	case "deploy":
+		//部署
+		err = deployV1(msg.Bytes())
+
+	case "shell":
+		//执行脚本
+
+		switch m.GetString("data.type") {
+		case "run":
+			err = shell.Run(m.GetString("data"))
+		default: //"start"
+			err = shell.Start(m.GetString("data"))
+		}
+
+	case "file":
+
+	case "edge":
+		//edge服务
+		logs.Debug("Edge服务")
+
+		err = this.edge(c, m)
+
+	case "write":
+		//发送给一个客户端
+
+		conn, err := net.ListenUDP("udp", &net.UDPAddr{})
+		if err == nil {
+			var addr *net.UDPAddr
+			addr, err = net.ResolveUDPAddr("udp", m.GetString("data.key"))
+			if err == nil {
+				_, err = conn.WriteToUDP(m.GetBytes("data.data"), addr)
+			}
+		}
+
+	case "broadcast":
+		//广播所有ipv4
+
+		data := m.GetBytes("data")
+		err = this.broadcastUDP(data)
+
+	default:
+
+		err = fmt.Errorf("未知类型: %s", Type)
+
+	}
+
+	c.WriteAny(io.Model{
+		Type: Type,
+		Code: conv.SelectInt(err == nil, 200, 500),
+		UID:  m.GetString("uid"),
+		Msg:  conv.New(err).String("成功"),
+	})
+
 }
 
 func (this *gui) onReady() {
@@ -146,6 +158,11 @@ func (this *gui) onReady() {
 	//udp服务
 	go func() {
 		logs.PanicErr(this.udpServer())
+	}()
+
+	//tcp服务
+	go func() {
+		logs.PanicErr(this.tcpServer())
 	}()
 
 	/*
@@ -178,11 +195,16 @@ func (this *gui) onExit() {
 	//logs.Debug("退出")
 }
 
-func (this *gui) broadcast(s *io.Server, data []byte) error {
+func (this *gui) broadcastUDP(data []byte) (err error) {
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{})
+	if err != nil {
+		return
+	}
+	defer conn.Close()
 	data = io.NewPkg(0, data).Bytes()
 	return RangeIPv4("", func(ipv4 net.IP, self bool) bool {
 		if !self {
-			s.Listener().(*listen.UDPServer).WriteToUDP(data, &net.UDPAddr{
+			conn.WriteToUDP(data, &net.UDPAddr{
 				IP:   ipv4,
 				Port: this.udpPort,
 			})
@@ -195,6 +217,7 @@ func (this *gui) edge(c *io.Client, m *conv.Map) error {
 
 	switch m.GetString("data.type") {
 	case "upgrade_notice":
+		logs.Debug("Edge升级通知")
 
 		noticeMsg := fmt.Sprintf("主人. 发现网关新版本(%s). 是否马上升级?", m.GetString("data.version"))
 

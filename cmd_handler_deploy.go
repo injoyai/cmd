@@ -79,46 +79,48 @@ func handlerDeployClient(addr string, flags *Flags) {
 		c.SetWriteWithNil()
 		c.SetDealFunc(func(c *io.Client, msg io.Message) {
 			fmt.Println(msg.String())
+			c.Close()
 		})
-
-		//读取文件 target source
-		var file []*_deployFile
-		if len(target) > 0 && len(source) > 0 {
-
-			zipPath := filepath.Clean(source) + ".zip"
-			logs.Debugf("打包文件: %s", zipPath)
-			err := zip.Encode(source, zipPath)
-			if err != nil {
-				logs.Err(err)
-				return
-			}
-			defer os.Remove(zipPath)
-
-			bs, err := ioutil.ReadFile(zipPath)
-			if err != nil {
-				logs.Err(err)
-				return
-			}
-
-			file = append(file, (&_deployFile{
-				Name: target,
-				Data: base64.StdEncoding.EncodeToString(bs),
-			}).deal())
-		}
-
-		bs := conv.Bytes(&Deploy{
-			Type:  Type,
-			File:  file,
-			Shell: []string{shell},
-		})
-
-		bs, _ = io.WriteWithPkg(bs)
-		bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs))
-
 	})
-	if logs.PrintErr(err) {
+	if err != nil {
+		logs.Err(err)
 		return
 	}
+
+	//读取文件 target source
+	var file []*_deployFile
+	if len(target) > 0 && len(source) > 0 {
+
+		zipPath := filepath.Clean(source) + ".zip"
+		logs.Debugf("打包文件: %s\n", zipPath)
+		err := zip.Encode(source, zipPath)
+		if err != nil {
+			logs.Err(err)
+			return
+		}
+		defer os.Remove(zipPath)
+
+		bs, err := ioutil.ReadFile(zipPath)
+		if err != nil {
+			logs.Err(err)
+			return
+		}
+
+		file = append(file, (&_deployFile{
+			Name: target,
+			Data: base64.StdEncoding.EncodeToString(bs),
+		}).deal())
+	}
+
+	bs := conv.Bytes(&Deploy{
+		Type:  Type,
+		File:  file,
+		Shell: []string{shell},
+	})
+
+	bs, _ = io.WriteWithPkg(bs)
+	bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs))
+
 	c.Run()
 }
 
