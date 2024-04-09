@@ -144,6 +144,7 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 		c, err := net.DialTimeout("udp", ":10067", time.Millisecond*100)
 		if err == nil {
 			c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+			c.Close()
 		}
 		return
 	}
@@ -154,6 +155,7 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 				c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
 				if err == nil {
 					c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+					c.Close()
 				}
 			}
 			return true
