@@ -63,20 +63,23 @@ func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 		inter.Print()
 		list := g.Maps(nil)
 		wg := sync.WaitGroup{}
-		//fmt.Printf("  - %s\n", ipv4)
-		inter.RangeIPv4(func(ipv4 net.IP, self bool) bool {
+		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
 			go func(ipv4 net.IP) {
 				defer wg.Done()
-				used, err := ip.Ping(ipv4.String(), timeout)
-				if err == nil {
-					s := fmt.Sprintf("  - %s: %s\n", ipv4, used.String())
-					if sortResult {
-						list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
-					} else {
-						fmt.Print(s)
+				s := fmt.Sprintf("  - %s: 本机\n", ipv4)
+				if !self {
+					used, err := ip.Ping(ipv4.String(), timeout)
+					if err != nil {
+						return
 					}
+					s = fmt.Sprintf("  - %s: %s\n", ipv4, used.String())
 				}
+				if sortResult {
+					list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
+					return
+				}
+				fmt.Print(s)
 			}(ipv4)
 			return true
 		})
@@ -115,7 +118,7 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 		inter.Print()
 		list := g.Maps(nil)
 		wg := sync.WaitGroup{}
-		inter.RangeIPv4(func(ipv4 net.IP, self bool) bool {
+		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
 			go func(ipv4 net.IP, timeout time.Duration) {
 				defer wg.Done()
@@ -208,7 +211,7 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	result := g.Maps{}
 	wg := sync.WaitGroup{}
 	RangeNetwork(network, func(inter *Interfaces) {
-		inter.RangeIPv4(func(ipv4 net.IP, self bool) bool {
+		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
 			go func(ipv4 net.IP) {
 				defer wg.Done()
@@ -308,21 +311,27 @@ func (this *Interfaces) IPv4s() ([]net.IP, error) {
 	return result, nil
 }
 
-func (this *Interfaces) RangeIPv4(fn func(ipv4 net.IP, self bool) bool) error {
+func (this *Interfaces) RangeSegment(fn func(ipv4 net.IP, self bool) bool) error {
+	return this.RangeIPv4(func(ipv4 net.IP) bool {
+		ip.RangeFunc(
+			net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
+			net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
+			func(ip net.IP) bool {
+				return fn(ip, ip.String() == ipv4.String())
+			},
+		)
+		return true
+	})
+}
+
+func (this *Interfaces) RangeIPv4(fn func(ipv4 net.IP) bool) error {
 	addrs, err := this.Addrs()
 	if err != nil {
 		return err
 	}
 	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-			ipv4 := ipnet.IP.To4()
-			ip.RangeFunc(
-				net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
-				net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
-				func(ip net.IP) bool {
-					return fn(ip, ip.String() == ipv4.String())
-				},
-			)
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() && ipNet.IP.To4() != nil {
+			fn(ipNet.IP.To4())
 		}
 	}
 	return nil
