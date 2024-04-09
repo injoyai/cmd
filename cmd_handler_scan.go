@@ -58,6 +58,7 @@ func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
+	find := flags.GetString("find")
 
 	RangeNetwork(network, func(inter *Interfaces) {
 		inter.Print()
@@ -74,6 +75,9 @@ func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 						return
 					}
 					s = fmt.Sprintf("  - %s: %s\n", ipv4, used.String())
+				}
+				if len(find) > 0 && !strings.Contains(s, find) {
+					return
 				}
 				if sortResult {
 					list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
@@ -113,6 +117,7 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
 	Type := flags.GetString("type", "tcp")
+	find := flags.GetString("find")
 
 	RangeNetwork(network, func(inter *Interfaces) {
 		inter.Print()
@@ -132,6 +137,9 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 					s := fmt.Sprintf("  - %s   开启   %s", addr, string(bs[:n]))
 					if s[len(s)-1] != '\n' {
 						s += string('\n')
+					}
+					if len(find) > 0 && !strings.Contains(s, find) {
+						return
 					}
 					if sortResult {
 						list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
@@ -161,7 +169,9 @@ func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
+	find := flags.GetString("find")
 	sortResult := flags.GetBool("sort")
+
 	result := g.Maps{}
 	wg := sync.WaitGroup{}
 	for i, v := range list {
@@ -180,13 +190,17 @@ func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 				}
 			}
 			p.Close()
+			s := fmt.Sprintf("%s:  %s", v, conv.New(err).String("空闲"))
+			if len(find) > 0 && !strings.Contains(s, find) {
+				return
+			}
 			if !sortResult {
-				fmt.Printf("%s:  %s\n", v, conv.New(err).String("空闲"))
+				fmt.Println(s)
 				return
 			}
 			result = append(result, g.Map{
 				"index": i,
-				"msg":   fmt.Sprintf("%s:  %s", v, conv.New(err).String("空闲")),
+				"msg":   s,
 			})
 		}(i, v)
 	}
@@ -207,6 +221,7 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 100))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
+	find := flags.GetString("find")
 
 	result := g.Maps{}
 	wg := sync.WaitGroup{}
@@ -235,6 +250,9 @@ func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 								m.GetString("data.sn"),
 								m.GetString("data.model"),
 								m.GetString("data.version"))
+							if len(find) > 0 && !strings.Contains(s, find) {
+								return
+							}
 							if !sortResult {
 								fmt.Println(info)
 								return
