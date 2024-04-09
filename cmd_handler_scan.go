@@ -312,7 +312,7 @@ type Interfaces struct {
 }
 
 func (this *Interfaces) Print() {
-	fmt.Printf("\n%d: %s (%s):\n", this.Index, this.Name, this.HardwareAddr)
+	fmt.Printf("\n%d: %s (%s):\n", this.Index, this.HardwareAddr, this.Name)
 }
 
 func (this *Interfaces) IPv4s() ([]net.IP, error) {
