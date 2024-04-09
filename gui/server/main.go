@@ -3,12 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/getlantern/systray"
-	"github.com/getlantern/systray/example/icon"
 	"github.com/go-toast/toast"
 	gg "github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
-	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/ip"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -45,18 +43,17 @@ func (this *gui) Run() {
 	systray.Run(this.onReady, this.onExit)
 }
 
-func (this *gui) onReady() {
+func (this *gui) httpServer() error {
+	return http.ListenAndServe(fmt.Sprintf(":%d", this.httpPort), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			cmd := r.URL.Query().Get("cmd")
+			logs.Debug(cmd)
+			tool.ShellStart(cmd)
+		}
+	}))
+}
 
-	go func() {
-		logs.PanicErr(http.ListenAndServe(fmt.Sprintf(":%d", this.httpPort), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/" {
-				cmd := r.URL.Query().Get("cmd")
-				logs.Debug(cmd)
-				tool.ShellStart(cmd)
-			}
-		})))
-	}()
-
+func (this *gui) udpServer() error {
 	ips, _ := GetSelfIP()
 	ipMap := map[string]bool{}
 	for _, v := range ips {
@@ -64,64 +61,101 @@ func (this *gui) onReady() {
 	}
 	first := true
 
-	//监听10089端口,udp服务,定时发送心跳包
-	go func() {
+	return listen.RunUDPServer(this.udpPort, func(s *io.Server) {
+		s.Debug(true)
+		s.SetReadWriteWithPkg()
+		s.SetDealFunc(func(c *io.Client, msg io.Message) {
 
-		logs.PanicErr(listen.RunUDPServer(this.udpPort, func(s *io.Server) {
-			s.Debug(true)
-			s.SetReadWriteWithPkg()
-			s.SetDealFunc(func(c *io.Client, msg io.Message) {
+			if ipMap[strings.Split(c.GetKey(), ":")[0]] && !first {
+				return
+			}
+			first = false
 
-				if ipMap[strings.Split(c.GetKey(), ":")[0]] && !first {
-					return
-				}
-				first = false
+			p, err := io.DecodePkg(msg)
+			if err != nil {
+				return
+			}
 
-				p, err := io.DecodePkg(msg)
-				if err != nil {
-					return
-				}
+			msg = p.Data
 
-				msg = p.Data
+			m := conv.NewMap(msg.Bytes())
+			Type := m.GetString("type")
+			if m.GetInt("code") > 0 {
+				Type = "response"
+			}
+			switch Type {
 
-				m := conv.NewMap(msg.Bytes())
-				switch m.GetString("type") {
+			case "response":
+				//响应
 
-				case "response":
+			case "deploy":
+				//部署
+				err = deployV1(m.GetBytes("data"))
 
-				case "deploy":
-					//部署
+			case "shell":
+				//执行脚本
 
-				case "shell":
-
-					shell.Start(m.GetString("data"))
-
-				case "file":
-
-				case "edge":
-					this.edge(c, m)
-
-				case "write":
-					//发送给一个客户端
-
-					s.WriteClient(m.GetString("data.key"), m.GetBytes("data.data"))
-
-				case "broadcast":
-					//广播所有ipv4
-
-					data := m.GetBytes("data")
-					this.broadcast(s, data)
-
+				switch m.GetString("data.type") {
+				case "run":
+					err = shell.Run(m.GetString("data"))
+				default: //"start"
+					err = shell.Start(m.GetString("data"))
 				}
 
+			case "file":
+
+			case "edge":
+				//edge服务
+				err = this.edge(c, m)
+
+			case "write":
+				//发送给一个客户端
+
+				_, err = s.WriteClient(m.GetString("data.key"), m.GetBytes("data.data"))
+
+			case "broadcast":
+				//广播所有ipv4
+
+				data := m.GetBytes("data")
+				err = this.broadcast(s, data)
+
+			default:
+
+				err = fmt.Errorf("未知类型: %s", Type)
+
+			}
+
+			c.WriteAny(io.Model{
+				Type: Type,
+				Code: conv.SelectInt(err == nil, 200, 500),
+				UID:  m.GetString("uid"),
+				Msg:  conv.New(err).String("成功"),
 			})
 
-		}))
+		})
+	})
+}
+
+func (this *gui) onReady() {
+
+	//http服务
+	go func() {
+		logs.PanicErr(this.httpServer())
 	}()
 
-	systray.SetIcon(icon.Data)
-	systray.SetTitle("Awesome App")
-	systray.SetTooltip("in")
+	//udp服务
+	go func() {
+		logs.PanicErr(this.udpServer())
+	}()
+
+	/*
+
+
+
+	 */
+
+	systray.SetIcon(Ico32)
+	systray.SetTooltip("In Server")
 
 	mConfig := systray.AddMenuItem("配置", "配置")
 	go func() {
@@ -157,23 +191,7 @@ func (this *gui) broadcast(s *io.Server, data []byte) error {
 	})
 }
 
-func (this *gui) Succ(c *io.Client) {
-	c.WriteAny(g.Map{
-		"type": "response",
-		"code": 200,
-		"msg":  "成功",
-	})
-}
-
-func (this *gui) Fail(c *io.Client, err error) {
-	c.WriteAny(g.Map{
-		"type": "response",
-		"code": 500,
-		"msg":  err.Error(),
-	})
-}
-
-func (this *gui) edge(c *io.Client, m *conv.Map) {
+func (this *gui) edge(c *io.Client, m *conv.Map) error {
 
 	switch m.GetString("data.type") {
 	case "upgrade_notice":
@@ -192,29 +210,24 @@ func (this *gui) edge(c *io.Client, m *conv.Map) {
 			},
 		}
 		if err := notification.Push(); err != nil {
-			this.Fail(c, err)
-			return
+			return err
 		}
 
 		notice.DefaultVoice.Speak(noticeMsg)
-
-		this.Succ(c)
 
 	case "upgrade":
 
 	case "open", "run", "start":
 
-		tool.ShellStart("in server edge")
-
-		this.Succ(c)
+		return tool.ShellStart("in server edge")
 
 	case "close", "stop", "shutdown":
 
-		tool.ShellRun("in server edge stop")
-
-		this.Succ(c)
+		return tool.ShellRun("in server edge stop")
 
 	}
+
+	return nil
 }
 
 func RangeIPv4(network string, fn func(ipv4 net.IP, self bool) bool) error {

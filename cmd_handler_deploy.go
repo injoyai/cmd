@@ -29,14 +29,16 @@ const (
 )
 
 type _deployFile struct {
-	Name string `json:"name"` //文件路径
-	Data string `json:"data"` //文件内容
+	Name    string `json:"name"`    //文件路径
+	Data    string `json:"data"`    //文件内容
+	Restart bool   `json:"restart"` //是否重启
 }
 
 func (this *_deployFile) deal() *_deployFile {
 	this.Name = strings.ReplaceAll(this.Name, "{user}", oss.UserDir())
 	this.Name = strings.ReplaceAll(this.Name, "{appdata}", oss.UserDataDir())
 	this.Name = strings.ReplaceAll(this.Name, "{injoy}", oss.UserInjoyDir())
+	this.Name = strings.ReplaceAll(this.Name, "{startup}", oss.UserStartupDir())
 	return this
 }
 
@@ -142,25 +144,31 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 			switch m.Type {
 			case deployDeploy:
 
-				for _, v := range m.File {
-					dir, name := filepath.Split(v.Name)
-					shell.Stop(name)
-					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
-						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
-						err = oss.New(zipPath, fileBytes)
-						logs.Infof("下载文件(%s),结果: %s\n", zipPath, conv.New(err).String("成功"))
-						if err == nil {
-							err = zip.Decode(zipPath, dir)
-							logs.Infof("解压文件(%s)到(%s),结果: %s\n", zipPath, dir, conv.New(err).String("成功"))
-							os.Remove(zipPath)
-							shell.Start(v.Name)
-						}
-					}
-					c.WriteAny(&resp{
-						Code: conv.SelectInt(err == nil, 200, 500),
-						Msg:  conv.New(err).String("成功"),
-					})
-				}
+				err := deployV1(msg)
+				c.WriteAny(&resp{
+					Code: conv.SelectInt(err == nil, 200, 500),
+					Msg:  conv.New(err).String("成功"),
+				})
+
+				//for _, v := range m.File {
+				//	dir, name := filepath.Split(v.Name)
+				//	shell.Stop(name)
+				//	if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
+				//		zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+				//		err = oss.New(zipPath, fileBytes)
+				//		logs.Infof("下载文件(%s),结果: %s\n", zipPath, conv.New(err).String("成功"))
+				//		if err == nil {
+				//			err = zip.Decode(zipPath, dir)
+				//			logs.Infof("解压文件(%s)到(%s),结果: %s\n", zipPath, dir, conv.New(err).String("成功"))
+				//			os.Remove(zipPath)
+				//			shell.Start(v.Name)
+				//		}
+				//	}
+				//	c.WriteAny(&resp{
+				//		Code: conv.SelectInt(err == nil, 200, 500),
+				//		Msg:  conv.New(err).String("成功"),
+				//	})
+				//}
 
 			case deployFile:
 
@@ -198,4 +206,42 @@ func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 	logs.Err(s.Run())
+}
+
+func deployV1(bytes io.Message) error {
+	var m *Deploy
+	err := json.Unmarshal(bytes, &m)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range m.File {
+		dir, name := filepath.Split(v.Name)
+		if v.Restart {
+			shell.Stop(name)
+		}
+
+		fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
+		if err != nil {
+			return err
+		}
+
+		zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+		if err = oss.New(zipPath, fileBytes); err != nil {
+			return fmt.Errorf("保存文件(%s)错误: %s", zipPath, err)
+		}
+
+		if err = zip.Decode(zipPath, dir); err != nil {
+			return fmt.Errorf("解压文件(%s)到(%s)错误: %s", zipPath, dir, err)
+		}
+		os.Remove(zipPath)
+
+		if v.Restart {
+			if err := shell.Start(v.Name); err != nil {
+				return fmt.Errorf("执行文件(%s)错误: %s", v.Name, err)
+			}
+		}
+	}
+
+	return nil
 }
