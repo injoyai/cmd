@@ -21,3 +21,7 @@ func PublishNotice(message *notice.Message) error {
 func APPPath(arg string) ([]string, error) {
 	return nil, errors.New("暂不支持")
 }
+
+func Shortcut(filename, target string) error {
+	return errors.New("暂不支持")
+}

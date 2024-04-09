@@ -23,7 +23,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 )
 
@@ -326,7 +325,7 @@ func handlerInServer(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellStart(filename))
 
 	if len(args) > 0 && args[0] == "startup" {
-		if err := os.Rename(oss.UserInjoyDir(name), oss.UserStartupDir(name)); err != nil {
+		if err := tool.Shortcut(oss.UserStartupDir(name+".lnk"), oss.UserInjoyDir(name)); err != nil {
 			logs.Err(err)
 			return
 		}
