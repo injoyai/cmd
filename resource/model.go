@@ -88,6 +88,11 @@ var (
 			Name: "npc.exe",
 			Url:  "https://oss.qianlangyun.com/qianlang-store/npc.exe", //"https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
 		},
+		"listen": {
+			Key:  []string{"listen"},
+			Name: "listen.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/listen.exe",
+		},
 		"upgrade": {
 			Key:  []string{"in_upgrade"},
 			Name: "in_upgrade.exe",
