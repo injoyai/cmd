@@ -9,6 +9,7 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/io"
@@ -67,8 +68,18 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 			download = downloadM3u8
 
 		default:
-			op.suffix = ext
-			download = downloadOther
+
+			switch {
+			case strings.HasPrefix(op.Resource, "rtsp://") ||
+				strings.HasPrefix(op.Resource, "rtmp://"):
+				op.suffix = ".ts"
+				download = downloadStream
+
+			default:
+				op.suffix = ext
+				download = downloadOther
+
+			}
 
 		}
 	}
@@ -188,32 +199,32 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 		}
 
 		//合并视频
-		g.Retry(func() error {
-			//合并视频,删除分片等信息
-			mergeFile, err := os.Create(op.Filename())
-			if err != nil {
-				return err
-			}
-			defer mergeFile.Close()
-			return oss.RangeFileInfo(cacheDir, func(info fs.FileInfo) (bool, error) {
-				if !info.IsDir() && strings.HasSuffix(info.Name(), op.suffix) {
-					f, err := os.Open(filepath.Join(cacheDir, info.Name()))
-					if err != nil {
-						return false, err
-					}
-					defer f.Close()
-					_, err = io.Copy(mergeFile, f)
-					return err == nil, err
-				}
-				return true, nil
-			})
-		}, 3)
-
-		//删除文件夹和分片视频
-		oss.DelDir(cacheDir)
+		op.Merge(3)
 
 		break
 
+	}
+
+	return nil
+}
+
+// downloadStream 下载流媒体
+func downloadStream(ctx context.Context, op *Config) error {
+	MustDownload(ctx, &Config{
+		Resource:     "ffmpeg",
+		Dir:          oss.ExecDir(),
+		ProxyEnable:  op.ProxyEnable,
+		ProxyAddress: op.ProxyAddress,
+	})
+
+	//合并视频,ctrl+c也能合并
+	oss.ListenExit(func() { op.Merge(3) })
+
+	oss.RemoveAll(op.TempDir())
+	oss.New(op.TempDir())
+
+	if err := shell.Runf("ffmpeg -i %s -c copy -f hls %s", op.Resource, filepath.Join(op.TempDir(), "/out.m3u8")); err != nil {
+		return err
 	}
 
 	return nil
@@ -248,6 +259,7 @@ func (this *Config) Proxy() string {
 	return ""
 }
 
+// GetName 文件名称,优先根据用户的设置,然后尝试去url中获取,最后随机生成
 func (this *Config) GetName() string {
 	if len(this.Name) == 0 {
 		u, err := url.Parse(this.Resource)
@@ -261,6 +273,7 @@ func (this *Config) GetName() string {
 	return this.Name
 }
 
+// Filename 完整的文件名称(包括路径),例 ./a/b/c.txt
 func (this *Config) Filename() string {
 	name := this.GetName()
 	if len(filepath.Ext(name)) == 0 {
@@ -269,6 +282,7 @@ func (this *Config) Filename() string {
 	return filepath.Join(this.Dir, name)
 }
 
+// TempFilename 完整的临时文件名称(包括路径),例 ./a/b/c.txt.temp
 func (this *Config) TempFilename() string {
 	name := this.GetName()
 	if len(filepath.Ext(name)) == 0 {
@@ -277,6 +291,32 @@ func (this *Config) TempFilename() string {
 	return filepath.Join(this.Dir, name+".temp")
 }
 
+// TempDir 临时文件夹,当资源是多个子资源组成的时候
 func (this *Config) TempDir() string {
 	return filepath.Join(this.Dir, this.GetName())
+}
+
+func (this *Config) Merge(retry uint) error {
+	cacheDir := this.TempDir()
+	return g.Retry(func() error {
+		//合并视频,删除分片等信息
+		mergeFile, err := os.Create(this.Filename())
+		if err != nil {
+			return err
+		}
+		defer mergeFile.Close()
+		defer oss.RemoveAll(cacheDir)
+		return oss.RangeFileInfo(cacheDir, func(info fs.FileInfo) (bool, error) {
+			if !info.IsDir() && strings.HasSuffix(info.Name(), this.suffix) {
+				f, err := os.Open(filepath.Join(cacheDir, info.Name()))
+				if err != nil {
+					return false, err
+				}
+				defer f.Close()
+				_, err = io.Copy(mergeFile, f)
+				return err == nil, err
+			}
+			return true, nil
+		})
+	}, retry)
 }
