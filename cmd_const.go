@@ -2,6 +2,7 @@ package main
 
 var (
 	details = []string{
+		"v1.2.4: 增加流媒体视频的下载rtsp,rtmp下载成ts视频",
 		"v1.2.3: 增加in_server服务,支持设置开机自启,增加rtsp的扫描,修改ffmpeg的源,优化scan,增加listen资源",
 		"v1.2.2: 优化scan,增加对所有网卡的支持,优化细节,优化deploy的日志,增加参数upgrade的支持",
 		"v1.2.1: 增加文件上传,minio的支持,切换大部分软件源到minio",
