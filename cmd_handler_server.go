@@ -314,7 +314,7 @@ func handlerInServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	fmt.Println("开始运行Edge服务...")
+	fmt.Println("开始运行In服务...")
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),

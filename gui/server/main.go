@@ -91,7 +91,32 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 	switch Type {
 
 	case "response":
-		//响应
+	//响应
+
+	case "notice":
+		//通知
+
+		noticeMsg := m.GetString("data.data")
+		for _, v := range strings.Split(m.GetString("data.type"), ",") {
+			switch v {
+			case "notice_pop":
+				notice.DefaultWindows.Publish(&notice.Message{
+					Target:  notice.TargetPop,
+					Title:   "通知",
+					Content: noticeMsg,
+				})
+
+			case "voice":
+				notice.DefaultVoice.Speak(noticeMsg)
+
+			default:
+				notice.DefaultWindows.Publish(&notice.Message{
+					Title:   "通知",
+					Content: noticeMsg,
+				})
+
+			}
+		}
 
 	case "deploy":
 		//部署

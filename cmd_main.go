@@ -160,10 +160,10 @@ func main() {
 					Run:     handlerPushUDP,
 				},
 				{
-					Flag:    []*Flag{{Name: "test", DefaultValue: "false", Memo: "测试"}},
+					Flag:    []*Flag{{Name: "self", DefaultValue: "false", Memo: "只发送给自己"}},
 					Use:     "server",
 					Short:   "广播到server",
-					Example: "in push server {}",
+					Example: "in push server {\"type\":\"notice\",\"data\":{\"type\":\"voice,\",\"data\":\"哈哈哈哈\"}}",
 					Run:     handlerPushServer,
 				},
 			},
