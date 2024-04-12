@@ -140,7 +140,7 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	if flags.GetBool("test") {
+	if flags.GetBool("self") {
 		c, err := net.DialTimeout("udp", ":10067", time.Millisecond*100)
 		if err == nil {
 			c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
