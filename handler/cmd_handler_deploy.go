@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"bytes"
@@ -63,7 +63,7 @@ type resp struct {
 
 //====================DeployClient====================//
 
-func handlerDeployClient(addr string, flags *Flags) {
+func DeployClient(addr string, flags *Flags) {
 
 	target := flags.GetString("target")
 	source := flags.GetString("source")
@@ -126,7 +126,7 @@ func handlerDeployClient(addr string, flags *Flags) {
 
 //====================DeployServer====================//
 
-func handlerDeployServer(cmd *cobra.Command, args []string, flags *Flags) {
+func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	port := flags.GetInt("port", 10088)
 	s, err := listen.NewTCPServer(port, func(s *io.Server) {

@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"bufio"
@@ -20,36 +20,36 @@ import (
 	"strings"
 )
 
-func handlerDialTCP(cmd *cobra.Command, args []string, flags *Flags) {
+func DialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
 	<-dial.RedialTCP(args[0], func(c *io.Client) {
-		handlerDialDeal(c, flags, true)
+		DialDeal(c, flags, true)
 	}).DoneAll()
 }
 
-func handlerDialUDP(cmd *cobra.Command, args []string, flags *Flags) {
+func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
 	<-dial.RedialUDP(args[0], func(c *io.Client) {
-		handlerDialDeal(c, flags, true)
+		DialDeal(c, flags, true)
 		c.WriteString(io.Pong)
 	}).DoneAll()
 }
 
-func handlerDialLog(cmd *cobra.Command, args []string, flags *Flags) {
+func DialLog(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
 	<-dial.RedialTCP(args[0], func(c *io.Client) {
 		c.SetLogger(&_log{})
-		handlerDialDeal(c, flags, true)
+		DialDeal(c, flags, true)
 	}).DoneAll()
 }
 
-func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
+func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
@@ -65,11 +65,11 @@ func handlerDialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 		args[0] = "ws://" + args[0]
 	}
 	<-dial.RedialWebsocket(args[0], nil, func(c *io.Client) {
-		handlerDialDeal(c, flags, true)
+		DialDeal(c, flags, true)
 	}).DoneAll()
 }
 
-func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
+func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("请输入连接地址")
 		return
@@ -109,12 +109,12 @@ func handlerDialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 		SetWriteTimeout(timeout).
 		SetAutoReconnect(false).
 		SetConnectTimeout(timeout), func(c *io.Client) {
-		handlerDialDeal(c, flags, true)
+		DialDeal(c, flags, true)
 	})
 	<-c.DoneAll()
 }
 
-func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
+func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
@@ -147,7 +147,7 @@ func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 			logs.Err(err)
 			continue
 		}
-		handlerDialDeal(c, flags, false)
+		DialDeal(c, flags, false)
 		c.Debug(false)
 		c.SetDealFunc(func(c *io.Client, msg io.Message) {
 			fmt.Print(msg.String())
@@ -166,7 +166,7 @@ func handlerDialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 }
 
-func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
+func DialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
@@ -178,19 +178,19 @@ func handlerDialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
 	}, func(c *io.Client) {
-		handlerDialDeal(c, flags, true)
+		DialDeal(c, flags, true)
 	}).DoneAll()
 }
 
-func handlerDialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
+func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 		return
 	}
-	handlerDeployClient(args[0], flags)
+	DeployClient(args[0], flags)
 }
 
-func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
+func DialDeal(c *io.Client, flags *Flags, run bool) {
 	oss.ListenExit(func() { c.CloseAll() })
 	r := bufio.NewReader(os.Stdin)
 	c.SetOptions(func(c *io.Client) {
@@ -233,7 +233,7 @@ func handlerDialDeal(c *io.Client, flags *Flags, run bool) {
 	}
 }
 
-func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
+func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:   "npc",
 		Dir:        oss.ExecDir(),
@@ -252,7 +252,7 @@ func dialDialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellRun(filename))
 }
 
-func dialDialFrp(cmd *cobra.Command, args []string, flags *Flags) {
+func DialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "frpc",
 		Dir:          oss.ExecDir(),

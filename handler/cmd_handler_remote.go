@@ -1,7 +1,8 @@
-package main
+package handler
 
 import (
 	"fmt"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/http"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func handlerMemo(cmd *cobra.Command, args []string, flags *Flags) {
+func Memo(cmd *cobra.Command, args []string, flags *Flags) {
 	host := global.GetString("memoHost")
 	token := global.GetString("memoToken")
 	cookie := &gohttp.Cookie{Name: "memos.access-token", Value: token}

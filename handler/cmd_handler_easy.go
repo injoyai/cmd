@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
+func Version(cmd *cobra.Command, args []string, flags *Flags) {
 	if (len(args) == 0 || args[0] != "all") && len(details) > 10 {
 		details = details[:10]
 	}
@@ -34,16 +34,16 @@ func handlerVersion(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 }
 
-func handlerRun(cmd *cobra.Command, args []string, flags *Flags) {
+func Run(cmd *cobra.Command, args []string, flags *Flags) {
 	tool.ShellStart("in install server")
 	tool.ShellStart("in_server")
 }
 
-func handlerStop(cmd *cobra.Command, args []string, flags *Flags) {
+func Stop(cmd *cobra.Command, args []string, flags *Flags) {
 	tool.ShellStart("in kill in_server")
 }
 
-func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
+func Where(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 || args[0] != "self" {
 		fmt.Println(oss.ExecDir())
 		return
@@ -77,18 +77,18 @@ func handlerWhere(cmd *cobra.Command, args []string, flags *Flags) {
 
 }
 
-func handlerCrud(cmd *cobra.Command, args []string, flags *Flags) {
+func Crud(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		log.Printf("[错误] %s", "请输入模块名称 例: in curd test")
 	}
 	logs.PrintErr(crud.New(args[0]))
 }
 
-func handlerDate(cmd *cobra.Command, args []string, flags *Flags) {
+func Date(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(time.Now().String())
 }
 
-func handlerKill(cmd *cobra.Command, args []string, flags *Flags) {
+func Kill(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) > 0 {
 		if strings.HasPrefix(args[0], `"`) && strings.HasSuffix(args[0], `"`) {
 			filename := "taskkill /f /t /im " + args[0]
@@ -104,7 +104,7 @@ func handlerKill(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(resp)
 }
 
-func handlerUpgrade(cmd *cobra.Command, args []string, flags *Flags) {
+func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "upgrade",
 		Dir:          oss.ExecDir(),
@@ -115,7 +115,7 @@ func handlerUpgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellStart("in_upgrade " + strings.Join(args, " ")))
 }
 
-func handlerIP(cmd *cobra.Command, args []string, flags *Flags) {
+func IP(cmd *cobra.Command, args []string, flags *Flags) {
 	for i := range args {
 		if args[i] == "self" {
 			args[i] = "myip"
@@ -130,11 +130,11 @@ func handlerIP(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
 }
 
-func handlerDocPython(cmd *cobra.Command, args []string, flags *Flags) {
+func DocPython(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(`配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
 }
 
-func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
+func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("未填写发送内容")
 		return
@@ -163,12 +163,12 @@ func handlerPushServer(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
-func handlerPushVoice(cmd *cobra.Command, args []string, flags *Flags) {
+func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
 	msg := fmt.Sprint(conv.Interfaces(args)...)
 	notice.DefaultVoice.Speak(msg)
 }
 
-func handlerPushUDP(cmd *cobra.Command, args []string, flags *Flags) {
+func PushUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("未填写发送内容")
 		return

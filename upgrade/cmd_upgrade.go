@@ -71,7 +71,7 @@ func main() {
 								Name:         upgradeUpgradeName,
 								Dir:          oss.ExecDir(),
 								ProxyEnable:  true,
-								ProxyAddress: global.Global.GetString("proxy"),
+								ProxyAddress: global.GetString("proxy"),
 								ReDownload:   true,
 							})
 
@@ -130,7 +130,7 @@ func main() {
 			Resource:     "in",
 			Dir:          oss.ExecDir(),
 			ProxyEnable:  true,
-			ProxyAddress: global.Global.GetString("proxy"),
+			ProxyAddress: global.GetString("proxy"),
 			ReDownload:   true,
 		})
 

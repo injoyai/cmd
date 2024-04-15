@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func handlerUploadMinio(cmd *cobra.Command, args []string, flags *Flags) {
+func UploadMinio(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("未选择上传资源")
 		return

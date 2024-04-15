@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"github.com/injoyai/conv"
@@ -17,6 +17,10 @@ func newFlags(list []*Flag) *Flags {
 	}
 	f.Extend = conv.NewExtend(f)
 	return f
+}
+
+func NewFlags(list []*Flag) *Flags {
+	return newFlags(list)
 }
 
 func newFlagRunType() *Flags {
@@ -59,7 +63,7 @@ type Command struct {
 	Child   []*Command
 }
 
-func (this *Command) command(flags ...*Flag) *cobra.Command {
+func (this *Command) Deal(flags ...*Flag) *cobra.Command {
 	if this.Command == nil {
 		this.Command = &cobra.Command{}
 	}
@@ -78,13 +82,9 @@ func (this *Command) command(flags ...*Flag) *cobra.Command {
 		}
 	}
 	for _, v := range this.Child {
-		this.Command.AddCommand(v.command(flags...))
+		this.Command.AddCommand(v.Deal(flags...))
 	}
 	return this.Command
 }
 
 type RunFunc func(cmd *cobra.Command, args []string, flag *Flags)
-
-type ICommand interface {
-	command(flags ...*Flag) *cobra.Command
-}

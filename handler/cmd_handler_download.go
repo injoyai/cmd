@@ -1,7 +1,8 @@
-package main
+package handler
 
 import (
 	"fmt"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
@@ -14,7 +15,7 @@ import (
 	"strings"
 )
 
-func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
+func Download(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 || len(args[0]) == 0 {
 		fmt.Println("未输入下载的内容")
 		return
@@ -25,7 +26,7 @@ func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
 		args[0] = "http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8"
 	case "gui":
 		//打开图形化界面
-		handlerOpen(cmd, []string{"downloader"}, flags)
+		Open(cmd, []string{"downloader"}, flags)
 		return
 	}
 
@@ -46,7 +47,7 @@ func handlerDownload(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println("下载完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
 }
 
-func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
+func Install(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("请输入需要安装的应用")
 		return
@@ -61,7 +62,7 @@ func handlerInstall(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println("安装完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
 }
 
-func handlerUninstall(cmd *cobra.Command, args []string, flags *Flags) {
+func Uninstall(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("请输入需要卸载的应用")
 		return
@@ -70,7 +71,7 @@ func handlerUninstall(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println("卸载结果: ", conv.New(err).String("成功"))
 }
 
-func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
+func Open(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		//打开执行目录
 		logs.PrintErr(tool.ShellStart(oss.ExecDir()))
@@ -78,7 +79,7 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 	//尝试在自定义中查找
-	if v, ok := global.GetSMap("customOpen")[args[0]]; ok {
+	if v, ok := global.File.GetSMap("customOpen")[args[0]]; ok {
 		fmt.Print("自定义")
 		logs.PrintErr(tool.ShellStart(v))
 		return
@@ -100,9 +101,9 @@ func handlerOpen(cmd *cobra.Command, args []string, flags *Flags) {
 	case "regedit", "注册表":
 		logs.PrintErr(tool.ShellStart("regedit"))
 	case "edge":
-		handlerEdgeServer(cmd, args, flags)
+		EdgeServer(cmd, args, flags)
 	case "server":
-		handlerInServer(cmd, args, flags)
+		InServer(cmd, args, flags)
 	default:
 
 		//尝试在内置资源查找
