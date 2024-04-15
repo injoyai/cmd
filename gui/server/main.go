@@ -197,6 +197,8 @@ func (this *gui) onReady() {
 	systray.SetIcon(Ico32)
 	systray.SetTooltip("In Server")
 
+	systray.AddMenuItem("v0.0.1", "引用公共函数")
+
 	mConfig := systray.AddMenuItem("全局配置", "全局配置")
 	go func() {
 		for range mConfig.ClickedCh {
