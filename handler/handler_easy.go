@@ -22,18 +22,6 @@ import (
 	"time"
 )
 
-func Version(cmd *cobra.Command, args []string, flags *Flags) {
-	if (len(args) == 0 || args[0] != "all") && len(details) > 10 {
-		details = details[:10]
-	}
-	fmt.Println()
-	fmt.Println(strings.Join(details, "\n"))
-	if len(BuildDate) > 0 {
-		fmt.Println()
-		fmt.Println("编译日期: " + BuildDate)
-	}
-}
-
 func Run(cmd *cobra.Command, args []string, flags *Flags) {
 	tool.ShellStart("in install server")
 	tool.ShellStart("in_server")
