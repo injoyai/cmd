@@ -1,8 +1,8 @@
-package main
+package handler
 
 import (
 	"fmt"
-	gg "github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/spf13/cobra"
@@ -10,26 +10,20 @@ import (
 	"strings"
 )
 
-var (
-	global  = gg.Global
-	global2 = conv.NewMap(gg.Global.GMap())
-	null    = gg.Null
-)
-
-func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
+func Global(cmd *cobra.Command, args []string, flags *Flags) {
 
 	if flags.GetBool("gui") || (len(args) > 0 && args[0] == "gui") {
-		gg.RunGUI()
+		global.RunGUI()
 		return
 	}
 
 	config := g.Map{}
-	for _, nature := range gg.GetConfigs() {
+	for _, nature := range global.GetConfigs() {
 		key := nature.Key
 		value := flags.GetString(key)
-		if value == null {
+		if value == global.Null {
 			switch v := nature.Value.(type) {
-			case gg.Natures:
+			case global.Natures:
 				value = conv.String(v.Map())
 			default:
 				value = conv.String(nature.Value)
@@ -38,7 +32,7 @@ func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
 		config[key] = value
 	}
 	flags.Range(func(key string, val *Flag) bool {
-		if val.Value == null {
+		if val.Value == global.Null {
 			return true
 		}
 		switch key {
@@ -55,7 +49,7 @@ func handlerGlobal(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 		return true
 	})
-	gg.SaveConfigs(config)
+	global.SaveConfigs(config)
 
 	//打印最新配置信息
 	list := []string(nil)

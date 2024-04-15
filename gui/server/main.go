@@ -5,6 +5,7 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/go-toast/toast"
 	gg "github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/net/ip"
@@ -14,6 +15,7 @@ import (
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
+	"github.com/spf13/cobra"
 	"net"
 	"net/http"
 	"strings"
@@ -199,10 +201,17 @@ func (this *gui) onReady() {
 	systray.SetIcon(Ico32)
 	systray.SetTooltip("In Server")
 
-	mConfig := systray.AddMenuItem("配置", "配置")
+	mConfig := systray.AddMenuItem("全局配置", "全局配置")
 	go func() {
 		for range mConfig.ClickedCh {
 			gg.RunGUI()
+		}
+	}()
+
+	mDownloader := systray.AddMenuItem("下载器", "下载器")
+	go func() {
+		for range mDownloader.ClickedCh {
+			handler.Open(&cobra.Command{}, []string{"downloader"}, handler.NewFlags(nil))
 		}
 	}()
 

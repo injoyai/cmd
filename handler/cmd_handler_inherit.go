@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 //====================Swag====================
 
-func handlerSwag(cmd *cobra.Command, args []string, flags *Flags) {
+func Swag(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource: "swag",
 		Dir:      oss.ExecDir(),
@@ -30,12 +30,12 @@ func handlerSwag(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================Go====================
 
-func handlerGo(cmd *cobra.Command, args []string, flags *Flags) {
+func Go(cmd *cobra.Command, args []string, flags *Flags) {
 	bs, _ := exec.Command("go", args...).CombinedOutput()
 	fmt.Println(string(bs))
 }
 
-func handleBuild(cmd *cobra.Command, args []string, flags *Flags) {
+func Build(cmd *cobra.Command, args []string, flags *Flags) {
 	os.Setenv("GOOS", "windows")
 	os.Setenv("GOARCH", "amd64")
 	os.Setenv("GO111MODULE", "on")
@@ -44,7 +44,7 @@ func handleBuild(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(result)
 }
 
-func handlerPprof(cmd *cobra.Command, args []string, flags *Flags) {
+func Pprof(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("输入地址,例: http://localhost:6060 , localhost:6060")
 		return
@@ -52,13 +52,13 @@ func handlerPprof(cmd *cobra.Command, args []string, flags *Flags) {
 	switch cmd.Use {
 	case "profile":
 		fmt.Println("正在读取数据,需要20秒...")
-		handlerPprof2(args[0] + "/pprof/profile?seconds=20")
+		Pprof2(args[0] + "/pprof/profile?seconds=20")
 	case "heap":
-		handlerPprof2(args[0] + "/pprof/heap")
+		Pprof2(args[0] + "/pprof/heap")
 	}
 }
 
-func handlerPprof2(url string, param ...string) {
+func Pprof2(url string, param ...string) {
 	if !strings.Contains(url, "http://") {
 		url = "http://" + url
 	}

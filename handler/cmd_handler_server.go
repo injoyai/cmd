@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 
 //====================SeleniumServer====================//
 
-func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
+func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	userDir := oss.UserInjoyDir()
 	filename := filepath.Join(userDir, "chromedriver.exe")
@@ -52,7 +52,7 @@ func handlerSeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================TCPServer====================//
 
-func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
+func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	s, err := listen.NewTCPServer(
 		flags.GetInt("port", 10086),
 		func(s *io.Server) {
@@ -69,7 +69,7 @@ func handlerTCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================UDPServer====================//
 
-func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
+func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
 	s, err := listen.NewUDPServer(port, func(s *io.Server) {
 		s.SetTimeout(flags.GetSecond("timeout", -1))
@@ -86,7 +86,7 @@ func handlerUDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================MQTTServer====================//
 
-func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
+func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	port := flags.GetInt("port", 1883)
 	debug := flags.GetBool("debug")
@@ -148,7 +148,7 @@ func handlerMQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================EdgeServer====================//
 
-func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
+func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) > 0 {
 		switch args[0] {
 		case "stop":
@@ -185,7 +185,7 @@ func handlerEdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================InfluxServer====================//
 
-func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
+func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "influxdb",
@@ -199,7 +199,7 @@ func handlerInfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================WebsocketServer====================//
 
-func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
+func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 8200)
 	debug := flags.GetBool("debug")
 	logs.Infof("[:%d] 开启Websocket服务成功...\n", port)
@@ -225,7 +225,7 @@ func handlerWebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================ProxyServer====================//
 
-func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
+func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10089)
 	addr := flags.GetString("addr")
 	debug := flags.GetBool("debug")
@@ -257,7 +257,7 @@ func handlerProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================StreamServer====================//
 
-func handlerLivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
+func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "livego",
@@ -271,7 +271,7 @@ func handlerLivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================FrpServer====================//
 
-func handlerFrpServer(cmd *cobra.Command, args []string, flags *Flags) {
+func FrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "frps",
@@ -285,7 +285,7 @@ func handlerFrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================HTTPServer====================//
 
-func handlerHTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
+func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 8080)
 	logs.Infof("[:%d] 开启HTTP服务成功...\n", port)
 	logs.PrintErr(
@@ -306,7 +306,7 @@ func handlerHTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================InServer====================//
 
-func handlerInServer(cmd *cobra.Command, args []string, flags *Flags) {
+func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 	name := "in_server.exe"
 
 	shell.Stop(name)

@@ -1,9 +1,11 @@
 package global
 
 import (
+	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/cache"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
+	"strings"
 )
 
 const (
@@ -12,10 +14,21 @@ const (
 
 func init() {
 	cache.DefaultDir = oss.UserInjoyDir("data/cache/")
-	Global = cache.NewFile("cmd", "global")
+	File = cache.NewFile("cmd", "global")
+	DMap = conv.NewMap(File.GMap())
 }
 
-var Global *cache.File
+var (
+	File *cache.File
+	DMap *conv.Map
+)
+
+func GetString(key string, def ...string) string {
+	if strings.Contains(key, ".") {
+		return DMap.GetString(key, def...)
+	}
+	return File.GetString(key, def...)
+}
 
 func GetConfigs() []Nature {
 	natures := []Nature{
@@ -39,10 +52,10 @@ func GetConfigs() []Nature {
 	for i := range natures {
 		switch natures[i].Type {
 		case "bool":
-			natures[i].Value = Global.GetBool(natures[i].Key)
+			natures[i].Value = File.GetBool(natures[i].Key)
 		case "object":
 			object := Natures(nil)
-			for k, v := range Global.GetGMap(natures[i].Key) {
+			for k, v := range File.GetGMap(natures[i].Key) {
 				object = append(object, Nature{
 					Name:  k,
 					Key:   k,
@@ -55,7 +68,7 @@ func GetConfigs() []Nature {
 				natures[i].Value = []Nature{}
 			}
 			ls := natures[i].Value.([]Nature)
-			for k, v := range Global.GetGMap(natures[i].Key) {
+			for k, v := range File.GetGMap(natures[i].Key) {
 				for j := range ls {
 					if ls[j].Key == k {
 						ls[j].Value = v
@@ -64,7 +77,7 @@ func GetConfigs() []Nature {
 				}
 			}
 		default:
-			natures[i].Value = Global.GetString(natures[i].Key)
+			natures[i].Value = File.GetString(natures[i].Key)
 		}
 	}
 	return natures
@@ -72,9 +85,9 @@ func GetConfigs() []Nature {
 
 func SaveConfigs(m g.Map) error {
 	for k, v := range m {
-		Global.Set(k, v)
+		File.Set(k, v)
 	}
-	return Global.Save()
+	return File.Save()
 }
 
 type Nature struct {

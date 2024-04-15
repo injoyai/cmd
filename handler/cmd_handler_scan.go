@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-func handlerScanNetstat(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanNetstat(cmd *cobra.Command, args []string, flags *Flags) {
 	s := "netstat -ano"
 	if find := flags.GetString("find"); len(find) > 0 {
 		s += fmt.Sprintf(` | findstr "%s"`, find)
@@ -27,7 +27,7 @@ func handlerScanNetstat(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellRun(s))
 }
 
-func handlerScanTask(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanTask(cmd *cobra.Command, args []string, flags *Flags) {
 	s := "tasklist"
 	if find := flags.GetString("find"); len(find) > 0 {
 		s += fmt.Sprintf(` | findstr "%s"`, find)
@@ -35,7 +35,7 @@ func handlerScanTask(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellRun(s))
 }
 
-func handlerScanNetwork(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanNetwork(cmd *cobra.Command, args []string, flags *Flags) {
 	is, err := net.Interfaces()
 	if err != nil {
 		logs.Err(err)
@@ -54,7 +54,7 @@ func handlerScanNetwork(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 }
 
-func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
@@ -99,15 +99,15 @@ func handlerScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
-func handlerScanSSH(cmd *cobra.Command, args []string, flags *Flags) {
-	handlerScanPort(cmd, []string{"22"}, flags)
+func ScanSSH(cmd *cobra.Command, args []string, flags *Flags) {
+	ScanPort(cmd, []string{"22"}, flags)
 }
 
-func handlerScanRtsp(cmd *cobra.Command, args []string, flags *Flags) {
-	handlerScanPort(cmd, []string{"554"}, flags)
+func ScanRtsp(cmd *cobra.Command, args []string, flags *Flags) {
+	ScanPort(cmd, []string{"554"}, flags)
 }
 
-func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		log.Println("[错误]", "缺少端口")
 		return
@@ -162,7 +162,7 @@ func handlerScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
-func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	list, err := serial.GetPortsList()
 	if err != nil {
 		logs.Err(err)
@@ -217,7 +217,7 @@ func handlerScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 
 }
 
-func handlerScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 100))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
