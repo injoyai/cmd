@@ -21,10 +21,6 @@ import (
 	"strings"
 )
 
-func init() {
-	logs.SetWriter(logs.Stdout) //标准输出,不写入文件
-}
-
 func main() {
 
 	gui := &gui{

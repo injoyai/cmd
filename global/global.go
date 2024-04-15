@@ -5,6 +5,7 @@ import (
 	"github.com/injoyai/goutil/cache"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/logs"
 	"strings"
 )
 
@@ -13,6 +14,11 @@ const (
 )
 
 func init() {
+	oss.New(oss.UserInjoyDir())           //默认缓存文件夹
+	logs.SetFormatter(logs.TimeFormatter) //输出格式只有时间
+	logs.SetWriter(logs.Stdout)           //标准输出,不写入文件
+	logs.SetShowColor(false)              //不显示颜色
+
 	cache.DefaultDir = oss.UserInjoyDir("data/cache/")
 	File = cache.NewFile("cmd", "global")
 	DMap = conv.NewMap(File.GMap())

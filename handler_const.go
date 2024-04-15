@@ -1,8 +1,15 @@
-package handler
+package main
+
+import (
+	"fmt"
+	"github.com/injoyai/cmd/handler"
+	"github.com/spf13/cobra"
+	"strings"
+)
 
 var (
 	details = []string{
-		"v1.2.4: 增加流媒体视频的下载rtsp,rtmp下载成ts视频",
+		"v1.2.4: 增加流媒体视频的下载rtsp,rtmp下载成ts视频,整理结构",
 		"v1.2.3: 增加in_server服务,支持设置开机自启,增加rtsp的扫描,修改ffmpeg的源,优化scan,增加listen资源",
 		"v1.2.2: 优化scan,增加对所有网卡的支持,优化细节,优化deploy的日志,增加参数upgrade的支持",
 		"v1.2.1: 增加文件上传,minio的支持,切换大部分软件源到minio",
@@ -28,3 +35,15 @@ var (
 var (
 	BuildDate = ""
 )
+
+func Version(cmd *cobra.Command, args []string, flags *handler.Flags) {
+	if (len(args) == 0 || args[0] != "all") && len(details) > 10 {
+		details = details[:10]
+	}
+	fmt.Println()
+	fmt.Println(strings.Join(details, "\n"))
+	if len(BuildDate) > 0 {
+		fmt.Println()
+		fmt.Println("编译日期: " + BuildDate)
+	}
+}
