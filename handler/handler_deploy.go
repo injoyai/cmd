@@ -146,7 +146,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 			switch m.Type {
 			case deployDeploy:
 
-				err := deployV1(msg)
+				err := DeployV1(msg)
 				c.WriteAny(&resp{
 					Code: conv.SelectInt(err == nil, 200, 500),
 					Msg:  conv.New(err).String("成功"),
@@ -210,7 +210,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.Err(s.Run())
 }
 
-func deployV1(bytes io.Message) error {
+func DeployV1(bytes io.Message) error {
 	var m *Deploy
 	err := json.Unmarshal(bytes, &m)
 	if err != nil {
@@ -220,25 +220,30 @@ func deployV1(bytes io.Message) error {
 	for _, v := range m.File {
 		dir, name := filepath.Split(v.Name)
 		if v.Restart {
+			logs.Info("关闭文件")
 			shell.Stop(name)
 		}
 
+		logs.Info("解析文件")
 		fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
 		if err != nil {
 			return err
 		}
 
+		logs.Info("保存文件")
 		zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
 		if err = oss.New(zipPath, fileBytes); err != nil {
 			return fmt.Errorf("保存文件(%s)错误: %s", zipPath, err)
 		}
 
+		logs.Info("解压文件")
 		if err = zip.Decode(zipPath, dir); err != nil {
 			return fmt.Errorf("解压文件(%s)到(%s)错误: %s", zipPath, dir, err)
 		}
 		os.Remove(zipPath)
 
 		if v.Restart {
+			logs.Info("执行文件")
 			if err := shell.Start(v.Name); err != nil {
 				return fmt.Errorf("执行文件(%s)错误: %s", v.Name, err)
 			}

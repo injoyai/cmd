@@ -118,7 +118,7 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 
 	case "deploy":
 		//部署
-		err = deployV1(msg.Bytes())
+		err = handler.DeployV1(msg.Bytes())
 
 	case "shell":
 		//执行脚本
