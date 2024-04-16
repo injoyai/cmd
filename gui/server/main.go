@@ -8,9 +8,9 @@ import (
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
+	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/ip"
 	"github.com/injoyai/goutil/notice"
-	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/listen"
@@ -67,14 +67,83 @@ func (this *gui) udpServer() error {
 	})
 }
 
-func (this *gui) deal(c *io.Client, msg io.Message) {
+func (this *gui) onReady() {
 
-	ips, _ := GetSelfIP()
-	for _, v := range ips {
-		if v.String() != ip.GetLocal() && v.String() == strings.Split(c.GetKey(), ":")[0] {
-			return
+	//http服务
+	go func() {
+		logs.PanicErr(this.httpServer())
+	}()
+
+	//udp服务
+	go func() {
+		logs.PanicErr(this.udpServer())
+	}()
+
+	//tcp服务
+	go func() {
+		logs.PanicErr(this.tcpServer())
+	}()
+
+	/*
+
+
+
+	 */
+
+	systray.SetIcon(Ico32)
+	systray.SetTooltip("In Server")
+
+	systray.AddMenuItem("版本: V0.0.2", "修复升级的bug")
+
+	mConfig := systray.AddMenuItem("全局配置", "全局配置")
+	go func() {
+		for range mConfig.ClickedCh {
+			shell.Start("in global gui")
 		}
-	}
+	}()
+
+	mDownloader := systray.AddMenuItem("下载器", "下载器")
+	go func() {
+		for range mDownloader.ClickedCh {
+			shell.Start("in download gui")
+		}
+	}()
+
+	mBroadcast := systray.AddMenuItem("广播通知", "广播通知")
+	go func() {
+		for range mBroadcast.ClickedCh {
+			broadcast.RunGUI(func(input, selected string) {
+				handler.PushServer(&cobra.Command{}, []string{input}, handler.NewFlags([]*handler.Flag{
+					{Name: "self", Value: conv.String(selected == "self")},
+					{Name: "byGui", Value: "true"},
+				}))
+			})
+		}
+	}()
+
+	//退出菜单
+	mQuit := systray.AddMenuItem("退出", "退出程序")
+	go func() {
+		<-mQuit.ClickedCh
+		systray.Quit()
+	}()
+
+}
+
+func (this *gui) onExit() {}
+
+func (this *gui) deal(c *io.Client, msg io.Message) {
+	defer g.Recover(nil)
+
+	handler.RangeNetwork("", func(inter *handler.Interfaces) {
+		inter.RangeIPv4(func(ipv4 net.IP) bool {
+			if ipv4.String() != ip.GetLocal() && ipv4.String() == strings.Split(c.GetKey(), ":")[0] {
+				panic("exit")
+				return false
+			}
+			return true
+		})
+	})
 
 	p, err := io.DecodePkg(msg)
 	if err == nil {
@@ -171,74 +240,6 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 
 }
 
-func (this *gui) onReady() {
-
-	//http服务
-	go func() {
-		logs.PanicErr(this.httpServer())
-	}()
-
-	//udp服务
-	go func() {
-		logs.PanicErr(this.udpServer())
-	}()
-
-	//tcp服务
-	go func() {
-		logs.PanicErr(this.tcpServer())
-	}()
-
-	/*
-
-
-
-	 */
-
-	systray.SetIcon(Ico32)
-	systray.SetTooltip("In Server")
-
-	systray.AddMenuItem("版本: V0.0.1", "引用公共函数")
-
-	mConfig := systray.AddMenuItem("全局配置", "全局配置")
-	go func() {
-		for range mConfig.ClickedCh {
-			shell.Start("in global gui")
-		}
-	}()
-
-	mDownloader := systray.AddMenuItem("下载器", "下载器")
-	go func() {
-		for range mDownloader.ClickedCh {
-			shell.Start("in download gui")
-		}
-	}()
-
-	mBroadcast := systray.AddMenuItem("广播通知", "广播通知")
-	go func() {
-		for range mBroadcast.ClickedCh {
-			broadcast.RunGUI(func(input, selected string) {
-				handler.PushServer(&cobra.Command{}, []string{input}, handler.NewFlags([]*handler.Flag{
-					{Name: "self", Value: conv.String(selected == "self")},
-					{Name: "byGui", Value: "true"},
-				}))
-			})
-		}
-	}()
-
-	//退出菜单
-	mQuit := systray.AddMenuItem("退出", "退出程序")
-	go func() {
-		<-mQuit.ClickedCh
-		systray.Quit()
-	}()
-
-}
-
-func (this *gui) onExit() {
-	// clean up here
-	//logs.Debug("退出")
-}
-
 func (this *gui) broadcastUDP(data []byte) (err error) {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{})
 	if err != nil {
@@ -246,14 +247,16 @@ func (this *gui) broadcastUDP(data []byte) (err error) {
 	}
 	defer conn.Close()
 	data = io.NewPkg(0, data).Bytes()
-	return RangeIPv4("", func(ipv4 net.IP, self bool) bool {
-		if !self {
-			conn.WriteToUDP(data, &net.UDPAddr{
-				IP:   ipv4,
-				Port: this.udpPort,
-			})
-		}
-		return true
+	return handler.RangeNetwork("", func(inter *handler.Interfaces) {
+		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
+			if !self {
+				conn.WriteToUDP(data, &net.UDPAddr{
+					IP:   ipv4,
+					Port: this.udpPort,
+				})
+			}
+			return true
+		})
 	})
 }
 
@@ -266,7 +269,7 @@ func (this *gui) edge(c *io.Client, m *conv.Map) error {
 		noticeMsg := fmt.Sprintf("主人. 发现网关新版本(%s). 是否马上升级?", m.GetString("data.version"))
 
 		//显示通知和是否升级按钮按钮
-		upgradeEdge := fmt.Sprintf("http://localhost:%d", this.httpPort) + "?cmd=in%20download%20edge%20-d=true%20--voiceText=升级完成%20--noticeText=升级完成%20--dir=" + oss.UserInjoyDir()
+		upgradeEdge := fmt.Sprintf("http://localhost:%d", this.httpPort) + "?cmd=in%20server%20edge%20upgrade"
 		notification := toast.Notification{
 			AppID:   "Microsoft.Windows.Shell.RunDialog",
 			Title:   "发现新版本",
@@ -284,6 +287,8 @@ func (this *gui) edge(c *io.Client, m *conv.Map) error {
 
 	case "upgrade":
 
+		return tool.ShellRun("in server edge upgrade")
+
 	case "open", "run", "start":
 
 		return tool.ShellStart("in server edge")
@@ -294,41 +299,6 @@ func (this *gui) edge(c *io.Client, m *conv.Map) error {
 
 	}
 
-	return nil
-}
-
-func RangeIPv4(network string, fn func(ipv4 net.IP, self bool) bool) error {
-	is, err := net.Interfaces()
-	if err != nil {
-		return err
-	}
-	for _, v := range is {
-
-		if v.Flags&(1<<net.FlagLoopback) == 1 || v.Flags&(1<<net.FlagUp) == 0 {
-			continue
-		}
-		if len(network) > 0 && network != "all" && !strings.Contains(v.Name, network) {
-			continue
-		}
-
-		addrs, err := v.Addrs()
-		if err != nil {
-			return err
-		}
-
-		for _, addr := range addrs {
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				ipv4 := ipnet.IP.To4()
-				ip.RangeFunc(
-					net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
-					net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
-					func(ip net.IP) bool {
-						return fn(ip, ip.String() == ipv4.String())
-					},
-				)
-			}
-		}
-	}
 	return nil
 }
 
