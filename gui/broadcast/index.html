@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息推送</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .options {
+            margin-bottom: 10px;
+        }
+
+        .options label {
+            margin-right: 10px;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .input-container input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        .input-container button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .input-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s 1.5s forwards;
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="options" id ="options">
+        <label><input type="radio" name="push" value="self" checked> 本机</label>
+        <label><input type="radio" name="push" value="broadcast"> 广播</label>
+    </div>
+    <div class="input-container">
+        <input type="checkbox" id="notification" name="pushOption" value="notice" checked="true">
+        <label for="notification">通知</label>
+        <input type="checkbox" id="voice" name="pushOption" value="voice">
+        <label for="voice">语音</label>
+        <input type="checkbox" id="popup" name="pushOption" value="popup">
+        <label for="popup">弹窗</label>
+    </div>
+    <div class="input-container">
+        <input id="input" type="text" placeholder="输入消息...">
+        <button onclick="send()">发送</button>
+    </div>
+</div>
+<script>
+    function selected(){
+        var options = document.querySelectorAll('input[name="push"]');
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].checked) {
+                return options[i].value;
+            }
+        }
+    }
+    function options(){
+        var selectedOptions = [];
+        var checkboxes = document.querySelectorAll('input[name="pushOption"]:checked');
+        checkboxes.forEach(function(checkbox) {
+            selectedOptions.push(checkbox.value);
+        });
+        return selectedOptions;
+    }
+
+    function notice(msg){
+        // 假设发送成功后显示一个小窗口提醒
+        var notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.innerText = msg;
+        document.body.appendChild(notification);
+
+        // 2秒后自动消失
+        setTimeout(function() {
+            document.body.removeChild(notification);
+        }, 2000);
+    }
+    function send(){}
+</script>
+</body>
+</html>

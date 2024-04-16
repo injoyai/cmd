@@ -71,6 +71,40 @@
             align-items: center;
             margin-bottom: 10px; /* 设置行与行之间的垂直间距 */
         }
+
+        .notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s 1.5s forwards;
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -279,6 +313,18 @@
         //console.log(configObject);
         // 保存配置到文件或其他地方
         saveToFile(configObject);
+    }
+
+    function notice(msg){
+        var notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.innerText = msg;
+        document.body.appendChild(notification);
+
+        // 2秒后自动消失
+        setTimeout(function() {
+            document.body.removeChild(notification);
+        }, 2000);
     }
 
     function saveToFile(config) {
