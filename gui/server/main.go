@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/getlantern/systray"
 	"github.com/go-toast/toast"
-	gg "github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/gui/broadcast"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
@@ -97,9 +97,9 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 		noticeMsg := m.GetString("data.data")
 		for _, v := range strings.Split(m.GetString("data.type"), ",") {
 			switch v {
-			case "notice_pop":
+			case notice.TargetPopup:
 				notice.DefaultWindows.Publish(&notice.Message{
-					Target:  notice.TargetPop,
+					Target:  notice.TargetPopup,
 					Title:   "通知",
 					Content: noticeMsg,
 				})
@@ -202,14 +202,26 @@ func (this *gui) onReady() {
 	mConfig := systray.AddMenuItem("全局配置", "全局配置")
 	go func() {
 		for range mConfig.ClickedCh {
-			gg.RunGUI()
+			shell.Start("in global gui")
 		}
 	}()
 
 	mDownloader := systray.AddMenuItem("下载器", "下载器")
 	go func() {
 		for range mDownloader.ClickedCh {
-			handler.Open(&cobra.Command{}, []string{"downloader"}, handler.NewFlags(nil))
+			shell.Start("in download gui")
+		}
+	}()
+
+	mBroadcast := systray.AddMenuItem("广播通知", "广播通知")
+	go func() {
+		for range mBroadcast.ClickedCh {
+			broadcast.RunGUI(func(input, selected string) {
+				handler.PushServer(&cobra.Command{}, []string{input}, handler.NewFlags([]*handler.Flag{
+					{Name: "self", Value: conv.String(selected == "self")},
+					{Name: "byGui", Value: "true"},
+				}))
+			})
 		}
 	}()
 

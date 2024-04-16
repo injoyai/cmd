@@ -29,9 +29,9 @@ func RunGUI() {
 			fmt.Println(config)
 			if err := SaveConfigs(conv.GMap(config)); err != nil {
 				logs.Err(err)
-				app.Eval(fmt.Sprintf(`alert("%v");`, err))
+				app.Eval(fmt.Sprintf(`notice("%v");`, err))
 			} else {
-				app.Eval(`alert("保存成功");`)
+				app.Eval(`notice("保存成功");`)
 			}
 		})
 
