@@ -349,7 +349,9 @@ func (this *Interfaces) RangeIPv4(fn func(ipv4 net.IP) bool) error {
 	}
 	for _, addr := range addrs {
 		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() && ipNet.IP.To4() != nil {
-			fn(ipNet.IP.To4())
+			if !fn(ipNet.IP.To4()) {
+				break
+			}
 		}
 	}
 	return nil
