@@ -90,13 +90,15 @@ func (this *gui) onReady() {
 
 	 */
 
-	systray.SetIcon(Ico32)
+	systray.SetIcon(IcoI)
 	systray.SetTooltip("In Server")
 	version := systray.AddMenuItem("版本: V0.0.3", "")
-	version.AddSubMenuItem("1. 增加广播通知", "")
-	version.AddSubMenuItem("2. 去掉退出按钮", "")
+	version.SetIcon(IconVersion)
+	version.AddSubMenuItem("1. 增加广播通知", "").Disable()
+	version.AddSubMenuItem("2. 增加菜单图标", "").Disable()
 
 	mConfig := systray.AddMenuItem("全局配置", "全局配置")
+	mConfig.SetIcon(IcoSetting)
 	go func() {
 		for range mConfig.ClickedCh {
 			shell.Start("in global gui")
@@ -104,6 +106,7 @@ func (this *gui) onReady() {
 	}()
 
 	mDownloader := systray.AddMenuItem("下载器", "下载器")
+	mDownloader.SetIcon(IcoDownloader)
 	go func() {
 		for range mDownloader.ClickedCh {
 			shell.Start("in download gui")
@@ -124,11 +127,12 @@ func (this *gui) onReady() {
 	}()
 
 	//退出菜单
-	//mQuit := systray.AddMenuItem("退出", "退出程序")
-	//go func() {
-	//	<-mQuit.ClickedCh
-	//	systray.Quit()
-	//}()
+	mQuit := systray.AddMenuItem("退出", "退出程序")
+	mQuit.SetIcon(IcoQuit)
+	go func() {
+		<-mQuit.ClickedCh
+		systray.Quit()
+	}()
 
 }
 

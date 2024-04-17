@@ -309,11 +309,22 @@ func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 	name := "in_server.exe"
 
-	shell.Stop(name)
-	if len(args) > 0 && args[0] == "stop" {
+	switch {
+	case len(args) > 0 && args[0] == "stop":
+		shell.Stop(name)
 		return
+
+	case len(args) > 0 && args[0] == "startup":
+		if err := tool.Shortcut(oss.UserStartupDir(name+".lnk"), oss.UserInjoyDir(name)); err != nil {
+			logs.Err(err)
+			return
+		}
+		logs.Info("设置开机自启成功")
+		return
+
 	}
 
+	shell.Stop(name)
 	fmt.Println("开始运行In服务...")
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
@@ -323,13 +334,4 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	logs.PrintErr(tool.ShellStart(filename))
-
-	if len(args) > 0 && args[0] == "startup" {
-		if err := tool.Shortcut(oss.UserStartupDir(name+".lnk"), oss.UserInjoyDir(name)); err != nil {
-			logs.Err(err)
-			return
-		}
-		logs.Info("设置开机自启成功")
-	}
-
 }
