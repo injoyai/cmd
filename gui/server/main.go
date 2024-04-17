@@ -92,8 +92,9 @@ func (this *gui) onReady() {
 
 	systray.SetIcon(Ico32)
 	systray.SetTooltip("In Server")
-
-	systray.AddMenuItem("版本: V0.0.2", "修复升级的bug")
+	version := systray.AddMenuItem("版本: V0.0.3", "")
+	version.AddSubMenuItem("1. 增加广播通知", "")
+	version.AddSubMenuItem("2. 去掉退出按钮", "")
 
 	mConfig := systray.AddMenuItem("全局配置", "全局配置")
 	go func() {
@@ -110,6 +111,7 @@ func (this *gui) onReady() {
 	}()
 
 	mBroadcast := systray.AddMenuItem("广播通知", "广播通知")
+	mBroadcast.SetIcon(IcoBroadcast)
 	go func() {
 		for range mBroadcast.ClickedCh {
 			broadcast.RunGUI(func(input, selected string) {
@@ -122,11 +124,11 @@ func (this *gui) onReady() {
 	}()
 
 	//退出菜单
-	mQuit := systray.AddMenuItem("退出", "退出程序")
-	go func() {
-		<-mQuit.ClickedCh
-		systray.Quit()
-	}()
+	//mQuit := systray.AddMenuItem("退出", "退出程序")
+	//go func() {
+	//	<-mQuit.ClickedCh
+	//	systray.Quit()
+	//}()
 
 }
 
