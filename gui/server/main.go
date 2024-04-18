@@ -210,7 +210,7 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 	case "edge":
 		//edge服务
 		logs.Debug("Edge服务")
-
+		logs.Debug(m.String())
 		err = this.edge(c, m)
 
 	case "write":
