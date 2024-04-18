@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.2.5: 增加广播推送的gui,修复upgrade的bug",
+		"v1.2.5: 增加广播推送的gui,修复upgrade的bug,增加简易in http,发起http请求",
 		"v1.2.4: 增加流媒体视频的下载rtsp,rtmp下载成ts视频,整理结构",
 		"v1.2.3: 增加in_server服务,支持设置开机自启,增加rtsp的扫描,修改ffmpeg的源,优化scan,增加listen资源",
 		"v1.2.2: 优化scan,增加对所有网卡的支持,优化细节,优化deploy的日志,增加参数upgrade的支持",
