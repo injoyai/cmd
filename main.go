@@ -5,6 +5,7 @@ import (
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 type (
@@ -125,6 +126,25 @@ func main() {
 			Short:   "生成增删改查",
 			Example: "in curd test",
 			Run:     handler.Crud,
+		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "method", Short: "m", Memo: "请求方式", DefaultValue: http.MethodGet},
+				{Name: "header", Short: "H", Memo: "请求头"},
+				{Name: "body", Short: "b", Memo: "请求体"},
+				{Name: "form", Short: "f", Memo: "请求体form-data"},
+				{Name: "retry", Short: "r", Memo: "重试次数"},
+				{Name: "debug", Short: "d", Memo: "调试打印日志"},
+				{Name: "proxy", Short: "p", Memo: "代理地址"},
+				{Name: "timeout", Short: "t", Memo: "超时时间(s)", DefaultValue: "10"},
+				{Name: "output", Short: "o", Memo: "输出到文件,例 -o=./a.txt"},
+				{Name: "search", Short: "s", Memo: "筛选body数据,例 --search=code"},
+			},
+			Use:     "http",
+			Short:   "文字转语音",
+			Example: "in http https://localhost:8080/ping",
+			Run:     handler.HTTP,
 		},
 
 		&Command{
