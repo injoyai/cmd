@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fatih/color"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/net/http"
 	"github.com/injoyai/logs"
@@ -50,9 +49,9 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	msg := resp.GetBodyString()
+	msg := fmt.Sprintf("Status: %s, Body: %s", resp.Status, resp.GetBodyString())
 	if len(search) > 0 {
-		msg = conv.NewMap(msg).GetString(search)
+		msg = conv.NewMap(resp.GetBodyString()).GetString(search)
 	}
 
 	if len(output) > 0 {
@@ -63,10 +62,5 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	fmt.Printf("%s: %s, %s: %s\n",
-		color.RedString("Status"),
-		color.BlueString(resp.Status),
-		color.RedString("Body"),
-		msg, //color.BlueString(msg))
-	)
+	fmt.Print(msg)
 }
