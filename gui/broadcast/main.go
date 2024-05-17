@@ -3,6 +3,8 @@ package broadcast
 import (
 	_ "embed"
 	"fmt"
+	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/goutil/net/ip"
 	"github.com/injoyai/lorca"
 	"strings"
 )
@@ -28,7 +30,11 @@ func RunGUI(handler func(input, selected string)) {
 			for _, v := range app.Eval("options()").Array() {
 				dataType = append(dataType, v.String())
 			}
-			input = fmt.Sprintf(`{"type":"notice","data":{"type":"%s","data":"%s"}}`, strings.Join(dataType, ","), input)
+			input = fmt.Sprintf(`{"type":"notice","data":{"type":"%s","data":"%s: %s"}}`,
+				strings.Join(dataType, ","),
+				global.GetString("nickName", ip.GetLocal()),
+				input,
+			)
 			handler(input, selected)
 			app.Eval("notice('发送成功')")
 		})

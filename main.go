@@ -631,6 +631,19 @@ func main() {
 			Example: "in ip self/8.8.8.8",
 			Run:     handler.IP,
 		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "append", Short: "a", Memo: "设置数据,优先级1,例 -a a[0].b=1"},
+				{Name: "set", Short: "s", Memo: "设置数据,优先级2,例 -s a[0].b=1"},
+				{Name: "del", Short: "d", Memo: "删除数据,优先级3,例 -d a[0].b"},
+				{Name: "get", Short: "g", Memo: "获取数据,优先级4,例 -g a[0].b"},
+			},
+			Use:     "json",
+			Short:   "解析json",
+			Example: `in json {"a":1,"b":2} -g=a`,
+			Run:     handler.Json,
+		},
 	)
 
 	root.Execute()
