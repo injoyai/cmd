@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/getlantern/systray"
 	"github.com/go-toast/toast"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/gui/broadcast"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/cmd/tool"
@@ -19,6 +21,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -27,14 +30,23 @@ func main() {
 		httpPort: 10066,
 		udpPort:  10067,
 		tcpPort:  10068,
+		version:  "V0.0.4",
+		versionDetails: []string{
+			"增加广播通知",
+			"增加菜单图标",
+		},
 	}
 	gui.Run()
 }
 
 type gui struct {
-	httpPort int
-	udpPort  int
-	tcpPort  int
+	httpPort       int
+	udpPort        int
+	udp            *io.Server
+	tcpPort        int
+	tcp            *io.Server
+	version        string
+	versionDetails []string
 }
 
 func (this *gui) Run() {
@@ -56,6 +68,7 @@ func (this *gui) tcpServer() error {
 		s.Debug(true)
 		s.SetReadWriteWithPkg()
 		s.SetDealFunc(this.deal)
+		this.tcp = s
 	})
 }
 
@@ -64,6 +77,22 @@ func (this *gui) udpServer() error {
 		s.Debug(true)
 		s.SetReadWriteWithPkg()
 		s.SetDealFunc(this.deal)
+		this.udp = s
+		handler.RangeNetwork("", func(inter *handler.Interfaces) {
+			inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
+				if !self {
+					s.Listener().(*listen.UDPServer).UDPConn.WriteToUDP(
+						conv.Bytes(io.Model{
+							Type: io.Ping,
+						}),
+						&net.UDPAddr{
+							IP:   ipv4,
+							Port: this.udpPort,
+						})
+				}
+				return true
+			})
+		})
 	})
 }
 
@@ -92,10 +121,28 @@ func (this *gui) onReady() {
 
 	systray.SetIcon(IcoI)
 	systray.SetTooltip("In Server")
-	version := systray.AddMenuItem("版本: V0.0.3", "")
+	version := systray.AddMenuItem("版本: "+this.version, "")
 	version.SetIcon(IconVersion)
-	version.AddSubMenuItem("1. 增加广播通知", "").Disable()
-	version.AddSubMenuItem("2. 增加菜单图标", "").Disable()
+	for i, v := range this.versionDetails {
+		version.AddSubMenuItem(fmt.Sprintf("%d: %s", i+1, v), "").Disable()
+	}
+
+	//mOnline := systray.AddMenuItem("在线客户端", "在线客户端")
+	//mOnline.SetIcon(IconVersion)
+	//mOnline.AddSubMenuItem("在线客户端", "").Disable()
+	//go func() {
+	//	for range mOnline.ClickedCh {
+	//		if this.udp != nil {
+	//			this.udp.RangeClient(func(key string, c *io.Client) bool {
+	//				if c.Tag().GetBool("online") {
+	//					item := mOnline.AddSubMenuItem(c.GetKey(), "")
+	//					item.Disable()
+	//				}
+	//				return true
+	//			})
+	//		}
+	//	}
+	//}()
 
 	mConfig := systray.AddMenuItem("全局配置", "全局配置")
 	mConfig.SetIcon(IcoSetting)
@@ -117,6 +164,7 @@ func (this *gui) onReady() {
 	mBroadcast.SetIcon(IcoBroadcast)
 	go func() {
 		for range mBroadcast.ClickedCh {
+			global.Refresh()
 			broadcast.RunGUI(func(input, selected string) {
 				handler.PushServer(&cobra.Command{}, []string{input}, handler.NewFlags([]*handler.Flag{
 					{Name: "self", Value: conv.String(selected == "self")},
@@ -156,21 +204,38 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 		msg = p.Data
 	}
 
-	m := conv.NewMap(msg.Bytes())
-	Type := m.GetString("type")
-	if m.GetInt("code") > 0 {
-		Type = "response"
-	}
-	switch Type {
+	model := new(io.Model)
+	logs.PrintErr(json.Unmarshal(msg, model))
+	data := g.Map(nil)
 
-	case "response":
-	//响应
+	if model.IsResponse() && model.Type != io.Ping {
+		logs.Debug(model)
+		return
+	}
+
+	m := conv.NewMap(model.Data)
+	switch model.Type {
+
+	case io.Ping:
+
+		if model.IsResponse() {
+			//有响应的设置成在线,有效期1分钟
+			c.Tag().Set("online", true, time.Minute)
+			c.Tag().Set("version", m.GetString("version"))
+			c.Tag().Set("startTime", m.GetInt64("startTime"))
+			return
+		} else {
+			data = g.Map{
+				"version":   this.version,
+				"startTime": g.StartTime.Unix(),
+			}
+		}
 
 	case "notice":
 		//通知
 
-		noticeMsg := m.GetString("data.data")
-		for _, v := range strings.Split(m.GetString("data.type"), ",") {
+		noticeMsg := m.GetString("data")
+		for _, v := range strings.Split(m.GetString("type"), ",") {
 			switch v {
 			case notice.TargetPopup:
 				notice.DefaultWindows.Publish(&notice.Message{
@@ -198,7 +263,7 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 	case "shell":
 		//执行脚本
 
-		switch m.GetString("data.type") {
+		switch m.GetString("type") {
 		case "run":
 			err = shell.Run(m.GetString("data"))
 		default: //"start"
@@ -209,9 +274,8 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 
 	case "edge":
 		//edge服务
-		logs.Debug("Edge服务")
-		logs.Debug(m.String())
-		err = this.edge(c, m)
+		c.Logger.Infof("Edge服务\n")
+		err = this.edge(c, conv.NewMap(msg))
 
 	case "write":
 		//发送给一个客户端
@@ -221,7 +285,7 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 			var addr *net.UDPAddr
 			addr, err = net.ResolveUDPAddr("udp", m.GetString("data.key"))
 			if err == nil {
-				_, err = conn.WriteToUDP(m.GetBytes("data.data"), addr)
+				_, err = conn.WriteToUDP(m.GetBytes("data"), addr)
 			}
 		}
 
@@ -233,16 +297,15 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 
 	default:
 
-		err = fmt.Errorf("未知类型: %s", Type)
+		err = fmt.Errorf("未知类型: %s", model.Type)
 
 	}
 
-	c.WriteAny(io.Model{
-		Type: Type,
-		Code: conv.SelectInt(err == nil, 200, 500),
-		UID:  m.GetString("uid"),
-		Msg:  conv.New(err).String("成功"),
-	})
+	c.WriteAny(model.Resp(
+		conv.SelectInt(err == nil, 200, 500),
+		data,
+		conv.New(err).String("成功"),
+	))
 
 }
 
@@ -270,7 +333,7 @@ func (this *gui) edge(c *io.Client, m *conv.Map) error {
 
 	switch m.GetString("data.type") {
 	case "upgrade_notice":
-		logs.Debug("Edge升级通知")
+		c.Logger.Infof("Edge升级通知\n")
 
 		noticeMsg := fmt.Sprintf("主人. 发现网关新版本(%s). 是否马上升级?", m.GetString("data.version"))
 
@@ -278,8 +341,8 @@ func (this *gui) edge(c *io.Client, m *conv.Map) error {
 		upgradeEdge := fmt.Sprintf("http://localhost:%d", this.httpPort) + "?cmd=in%20server%20edge%20upgrade"
 		notification := toast.Notification{
 			AppID:   "Microsoft.Windows.Shell.RunDialog",
-			Title:   "发现新版本",
-			Message: noticeMsg,
+			Title:   fmt.Sprintf("发现新版本(%s),是否马上升级?", m.GetString("data.version")),
+			Message: "版本详情: " + m.GetString("data.versionDetails"),
 			Actions: []toast.Action{
 				{"protocol", "马上升级", upgradeEdge},
 				{"protocol", "稍后再说", ""},

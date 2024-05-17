@@ -184,3 +184,29 @@ func PushUDP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 }
+
+func Json(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		args = []string{""}
+	}
+	m := conv.NewMap(args[0])
+
+	flags.Range(func(key string, val *Flag) bool {
+		switch key {
+		case "append":
+			if list := strings.SplitN(val.Value, "=", 2); len(list) == 2 {
+				m.Append(list[0], list[1])
+			}
+		case "set":
+			if list := strings.SplitN(val.Value, "=", 2); len(list) == 2 {
+				m.Set(list[0], list[1])
+			}
+		case "del":
+			m.Del(val.Value)
+		case "get":
+			s := m.GetString(val.Value)
+			fmt.Println(s)
+		}
+		return true
+	})
+}

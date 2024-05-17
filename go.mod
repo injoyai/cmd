@@ -5,13 +5,12 @@ go 1.16
 require (
 	github.com/DrmagicE/gmqtt v0.5.0
 	github.com/eclipse/paho.mqtt.golang v1.4.2
-	github.com/fatih/color v1.14.1
 	github.com/getlantern/systray v1.2.2
 	github.com/go-ole/go-ole v1.2.6
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4
 	github.com/gorilla/websocket v1.5.0
 	github.com/injoyai/base v1.0.7
-	github.com/injoyai/conv v1.1.2
+	github.com/injoyai/conv v1.1.5
 	github.com/injoyai/goutil v0.0.0-20240327090910-d5fbf5d5a1be
 	github.com/injoyai/io v0.1.8
 	github.com/injoyai/logs v1.0.7

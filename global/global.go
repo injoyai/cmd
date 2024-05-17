@@ -29,6 +29,11 @@ var (
 	DMap *conv.Map
 )
 
+func Refresh() {
+	File = cache.NewFile("cmd", "global")
+	DMap = conv.NewMap(File.GMap())
+}
+
 func GetString(key string, def ...string) string {
 	if strings.Contains(key, ".") {
 		return DMap.GetString(key, def...)
@@ -38,6 +43,7 @@ func GetString(key string, def ...string) string {
 
 func GetConfigs() []Nature {
 	natures := []Nature{
+		{Key: "nickName", Name: "昵称"},
 		{Key: "proxy", Name: "默认代理地址"},
 		{Key: "memoHost", Name: "备注请求地址"},
 		{Key: "memoToken", Name: "备注API秘钥"},
