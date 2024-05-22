@@ -9,6 +9,7 @@ import (
 	"github.com/injoyai/cmd/resource/crud"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
+	"github.com/injoyai/conv/codec"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -22,15 +23,6 @@ import (
 	"strings"
 	"time"
 )
-
-func Run(cmd *cobra.Command, args []string, flags *Flags) {
-	tool.ShellStart("in install server")
-	tool.ShellStart("in_server")
-}
-
-func Stop(cmd *cobra.Command, args []string, flags *Flags) {
-	tool.ShellStart("in kill in_server")
-}
 
 func Where(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 || args[0] != "self" {
@@ -209,4 +201,31 @@ func Json(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 		return true
 	})
+}
+
+func Read(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		logs.Err("未填写资源地址,例./file.txt")
+	}
+	bs, err := oss.Read(args[0])
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	codecStr := strings.ToLower(flags.GetString("codec", "json"))
+	_codec := codec.Json
+	switch codecStr {
+	case "json":
+		_codec = codec.Json
+	case "yaml":
+		_codec = codec.Yaml
+	case "toml":
+		_codec = codec.Toml
+	case "ini":
+		_codec = codec.Ini
+	}
+	m := conv.NewMap(bs, _codec)
+	get := flags.GetString("get")
+	s := m.GetString(get)
+	fmt.Println(s)
 }

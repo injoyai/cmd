@@ -9,7 +9,8 @@ import (
 
 var (
 	details = []string{
-		"v1.2.6: 增加in json进行json数据操作,一般用于脚本",
+		"v1.2.7: 增加了in read ./file.txt,用来读取资源(文件)",
+		"v1.2.6: 增加in json进行json数据操作,一般用于脚本,修复in open edge upgrade不能升级的问题",
 		"v1.2.5: 增加广播推送的gui,修复upgrade的bug,增加简易in http,发起http请求,增加全局配置昵称",
 		"v1.2.4: 增加流媒体视频的下载rtsp,rtmp下载成ts视频,整理结构",
 		"v1.2.3: 增加in_server服务,支持设置开机自启,增加rtsp的扫描,修改ffmpeg的源,优化scan,增加listen资源",

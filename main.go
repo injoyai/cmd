@@ -47,20 +47,6 @@ func main() {
 		},
 
 		&Command{
-			Use:     "run",
-			Short:   "开始运行in服务",
-			Example: "in run",
-			Run:     handler.Run,
-		},
-
-		&Command{
-			Use:     "stop",
-			Short:   "开始运行in服务",
-			Example: "in stop",
-			Run:     handler.Stop,
-		},
-
-		&Command{
 			Use:     "where",
 			Short:   "查看软件位置",
 			Example: "in where",
@@ -140,6 +126,7 @@ func main() {
 				{Name: "timeout", Short: "t", Memo: "超时时间(s)", DefaultValue: "10"},
 				{Name: "output", Short: "o", Memo: "输出到文件,例 -o=./a.txt"},
 				{Name: "search", Short: "s", Memo: "筛选body数据,例 --search=code"},
+				{Name: "get", Short: "g", Memo: "筛选body数据,例 -g=code"},
 			},
 			Use:     "http",
 			Short:   "文字转语音",
@@ -403,6 +390,12 @@ func main() {
 					Example: "in server http",
 					Run:     handler.HTTPServer,
 				},
+				{
+					Use:     "file",
+					Short:   "HTTP文件服务",
+					Example: "in server file",
+					Run:     handler.FileServer,
+				},
 			},
 		},
 
@@ -643,6 +636,17 @@ func main() {
 			Short:   "解析json",
 			Example: `in json {"a":1,"b":2} -g=a`,
 			Run:     handler.Json,
+		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "codec", Short: "c", Memo: "解析方式(json,yaml,toml,ini),默认json"},
+				{Name: "get", Short: "g", Memo: "获取数据,例 -g a[0].b"},
+			},
+			Use:     "read",
+			Short:   "读取文件",
+			Example: `in read ./xx.txt -g=a`,
+			Run:     handler.Read,
 		},
 	)
 

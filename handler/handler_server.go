@@ -335,3 +335,14 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 	logs.PrintErr(tool.ShellStart(filename))
 }
+
+//====================FileServer====================//
+
+func FileServer(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		args = []string{"./"}
+	}
+	port := flags.GetInt("port", 8080)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(args[0])))
+	logs.Err(err)
+}
