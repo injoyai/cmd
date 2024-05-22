@@ -101,7 +101,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 	case "regedit", "注册表":
 		logs.PrintErr(tool.ShellStart("regedit"))
 	case "edge":
-		EdgeServer(cmd, args, flags)
+		EdgeServer(cmd, args[1:], flags)
 	case "server":
 		InServer(cmd, args, flags)
 	default:
