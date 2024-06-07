@@ -177,7 +177,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 				for _, v := range m.File {
 					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
 						zipPath := filepath.Join(v.Name, time.Now().Format("20060102150405.zip"))
-						logs.Debugf("下载文件: %s", zipPath)
+						logs.Debugf("下载文件: %s\n", zipPath)
 						if err = oss.New(zipPath, fileBytes); err == nil {
 							err = zip.Decode(zipPath, v.Name)
 							os.Remove(zipPath)
@@ -193,7 +193,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 			case deployShell:
 
 				for _, v := range m.Shell {
-					logs.Debugf("执行脚本:%s", v)
+					logs.Debugf("执行脚本: %s\n", v)
 					result, err := shell.Exec(v)
 					c.WriteAny(&resp{
 						Code: conv.SelectInt(err == nil, 200, 500),
