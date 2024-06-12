@@ -109,6 +109,10 @@ var (
 			UrlLinuxAmd64: "https://oss.qianlangyun.com/qianlang-store/in",     //"https://github.com/injoyai/cmd/raw/main/in",
 			UrlLinuxArm7:  "https://oss.qianlangyun.com/qianlang-store/in7",
 		},
+		"timer": {
+			Name: "timer.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/timer.exe",
+		},
 		"influxdb": {
 			Key:  []string{"influx", "influxd"},
 			Name: "influxd.exe",

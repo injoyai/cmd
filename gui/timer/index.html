@@ -1,172 +1,411 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>定时器管理</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定时任务</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
 
-    .container {
-      max-width: 800px;
-      margin: 50px auto;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
 
-    h1 {
-      text-align: center;
-      color: #333;
-    }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
 
-    .timer {
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      overflow: hidden;
-    }
+        .timer-form button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
 
-    .timer-header {
-      background-color: #f0f0f0;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .timer-form button:hover {
+            background-color: #0056b3;
+        }
 
-    .timer-details {
-      padding: 10px;
-      display: none;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
 
-    .timer-expanded .timer-details {
-      display: block;
-    }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
 
-    .btn-container {
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-    }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
 
-    .btn-container button {
-      margin-right: 5px;
-    }
+        th {
+            background-color: #f8f8f8;
+        }
 
-    .btn {
-      background-color: #4caf50;
-      color: white;
-      padding: 8px 15px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
+        .actions button {
+            margin-right: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
 
-    .btn-danger {
-      background-color: #f44336;
-    }
+        .actions .edit {
+            background-color: #ffc107;
+            color: #fff;
+        }
 
-    .btn:hover {
-      background-color: #45a049;
-    }
+        .actions .delete {
+            background-color: #dc3545;
+            color: #fff;
+        }
 
-    .indicator {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 5px;
-    }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+        }
 
-    .indicator-on {
-      background-color: green;
-    }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
 
-    .indicator-off {
-      background-color: red;
-    }
-  </style>
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(14px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-content input {
+            width: 95%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .modal-content button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background-color: #218838;
+        }
+
+        .notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s 1.5s forwards;
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+    </style>
 </head>
 <body>
-
 <div class="container">
-  <h1>定时器管理</h1>
-  <div id="timerList">
-    <!-- 定时器列表将动态加载到这里 -->
-  </div>
-  <button onclick="addTimer()" class="btn">新增定时器</button>
+    <h1>定时器任务</h1>
+    <div class="timer-form">
+        <button id="openAddModal">添加</button>
+        <button id="refreshAll" class="refresh">刷新</button>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>主键</th>
+            <th>名称</th>
+            <th>Cron表达式</th>
+            <th>执行内容</th>
+            <th>启用/禁用</th>
+            <th>下次执行时间</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="timerTable">
+        <!-- Timer rows will be inserted here -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Timer Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>添加定时任务</h2>
+        <input type="text" id="addName" placeholder="名称">
+        <input type="text" id="addCronExpression" placeholder="Cron表达式">
+        <input type="text" id="addExecutionContent" placeholder="执行内容">
+        <button id="addTimer">添加</button>
+    </div>
+</div>
+
+<!-- Edit Timer Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>修改定时任务</h2>
+        <input type="text" id="editName" placeholder="名称">
+        <input type="text" id="editCronExpression" placeholder="Cron表达式">
+        <input type="text" id="editExecutionContent" placeholder="执行内容">
+        <button id="saveChanges">保存</button>
+    </div>
 </div>
 
 <script>
-  let timerCount = 0;
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    const addBtn = document.getElementById('openAddModal');
+    const closeAdd = addModal.getElementsByClassName('close')[0];
+    const closeEdit = editModal.getElementsByClassName('close')[0];
 
-  function addTimer() {
-    timerCount++;
-    const timerDiv = document.createElement('div');
-    timerDiv.classList.add('timer');
-    timerDiv.innerHTML = `
-            <div class="timer-header" onclick="toggleTimerDetails(${timerCount})">
-                <span>定时器 ${timerCount}</span>
-                <span id="timer_status_${timerCount}" class="timer-status"><span class="indicator indicator-on"></span>启用</span>
-            </div>
-            <div class="timer-details" id="timer_details_${timerCount}">
-                <div><input placeholder="Cron表达式" id="cron_${timerCount}" style="width: 100%;"></div>
-                <textarea placeholder="脚本内容" rows="4" id="script_${timerCount}" style="width: 100%;"></textarea>
-                <div class="btn-container">
-                    <button onclick="saveTimer(${timerCount})" class="btn">保存</button>
-                    <button onclick="toggleTimerStatus(event, ${timerCount})" class="btn btn-toggle">启用/禁用</button>
-                    <button onclick="removeTimer(${timerCount})" class="btn btn-danger">删除</button>
-                </div>
-            </div>
-        `;
-    document.getElementById('timerList').appendChild(timerDiv);
-  }
-
-  function toggleTimerDetails(timerId) {
-    const timerDetails = document.getElementById(`timer_details_${timerId}`);
-    timerDetails.classList.toggle('timer-expanded');
-  }
-
-  function toggleTimerStatus(event, timerId) {
-    event.stopPropagation();
-    const statusElement = document.getElementById(`timer_status_${timerId}`);
-    const indicator = statusElement.previousElementSibling;
-
-    if (statusElement.textContent === '状态：启用') {
-      statusElement.textContent = '状态：禁用';
-      indicator.classList.remove('indicator-on');
-      indicator.classList.add('indicator-off');
-    } else {
-      statusElement.textContent = '状态：启用';
-      indicator.classList.remove('indicator-off');
-      indicator.classList.add('indicator-on');
+    addBtn.onclick = function () {
+        addModal.style.display = "block";
     }
-  }
 
-  function removeTimer(timerId) {
-    const confirmation = confirm("确定要删除此定时器吗？");
-    if (confirmation) {
-      const timerDiv = document.getElementById('timer_' + timerId);
-      timerDiv.parentNode.removeChild(timerDiv);
+    closeAdd.onclick = function () {
+        addModal.style.display = "none";
     }
-  }
 
-  function saveTimer(timerId) {
-    const cronExpression = document.getElementById(`cron_${timerId}`).value;
-    const scriptContent = document.getElementById(`script_${timerId}`).value;
-    // 在这里添加保存定时器的逻辑
-    alert(`定时器 ${timerId} 已保存`);
-  }
+    closeEdit.onclick = function () {
+        editModal.style.display = "none";
+    }
+
+    window.onclick = function (event) {
+        if (event.target == addModal) {
+            addModal.style.display = "none";
+        }
+        if (event.target == editModal) {
+            editModal.style.display = "none";
+        }
+    }
+
+    document.getElementById('addTimer').addEventListener('click', () => {
+        const name = document.getElementById('addName').value;
+        const cron = document.getElementById('addCronExpression').value;
+        const content = document.getElementById('addExecutionContent').value;
+
+
+
+        addTimer(name, cron, content, false)
+
+
+        // Reset form and close modal
+        document.getElementById('addName').value = '';
+        document.getElementById('addCronExpression').value = '';
+        document.getElementById('addExecutionContent').value = '';
+        addModal.style.display = "none";
+    });
+
+    document.getElementById('refreshAll').addEventListener('click', () => {
+        refresh()
+    });
+
+
+    // loadingTimer 加载定时器到界面
+    function loadingTimer(id, name, cron, content, enable, next) {
+        const table = document.getElementById('timerTable');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+                <td>${id}</td>
+                <td>${name}</td>
+                <td>${cron}</td>
+                <td>${content}</td>
+                <td><label class="switch"><input type="checkbox" ${enable ? 'checked' : ''} onchange="toggleStatus(this)"><span class="slider"></span></label></td>
+                <td>${next}</td>
+                <td class="actions">
+                    <button class="edit" onclick="openEditModal(this)">修改</button>
+                    <button class="delete" onclick="deleteTimer(this)">删除</button>
+                </td>
+            `;
+        table.appendChild(row);
+    }
+
+    function toggleStatus(checkbox) {
+        const row = checkbox.closest('tr');
+        enableTimer(row.children[0].innerText, checkbox.checked)
+    }
+
+    function openEditModal(button) {
+        const row = button.closest('tr');
+        const id = row.children[0].innerText;
+        const name = row.children[1].innerText;
+        const cron = row.children[2].innerText;
+        const content = row.children[3].innerText;
+
+        document.getElementById('editName').value = name;
+        document.getElementById('editCronExpression').value = cron;
+        document.getElementById('editExecutionContent').value = content;
+
+        editModal.style.display = "block";
+
+        document.getElementById('saveChanges').onclick = function () {
+
+            updateTimer(id,
+                document.getElementById('editName').value,
+                document.getElementById('editCronExpression').value,
+                document.getElementById('editExecutionContent').value);
+
+
+            editModal.style.display = "none";
+        }
+    }
+
+    function deleteTimer(button) {
+        const row = button.closest('tr');
+        row.remove();
+        delTimer(row.children[0].innerText);
+    }
+
+    function addTimer(name, cron, content, enable) {
+    }
+
+    function updateTimer(id, name, cron, content) {
+    }
+
+    function enableTimer(id,enable) {
+    }
+
+    function delTimer(id) {
+    }
+
+    function refresh() {
+    }
+
+    function clearTimer() {
+        const table = document.getElementById('timerTable');
+        table.innerText = '';
+    }
+
+    function notice(msg){
+        // 假设发送成功后显示一个小窗口提醒
+        var notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.innerText = msg;
+        document.body.appendChild(notification);
+
+        // 2秒后自动消失
+        setTimeout(function() {
+            document.body.removeChild(notification);
+        }, 2000);
+    }
+
+
 </script>
-
 </body>
 </html>
