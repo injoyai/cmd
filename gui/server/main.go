@@ -30,10 +30,11 @@ func main() {
 		httpPort: 10066,
 		udpPort:  10067,
 		tcpPort:  10068,
-		version:  "V0.0.4",
+		version:  "V0.0.5",
 		versionDetails: []string{
-			"增加广播通知",
-			"增加菜单图标",
+			"v1.0.3 增加广播通知",
+			"v1.0.4 增加菜单图标",
+			"v1.0.5 增加定时任务",
 		},
 	}
 	gui.Run()
@@ -149,6 +150,14 @@ func (this *gui) onReady() {
 	go func() {
 		for range mConfig.ClickedCh {
 			shell.Start("in global gui")
+		}
+	}()
+
+	mTimer := systray.AddMenuItem("定时任务", "定时任务")
+	mTimer.SetIcon(IcoSetting)
+	go func() {
+		for range mTimer.ClickedCh {
+			shell.Start("in open timer")
 		}
 	}()
 
