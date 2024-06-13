@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"github.com/injoyai/base/maps/wait/v2"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
@@ -278,6 +279,74 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 			fmt.Println(v["msg"])
 		}
 	}
+}
+
+func ScanServer(cmd *cobra.Command, args []string, flags *Flags) {
+	udp, err := net.ListenUDP("udp", &net.UDPAddr{})
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, addr, err := udp.ReadFromUDP(buf)
+			if err != nil {
+				return
+			}
+			wait.Done(strings.Split(addr.String(), ":")[0], buf[:n])
+		}
+	}()
+
+	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 2000))
+	sortResult := flags.GetBool("sort")
+	network := flags.GetString("network")
+	find := flags.GetString("find")
+
+	bs := (&io.Pkg{
+		Control:  0,
+		Function: 0,
+		MsgID:    0,
+		Data:     conv.Bytes(io.Model{Type: io.Ping}),
+	}).Bytes()
+	RangeNetwork(network, func(inter *Interfaces) {
+		inter.Print()
+		list := g.Maps(nil)
+		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
+			_, err = udp.WriteToUDP(bs, &net.UDPAddr{
+				IP:   ipv4,
+				Port: 10067,
+			})
+			if err == nil {
+				go func() {
+					_, err := wait.Wait(ipv4.String(), timeout)
+					if err != nil {
+						return
+					}
+					s := fmt.Sprintf("  - %s   开启\n", ipv4)
+					if len(find) > 0 && !strings.Contains(s, find) {
+						return
+					}
+					if sortResult {
+						list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
+					} else {
+						fmt.Print(s)
+					}
+				}()
+			}
+			return true
+		})
+		<-time.After(timeout + time.Second)
+		if sortResult {
+			list.Sort(func(i, j int) bool {
+				return list[i]["i"].(uint32) < list[j]["i"].(uint32)
+			})
+			for _, m := range list {
+				fmt.Print(m["s"])
+			}
+		}
+	})
+
 }
 
 /*

@@ -474,6 +474,12 @@ func main() {
 					Example: "in scan task -f xx.exe",
 					Run:     handler.ScanTask,
 				},
+				{
+					Use:     "server",
+					Short:   "扫描运行的进程",
+					Example: "in scan server",
+					Run:     handler.ScanServer,
+				},
 			},
 		},
 
