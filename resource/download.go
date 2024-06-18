@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/injoyai/cmd/resource/m3u8"
 	"github.com/injoyai/cmd/tool"
+	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -90,7 +91,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	}
 
 	//开始下载
-	fmt.Println("开始下载: ", op.Resource)
+	fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(op.ProxyEnable, fmt.Sprintf("使用代理: %s", op.ProxyAddress), ""))
 	if err = download(ctx, op); err != nil {
 		return "", false, err
 	}
