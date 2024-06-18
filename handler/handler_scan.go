@@ -90,8 +90,8 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 		wg.Wait()
 		if sortResult {
-			list.Sort(func(i, j int) bool {
-				return list[i]["i"].(uint32) < list[j]["i"].(uint32)
+			list.Sort(func(i, j g.Map) bool {
+				return i["i"].(uint32) < j["i"].(uint32)
 			})
 			for _, m := range list {
 				fmt.Print(m["s"])
@@ -153,8 +153,8 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 		wg.Wait()
 		if sortResult {
-			list.Sort(func(i, j int) bool {
-				return list[i]["i"].(uint32) < list[j]["i"].(uint32)
+			list.Sort(func(i, j g.Map) bool {
+				return i["i"].(uint32) < j["i"].(uint32)
 			})
 			for _, m := range list {
 				fmt.Print(m["s"])
@@ -208,8 +208,8 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 
 	wg.Wait()
 	if sortResult {
-		result.Sort(func(i, j int) bool {
-			return conv.Int(result[i]["index"]) < conv.Int(result[j]["index"])
+		result.Sort(func(i, j g.Map) bool {
+			return conv.Int(i["index"]) < conv.Int(j["index"])
 		})
 		for _, v := range result {
 			fmt.Println(v["msg"])
@@ -272,8 +272,8 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 	wg.Wait()
 	if sortResult {
-		result.Sort(func(i, j int) bool {
-			return conv.Int(result[i]["index"]) < conv.Int(result[j]["index"])
+		result.Sort(func(i, j g.Map) bool {
+			return conv.Int(i["index"]) < conv.Int(j["index"])
 		})
 		for _, v := range result {
 			fmt.Println(v["msg"])
@@ -338,8 +338,8 @@ func ScanServer(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 		<-time.After(timeout + time.Second)
 		if sortResult {
-			list.Sort(func(i, j int) bool {
-				return list[i]["i"].(uint32) < list[j]["i"].(uint32)
+			list.Sort(func(i, j g.Map) bool {
+				return i["i"].(uint32) < j["i"].(uint32)
 			})
 			for _, m := range list {
 				fmt.Print(m["s"])
@@ -400,13 +400,12 @@ func (this *Interfaces) IPv4s() ([]net.IP, error) {
 
 func (this *Interfaces) RangeSegment(fn func(ipv4 net.IP, self bool) bool) error {
 	return this.RangeIPv4(func(ipv4 net.IP) bool {
-		ip.RangeFunc(
-			net.IP{ipv4[0], ipv4[1], ipv4[2], 0},
-			net.IP{ipv4[0], ipv4[1], ipv4[2], 255},
-			func(ip net.IP) bool {
-				return fn(ip, ip.String() == ipv4.String())
-			},
-		)
+		for i := conv.Uint32([]byte{ipv4[0], ipv4[1], ipv4[2], 0}); i <= conv.Uint32([]byte{ipv4[0], ipv4[1], ipv4[2], 255}); i++ {
+			ip := net.IP(conv.Bytes(i))
+			if !fn(ip, ip.String() == ipv4.String()) {
+				return false
+			}
+		}
 		return true
 	})
 }
