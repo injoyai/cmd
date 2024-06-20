@@ -72,6 +72,7 @@ func DeployClient(addr string, flags *Flags) {
 	if len(shell) > 0 && len(target) == 0 && len(source) == 0 {
 		Type = deployShell
 	}
+	restart := flags.GetBool("restart", Type == deployDeploy)
 	c, err := dial.NewTCP(addr, func(c *io.Client) {
 		c.Debug()
 		c.SetLevel(io.LevelInfo)
@@ -107,8 +108,9 @@ func DeployClient(addr string, flags *Flags) {
 		}
 
 		file = append(file, (&_deployFile{
-			Name: target,
-			Data: base64.StdEncoding.EncodeToString(bs),
+			Name:    target,
+			Data:    base64.StdEncoding.EncodeToString(bs),
+			Restart: restart,
 		}).deal())
 	}
 
@@ -220,7 +222,7 @@ func DeployV1(bytes io.Message) error {
 	for _, v := range m.File {
 		dir, name := filepath.Split(v.Name)
 		if v.Restart {
-			logs.Info("关闭文件")
+			logs.Info("关闭文件: ", name)
 			shell.Stop(name)
 		}
 
@@ -230,20 +232,20 @@ func DeployV1(bytes io.Message) error {
 			return err
 		}
 
-		logs.Info("保存文件")
 		zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+		logs.Info("保存文件: ", zipPath)
 		if err = oss.New(zipPath, fileBytes); err != nil {
 			return fmt.Errorf("保存文件(%s)错误: %s", zipPath, err)
 		}
 
-		logs.Info("解压文件")
+		logs.Info("解压文件: ", dir)
 		if err = zip.Decode(zipPath, dir); err != nil {
 			return fmt.Errorf("解压文件(%s)到(%s)错误: %s", zipPath, dir, err)
 		}
 		os.Remove(zipPath)
 
 		if v.Restart {
-			logs.Info("执行文件")
+			logs.Info("执行文件: ", v.Name)
 			if err := shell.Start(v.Name); err != nil {
 				return fmt.Errorf("执行文件(%s)错误: %s", v.Name, err)
 			}

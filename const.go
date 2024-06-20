@@ -9,6 +9,7 @@ import (
 
 var (
 	details = []string{
+		"v1.2.9: 修复部署时默认没有重启的问题",
 		"v1.2.8: 增加定时任务资源,使用in open timer,增加in scan server",
 		"v1.2.7: 增加了in read ./file.txt,用来读取资源(文件),增加ModbusPoll资源",
 		"v1.2.6: 增加in json进行json数据操作,一般用于脚本,修复in open edge upgrade不能升级的问题",

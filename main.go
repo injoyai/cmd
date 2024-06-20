@@ -258,6 +258,7 @@ func main() {
 						{Name: "source", Memo: "源头"},
 						{Name: "target", Memo: "目标"},
 						{Name: "shell", Memo: "脚本"},
+						{Name: "restart", Memo: "重新运行,当类型是deploy时,默认为true"},
 						{Name: "type", Memo: "类型(deploy,file,shell)"},
 					},
 					Use:     "deploy",
