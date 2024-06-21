@@ -25,7 +25,7 @@ import (
 )
 
 func Where(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 || args[0] != "self" {
+	if len(args) == 0 || args[0] == "self" {
 		fmt.Println(oss.ExecDir())
 		return
 	}
