@@ -154,7 +154,7 @@ func (this *gui) onReady() {
 	}()
 
 	mTimer := systray.AddMenuItem("定时任务", "定时任务")
-	mTimer.SetIcon(IcoSetting)
+	mTimer.SetIcon(IcoTimer)
 	go func() {
 		for range mTimer.ClickedCh {
 			shell.Start("in open timer")
