@@ -14,7 +14,6 @@ import (
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/io"
-	"io/fs"
 	"net/url"
 	"os"
 	"path"
@@ -152,7 +151,7 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 
 		//获取已经下载的分片
 		doneName := map[string]bool{}
-		oss.RangeFileInfo(cacheDir, func(info fs.FileInfo) (bool, error) {
+		oss.RangeFileInfo(cacheDir, func(info *oss.FileInfo) (bool, error) {
 			if !info.IsDir() && strings.HasSuffix(info.Name(), op.suffix) {
 				doneName[info.Name()] = true
 			}
@@ -307,7 +306,7 @@ func (this *Config) Merge(retry uint) error {
 		}
 		defer mergeFile.Close()
 		defer oss.RemoveAll(cacheDir)
-		return oss.RangeFileInfo(cacheDir, func(info fs.FileInfo) (bool, error) {
+		return oss.RangeFileInfo(cacheDir, func(info *oss.FileInfo) (bool, error) {
 			if !info.IsDir() && strings.HasSuffix(info.Name(), this.suffix) {
 				f, err := os.Open(filepath.Join(cacheDir, info.Name()))
 				if err != nil {
