@@ -239,10 +239,11 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	level := flags.GetInt("level", 1)
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
 	count := flags.GetBool("count")
+	show := flags.GetBool("show")
 
 	countFile := 0
 	countDir := 0
-	oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+	err := oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 
 		if count {
 			if info.IsDir() {
@@ -252,12 +253,27 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 		}
 
+		if show {
+			if info.IsDir() {
+				fmt.Printf("> %s \n", info.Filename())
+			} else if info.Dir == args[0] {
+				fmt.Printf("- %s \t%s\n", info.Name(), oss.SizeString(info.Size()))
+			} else {
+				fmt.Printf("  - %s \t%s\n", info.Name(), oss.SizeString(info.Size()))
+			}
+		}
+
 		if len(replace) == 2 {
 			if !info.IsDir() {
 				bs, err := oss.ReadBytes(info.Filename())
 				if !logs.PrintErr(err) {
 					bs = bytes.Replace(bs, []byte(replace[0]), []byte(replace[1]), -1)
-					oss.New(info.Filename(), bs)
+					f, err := os.Create(info.Filename())
+					if err == nil {
+						f.Write(bs)
+						f.Close()
+					}
+					logs.PrintErr(err)
 				}
 			}
 		}
@@ -265,5 +281,10 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 		return true, nil
 
 	}, level)
+
+	if !logs.PrintErr(err) && count {
+		logs.Infof("共计文件数: %d, 共计文件夹数: %d \n", countFile, countDir)
+
+	}
 
 }

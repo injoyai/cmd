@@ -117,8 +117,9 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "level", Short: "l", Memo: "递归层级", DefaultValue: "1"},
-				{Name: "replace", Short: "r", Memo: "替换 a=b", DefaultValue: ""},
-				{Name: "count", Short: "c", Memo: "统计数量", DefaultValue: ""},
+				{Name: "replace", Short: "r", Memo: "替换 a=b"},
+				{Name: "count", Short: "c", Memo: "统计数量"},
+				{Name: "show", Short: "s", Memo: "显示文件信息"},
 			},
 			Use:     "dir",
 			Short:   "对目录下的文件进行操作",
