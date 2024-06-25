@@ -116,6 +116,18 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
+				{Name: "level", Short: "l", Memo: "递归层级", DefaultValue: "1"},
+				{Name: "replace", Short: "r", Memo: "替换 a=b", DefaultValue: ""},
+				{Name: "count", Short: "c", Memo: "统计数量", DefaultValue: ""},
+			},
+			Use:     "dir",
+			Short:   "对目录下的文件进行操作",
+			Example: "in dir ./",
+			Run:     handler.Dir,
+		},
+
+		&Command{
+			Flag: []*Flag{
 				{Name: "method", Short: "m", Memo: "请求方式", DefaultValue: http.MethodGet},
 				{Name: "header", Short: "H", Memo: "请求头"},
 				{Name: "body", Short: "b", Memo: "请求体"},

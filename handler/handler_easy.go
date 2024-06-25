@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"fmt"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
@@ -228,4 +229,41 @@ func Read(cmd *cobra.Command, args []string, flags *Flags) {
 	get := flags.GetString("get")
 	s := m.GetString(get)
 	fmt.Println(s)
+}
+
+func Dir(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		args = []string{"./"}
+	}
+
+	level := flags.GetInt("level", 1)
+	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
+	count := flags.GetBool("count")
+
+	countFile := 0
+	countDir := 0
+	oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+
+		if count {
+			if info.IsDir() {
+				countDir++
+			} else {
+				countFile++
+			}
+		}
+
+		if len(replace) == 2 {
+			if !info.IsDir() {
+				bs, err := oss.ReadBytes(info.Filename())
+				if !logs.PrintErr(err) {
+					bs = bytes.Replace(bs, []byte(replace[0]), []byte(replace[1]), -1)
+					oss.New(info.Filename(), bs)
+				}
+			}
+		}
+
+		return true, nil
+
+	}, level)
+
 }
