@@ -236,7 +236,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 		args = []string{"./"}
 	}
 
-	level := flags.GetInt("level", 1)
+	level := flags.GetInt("level")
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
 	count := flags.GetBool("count")
 	show := flags.GetBool("show")
@@ -272,6 +272,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 					if err == nil {
 						f.Write(bs)
 						f.Close()
+						fmt.Printf("%s  %s >>> %s \n", info.Filename(), replace[0], replace[1])
 					}
 					logs.PrintErr(err)
 				}

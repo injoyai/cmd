@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/resource/m3u8"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
@@ -18,11 +19,16 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
 func MustDownload(ctx context.Context, op *Config) (filename string, exist bool) {
+
+	//忽略正则的资源地址
+	op.ProxyIgnore = strings.Split(global.GetString("proxyIgnore"), ",")
+
 	wait := time.Second * 2
 	for {
 		filename, exist, err := Download(ctx, op)
@@ -90,7 +96,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	}
 
 	//开始下载
-	fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(op.ProxyEnable, fmt.Sprintf("使用代理: %s", op.ProxyAddress), ""))
+	//fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(op.ProxyEnable, fmt.Sprintf("使用代理: %s", op.ProxyAddress), ""))
 	if err = download(ctx, op); err != nil {
 		return "", false, err
 	}
@@ -114,7 +120,9 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 func downloadOther(ctx context.Context, op *Config) error {
 	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
 	//以防出现下载失败,直接覆盖了源文件
-	if _, err := bar.Download(op.Resource, op.TempFilename(), op.Proxy()); err != nil {
+	proxy := op.Proxy()
+	fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
+	if _, err := bar.Download(op.Resource, op.TempFilename(), proxy); err != nil {
 		os.Remove(op.TempFilename())
 		return err
 	}
@@ -245,6 +253,7 @@ type Config struct {
 	Coroutine    uint
 	ProxyEnable  bool
 	ProxyAddress string
+	ProxyIgnore  []string
 	NoticeEnable bool
 	NoticeText   string
 	VoiceEnable  bool
@@ -254,6 +263,11 @@ type Config struct {
 
 func (this *Config) Proxy() string {
 	if this.ProxyEnable {
+		for _, v := range this.ProxyIgnore {
+			if regexp.MustCompile(v).MatchString(this.Resource) {
+				return ""
+			}
+		}
 		return this.ProxyAddress
 	}
 	return ""
