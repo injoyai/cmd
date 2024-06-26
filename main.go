@@ -116,19 +116,6 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "level", Short: "l", Memo: "递归层级"},
-				{Name: "replace", Short: "r", Memo: "替换 a=b"},
-				{Name: "count", Short: "c", Memo: "统计数量"},
-				{Name: "show", Short: "s", Memo: "显示文件信息"},
-			},
-			Use:     "dir",
-			Short:   "对目录下的文件进行操作",
-			Example: "in dir ./",
-			Run:     handler.Dir,
-		},
-
-		&Command{
-			Flag: []*Flag{
 				{Name: "method", Short: "m", Memo: "请求方式", DefaultValue: http.MethodGet},
 				{Name: "header", Short: "H", Memo: "请求头"},
 				{Name: "body", Short: "b", Memo: "请求体"},
@@ -647,6 +634,19 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
+				{Name: "level", Short: "l", Memo: "递归层级"},
+				{Name: "replace", Short: "r", Memo: "替换 a=b"},
+				{Name: "count", Short: "c", Memo: "统计数量"},
+				{Name: "show", Short: "s", Memo: "显示文件信息"},
+			},
+			Use:     "dir",
+			Short:   "对目录下的文件进行操作",
+			Example: "in dir ./",
+			Run:     handler.Dir,
+		},
+
+		&Command{
+			Flag: []*Flag{
 				{Name: "append", Short: "a", Memo: "设置数据,优先级1,例 -a a[0].b=1"},
 				{Name: "set", Short: "s", Memo: "设置数据,优先级2,例 -s a[0].b=1"},
 				{Name: "del", Short: "d", Memo: "删除数据,优先级3,例 -d a[0].b"},
@@ -667,6 +667,19 @@ func main() {
 			Short:   "读取文件",
 			Example: `in read ./xx.txt -g=a`,
 			Run:     handler.Read,
+		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "split", Short: "s", Memo: "分割数据"},
+				{Name: "index", Short: "i", Memo: "选取分割后的下标"},
+				{Name: "replace", Short: "r", Memo: "替换 -r a=b ,优先级2"},
+				{Name: "length", Short: "l", Memo: "输出长度,优先级1"},
+			},
+			Use:     "text",
+			Short:   "文本操作",
+			Example: `in text "a.n.s.f" -s=:`,
+			Run:     handler.Text,
 		},
 	)
 
