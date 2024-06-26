@@ -289,3 +289,51 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 }
+
+func Text(cmd *cobra.Command, args []string, flags *Flags) {
+
+	split := flags.GetString("split")
+	indexStr := strings.Split(flags.GetString("index"), ",")
+	length := flags.GetBool("length")
+	replace := strings.SplitN(flags.GetString("replace"), "=", 2)
+
+	if length {
+		for _, v := range args {
+			fmt.Println(len(v))
+		}
+	}
+
+	if len(replace) == 2 {
+		for i, v := range args {
+			args[i] = strings.Replace(v, replace[0], replace[1], -1)
+		}
+	}
+
+	lists := [][]string(nil)
+	for _, v := range args {
+		if len(split) > 0 {
+			lists = append(lists, strings.Split(v, split))
+		} else {
+			lists = append(lists, []string{v})
+		}
+	}
+
+	if len(indexStr) > 0 && indexStr[0] != "" {
+		for i, v := range lists {
+			ls := []string(nil)
+			for ii, vv := range v {
+				for _, j := range indexStr {
+					if conv.String(ii) == j {
+						ls = append(ls, vv)
+					}
+				}
+			}
+			lists[i] = ls
+		}
+	}
+
+	for _, v := range lists {
+		fmt.Println(strings.Join(v, split))
+	}
+
+}
