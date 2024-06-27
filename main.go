@@ -638,6 +638,8 @@ func main() {
 				{Name: "replace", Short: "r", Memo: "替换 a=b"},
 				{Name: "count", Short: "c", Memo: "统计数量"},
 				{Name: "show", Short: "s", Memo: "显示文件信息"},
+				{Name: "type", Short: "t", Memo: "执行类型"},
+				{Name: "output", Short: "o", Memo: "输出名称", DefaultValue: "./output.mp4"},
 			},
 			Use:     "dir",
 			Short:   "对目录下的文件进行操作",

@@ -240,6 +240,35 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
 	count := flags.GetBool("count")
 	show := flags.GetBool("show")
+	ty := flags.GetString("type")
+	output := flags.GetString("output", "./output.mp4")
+
+	switch ty {
+	case "merge_ts":
+
+		f, err := os.Create(output)
+		if err != nil {
+			logs.Err(err)
+			return
+		}
+		defer f.Close()
+
+		err = oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+
+			bs, err := oss.ReadBytes(info.Filename())
+			if err != nil {
+				return false, err
+			}
+			if _, err := f.Write(bs); err != nil {
+				return false, err
+			}
+
+			return true, nil
+		})
+		logs.PrintErr(err)
+		return
+
+	}
 
 	countFile := 0
 	countDir := 0
