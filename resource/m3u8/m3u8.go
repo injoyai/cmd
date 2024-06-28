@@ -7,10 +7,12 @@ import (
 	"github.com/injoyai/base/bytes/crypt/aes"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/http"
+	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -231,4 +233,32 @@ func (this *item) GetBytes(ctx context.Context, f func(p *http.Plan)) ([]byte, e
 		Bytes:   bs,
 	})
 	return bs, nil
+}
+
+/*
+
+
+
+ */
+
+// Merge 合并视频
+func Merge(output string, filenames []string) error {
+
+	mergeFile, err := os.Create(output)
+	if err != nil {
+		return err
+	}
+	defer mergeFile.Close()
+
+	for _, v := range filenames {
+		if err := oss.WithOpen(v, func(f *os.File) error {
+			_, err = io.Copy(mergeFile, f)
+			return err
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+
 }

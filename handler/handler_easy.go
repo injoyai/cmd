@@ -246,21 +246,23 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	switch ty {
 	case "merge_ts":
 
-		f, err := os.Create(output)
+		out, err := os.Create(output)
 		if err != nil {
 			logs.Err(err)
 			return
 		}
-		defer f.Close()
+		defer out.Close()
 
 		err = oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 
-			bs, err := oss.ReadBytes(info.Filename())
-			if err != nil {
-				return false, err
-			}
-			if _, err := f.Write(bs); err != nil {
-				return false, err
+			if !info.IsDir() && strings.HasSuffix(info.Name(), ".ts") {
+				if err := oss.WithOpen(info.Filename(), func(f *os.File) error {
+					_, err := io.Copy(out, f)
+					return err
+				}); err != nil {
+					logs.Err(err)
+					return false, err
+				}
 			}
 
 			return true, nil
