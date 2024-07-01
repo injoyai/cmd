@@ -683,6 +683,13 @@ func main() {
 			Example: `in text "a.n.s.f" -s=:`,
 			Run:     handler.Text,
 		},
+
+		&Command{
+			Use:     "chart",
+			Short:   "生成曲线图",
+			Example: `in chart ./a.csv`,
+			Run:     handler.Chart,
+		},
 	)
 
 	root.Execute()
