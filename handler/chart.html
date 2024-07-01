@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>多条曲线图</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        #myCanvas {
+            width: 80%;
+            max-width: 800px;
+            border: 1px solid #ccc;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .legend-item {
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <canvas id="myCanvas" width="800" height="400"></canvas>
+    <div class="legend">
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: rgba(75, 192, 192, 1);"></span> 曲线1
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: rgba(192, 75, 75, 1);"></span> 曲线2
+        </div>
+    </div>
+</div>
+<script>
+    var canvas = document.getElementById('myCanvas');
+    var ctx = canvas.getContext('2d');
+
+    var dataSets = [
+        { data: [65, 59, 80, 81, 56, 55, 40], color: 'rgba(75, 192, 192, 1)' },
+        { data: [28, 48, 40, 19, 86, 27, 90], color: 'rgba(192, 75, 75, 1)' }
+    ];
+    var labels = ['一月', '二月', '三月', '四月', '五月', '六月', '七月'];
+
+    var padding = 50;
+    var graphWidth = canvas.width - 2 * padding;
+    var graphHeight = canvas.height - 2 * padding;
+
+    var maxData = Math.max(...dataSets.flatMap(ds => ds.data));
+    var minData = 0;  // 将最小数据值设为0，确保纵坐标从0开始
+
+    // 画坐标轴
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.lineTo(canvas.width - padding, canvas.height - padding);
+    ctx.stroke();
+
+    function getPoint(t, p0, p1, p2, p3) {
+        return 0.5 * ((2 * p1) +
+            (-p0 + p2) * t +
+            (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
+            (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+    }
+
+    function drawSpline(points, color) {
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        for (var i = 0; i < points.length - 1; i++) {
+            var p0 = points[i - 1] || points[i];
+            var p1 = points[i];
+            var p2 = points[i + 1];
+            var p3 = points[i + 2] || points[i + 1];
+            for (var t = 0; t < 1; t += 0.02) {
+                var x = getPoint(t, p0[0], p1[0], p2[0], p3[0]);
+                var y = getPoint(t, p0[1], p1[1], p2[1], p3[1]);
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function drawChart() {
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 画坐标轴
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, canvas.height - padding);
+        ctx.lineTo(canvas.width - padding, canvas.height - padding);
+        ctx.stroke();
+
+        // 画曲线
+        dataSets.forEach(dataSet => {
+            var points = dataSet.data.map((value, index) => {
+                var x = padding + (index / (labels.length - 1)) * graphWidth;
+                var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
+                return [x, y];
+            });
+            drawSpline(points, dataSet.color);
+        });
+
+        // 画标签和刻度
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        for (var i = 0; i < labels.length; i++) {
+            var x = padding + (i / (labels.length - 1)) * graphWidth;
+            var y = canvas.height - padding + 20;
+            ctx.fillText(labels[i], x, y);
+        }
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        var stepSize = (maxData - minData) / 5;
+        for (var i = 0; i <= 5; i++) {
+            var y = canvas.height - padding - (i / 5) * graphHeight;
+            var value = (minData + i * stepSize).toFixed(0);
+            ctx.fillText(value, padding - 10, y);
+        }
+    }
+
+    drawChart();
+
+    canvas.addEventListener('mousemove', function(event) {
+        var rect = canvas.getBoundingClientRect();
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        drawChart();
+
+        dataSets.forEach(dataSet => {
+            var points = dataSet.data.map((value, index) => {
+                var x = padding + (index / (labels.length - 1)) * graphWidth;
+                var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
+                return [x, y, value];
+            });
+
+            points.forEach(point => {
+                if (Math.abs(x - point[0]) < 5 && Math.abs(y - point[1]) < 5) {
+                    ctx.beginPath();
+                    ctx.arc(point[0], point[1], 5, 0, Math.PI * 2, true);
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
+                    ctx.fill();
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(point[2], point[0] + 10, point[1] - 10);
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
