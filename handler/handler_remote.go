@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/http"
@@ -13,9 +14,15 @@ import (
 )
 
 func Memo(cmd *cobra.Command, args []string, flags *Flags) {
+
 	host := global.GetString("memoHost")
 	token := global.GetString("memoToken")
 	cookie := &gohttp.Cookie{Name: "memos.access-token", Value: token}
+
+	if len(args) > 0 && args[0] == "open" {
+		tool.ShellStart(host)
+		return
+	}
 
 	//添加备注
 	if add := flags.GetString("add"); len(add) > 0 {
