@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/csv"
 	"fmt"
+	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/other/excel"
 	"github.com/injoyai/logs"
@@ -45,10 +46,9 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	width := flags.GetInt("width", 800)
-	height := flags.GetInt("height", 500)
+	width := flags.GetInt("width", 700)
+	height := flags.GetInt("height", 400)
 	x, y := excel.ToInt(flags.GetString("label", "A1"))
-	//color := flags.GetString("color", "rgb(75, 75, 75)")
 
 	lorca.Run(&lorca.Config{
 		Width:  width,
@@ -85,23 +85,28 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 		}
 
+		colors := []string{"rgba(75, 192, 192)", "rgba(192, 75, 75)", "rgb(255, 99, 132)", "rgb(54, 162, 235)", "rgb(255, 206, 86)", "rgb(75, 192, 192)", "rgb(153, 102, 255)", "rgb(255, 159, 64)"}
+
 		datasets := []g.Map(nil)
 		for i, data := range m {
+			if names[i] == "" {
+				continue
+			}
 			datasets = append(datasets, g.Map{
-				"label":           names[i],
-				"data":            data,
-				"backgroundColor": "rgba(75, 192, 192, 0.2)",
-				"borderColor":     "rgba(75, 192, 192, 1)",
-				"borderWidth":     2,
-				"tension":         0.4,
+				"label":       names[i],
+				"data":        data,
+				"color":       colors[i%len(colors)],
+				"borderWidth": 2,
+				"tension":     0.4,
 			})
 		}
 
-		app.Eval(fmt.Sprintf("labels=%s", labels))
+		data := g.Map{
+			"labels":   labels,
+			"datasets": datasets,
+		}
 
-		logs.Debug(app.Eval(`loading(666)`).Err())
-		logs.Debug(app.Eval(`test('666')`).Err())
-		//logs.Debug(app.Eval(fmt.Sprintf(`loading(%s)`, conv.String(data))).Err())
+		app.Eval(fmt.Sprintf("loading(%s)", conv.String(data)))
 
 		return nil
 	})
