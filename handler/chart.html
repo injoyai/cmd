@@ -129,12 +129,14 @@
         ctx.stroke();
     }
 
-    function drawChart(chartData) {
+    function drawChart(chartData, max) {
+
         var padding = 50;
         var graphWidth = canvas.width - 2 * padding;
         var graphHeight = canvas.height - 2 * padding;
 
-        var maxData = Math.max(...chartData.datasets.flatMap(ds => ds.data));
+        //这里寻找最大值很慢
+        var maxData = max// Math.max(...chartData.datasets.flatMap(ds => ds.data));
         var minData = 0;  // 将最小数据值设为0，确保纵坐标从0开始
 
         // 清空画布
@@ -147,15 +149,34 @@
         ctx.lineTo(canvas.width - padding, canvas.height - padding);
         ctx.stroke();
 
+
+
         // 画曲线
         chartData.datasets.forEach(dataSet => {
-            var points = dataSet.data.map((value, index) => {
-                var x = padding + (index / (chartData.labels.length - 1)) * graphWidth;
-                var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
-                return [x, y];
-            });
-            drawSpline(points, dataSet.color);
+            var merge= Math.round((dataSet.data.length/36000)+0.5)
+            var filteredPoints = dataSet.data.reduce((accumulator, value, index) => {
+                // 这里的条件可以根据您的需求进行调整
+                // 例如，我们假设想要保留下标为奇数的数据点
+                if (merge===0||index % merge === 0) {
+                    var x = padding + (index / (chartData.labels.length - 1) * graphWidth);
+                    var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
+                    accumulator.push([x, y]);
+                }
+                return accumulator;
+            }, []); // 初始化为空数组
+
+            if (filteredPoints.length > 0) {
+                drawSpline(filteredPoints, dataSet.color);
+            }
         });
+        // chartData.datasets.forEach(dataSet => {
+        //     var points = dataSet.data.map((value, index) => {
+        //         var x = padding + (index / (chartData.labels.length - 1)) * graphWidth;
+        //         var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
+        //         return [x, y];
+        //     });
+        //     drawSpline(points, dataSet.color);
+        // });
 
         // 画标签和刻度
         ctx.fillStyle = '#333';
@@ -167,13 +188,25 @@
         });
 
         //标签间隔
-        var labelStep = Math.ceil(maxLabelWidth / (graphWidth / chartData.labels.length) * 1.2); // 根据标签宽度计算显示间隔
-        for (var i = 0; i < chartData.labels.length; i += labelStep) {
+        // var labelStep = Math.ceil(maxLabelWidth / (graphWidth / chartData.labels.length) * 1.2); // 根据标签宽度计算显示间隔
+        // for (var i = 0; i < chartData.labels.length; i += labelStep) {
+        //     var x = padding + (i / (chartData.labels.length - 1)) * graphWidth;
+        //     var y = canvas.height - padding + 20;
+        //     ctx.fillText(chartData.labels[i], x, y);
+        // }
+
+        //画5个横坐标
+        var interval= Math.floor(chartData.labels.length/4)
+        for (var i = 0; i < chartData.labels.length; i+=interval) {
             var x = padding + (i / (chartData.labels.length - 1)) * graphWidth;
             var y = canvas.height - padding + 20;
             ctx.fillText(chartData.labels[i], x, y);
         }
 
+
+
+
+        //纵坐标画5段
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         var stepSize = (maxData - minData) / 5;
@@ -184,6 +217,7 @@
         }
     }
 
+    //画示例颜色
     function drawLegend(chartData) {
         var legend = document.getElementById('legend');
         legend.innerHTML = '';
@@ -196,7 +230,7 @@
     }
 
 
-    function loading(data) {
+    function loading(data, max) {
         var notification = document.createElement('div');
         notification.className = 'notification';
         notification.innerText = '加载中...';
@@ -204,7 +238,8 @@
 
         canvas.width = document.getElementById('container').clientWidth * 0.9;
         canvas.height = document.getElementById('container').clientHeight * 0.8;
-        drawChart(data);
+
+        drawChart(data, max);
         drawLegend(data);
 
         notification.innerText = '加载成功';
@@ -226,8 +261,8 @@
             handler();
         }
 
-        if (afterMsg !== undefined && afterMsg !== null && typeof afterMsg === 'string' && afterMsg.trim().length > 0) {
-            notification.innerText = afterMsg;
+        if (afterMsg.toString().length > 0) {
+            notification.innerText = afterMsg.toString();
         }
 
         if (delay > 0) {
