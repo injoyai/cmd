@@ -59,6 +59,7 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 		labels := []string(nil)
 		m := make(map[int][]interface{})
 		names := make(map[int]string)
+		max := float64(0)
 
 		for _, page := range result {
 			for line, rows := range page {
@@ -78,6 +79,9 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 						v = strings.Trim(v, "\t")
 						v = strings.Trim(v, " ")
 						m[i] = append(m[i], v)
+						if f := conv.Float64(v); f > max {
+							max = f
+						}
 					} else if i == x-1 {
 						labels = append(labels, v)
 					}
@@ -106,7 +110,7 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 			"datasets": datasets,
 		}
 
-		app.Eval(fmt.Sprintf("loading(%s)", conv.String(data)))
+		app.Eval(fmt.Sprintf("loading(%s,%f)", conv.String(data), max))
 
 		return nil
 	})
