@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>多条曲线图</title>
+    <title>曲线图</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,64 +13,95 @@
             margin: 0;
             background-color: #f4f4f9;
         }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
         #myCanvas {
-            width: 80%;
-            max-width: 800px;
+            width: 100%;
+            height: 100%;
             border: 1px solid #ccc;
         }
+
         .legend {
             display: flex;
             justify-content: center;
             margin-top: 10px;
+            flex-wrap: wrap;
         }
+
         .legend-item {
-            margin-right: 20px;
+            margin: 5px 10px;
             display: flex;
             align-items: center;
         }
+
         .legend-color {
             width: 12px;
             height: 12px;
             display: inline-block;
             margin-right: 5px;
         }
+
+        .notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.5s forwards, fadeOut 0.5s 1000s forwards;
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
     </style>
 </head>
 <body>
-<div>
-    <canvas id="myCanvas" width="800" height="400"></canvas>
-    <div class="legend">
-        <div class="legend-item">
-            <span class="legend-color" style="background-color: rgba(75, 192, 192, 1);"></span> 曲线1
-        </div>
-        <div class="legend-item">
-            <span class="legend-color" style="background-color: rgba(192, 75, 75, 1);"></span> 曲线2
-        </div>
+<div id="container">
+    <div style="width: 90%; height: 80%;">
+        <canvas id="myCanvas"></canvas>
     </div>
+    <div class="legend" id="legend"></div>
 </div>
 <script>
     var canvas = document.getElementById('myCanvas');
     var ctx = canvas.getContext('2d');
 
-    var dataSets = [
-        { data: [65, 59, 80, 81, 56, 55, 40], color: 'rgba(75, 192, 192, 1)' },
-        { data: [28, 48, 40, 19, 86, 27, 90], color: 'rgba(192, 75, 75, 1)' }
-    ];
-    var labels = ['一月', '二月', '三月', '四月', '五月', '六月', '七月'];
-
-    var padding = 50;
-    var graphWidth = canvas.width - 2 * padding;
-    var graphHeight = canvas.height - 2 * padding;
-
-    var maxData = Math.max(...dataSets.flatMap(ds => ds.data));
-    var minData = 0;  // 将最小数据值设为0，确保纵坐标从0开始
-
-    // 画坐标轴
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, canvas.height - padding);
-    ctx.lineTo(canvas.width - padding, canvas.height - padding);
-    ctx.stroke();
+    var chartData = {
+        labels: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+        datasets: [
+            {data: [65, 59, 80, 81, 56, 55, 40, 60, 75, 70, 85, 90], color: 'rgba(75, 192, 192, 1)', label: '曲线1'},
+            {data: [28, 48, 40, 19, 86, 27, 90, 72, 68, 58, 82, 95], color: 'rgba(192, 75, 75, 1)', label: '曲线2'}
+        ]
+    };
 
     function getPoint(t, p0, p1, p2, p3) {
         return 0.5 * ((2 * p1) +
@@ -98,7 +129,14 @@
         ctx.stroke();
     }
 
-    function drawChart() {
+    function drawChart(chartData) {
+        var padding = 50;
+        var graphWidth = canvas.width - 2 * padding;
+        var graphHeight = canvas.height - 2 * padding;
+
+        var maxData = Math.max(...chartData.datasets.flatMap(ds => ds.data));
+        var minData = 0;  // 将最小数据值设为0，确保纵坐标从0开始
+
         // 清空画布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -110,9 +148,9 @@
         ctx.stroke();
 
         // 画曲线
-        dataSets.forEach(dataSet => {
+        chartData.datasets.forEach(dataSet => {
             var points = dataSet.data.map((value, index) => {
-                var x = padding + (index / (labels.length - 1)) * graphWidth;
+                var x = padding + (index / (chartData.labels.length - 1)) * graphWidth;
                 var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
                 return [x, y];
             });
@@ -122,10 +160,18 @@
         // 画标签和刻度
         ctx.fillStyle = '#333';
         ctx.textAlign = 'center';
-        for (var i = 0; i < labels.length; i++) {
-            var x = padding + (i / (labels.length - 1)) * graphWidth;
+
+        var maxLabelWidth = 0;
+        chartData.labels.forEach(label => {
+            maxLabelWidth = Math.max(maxLabelWidth, ctx.measureText(label).width);
+        });
+
+        //标签间隔
+        var labelStep = Math.ceil(maxLabelWidth / (graphWidth / chartData.labels.length) * 1.2); // 根据标签宽度计算显示间隔
+        for (var i = 0; i < chartData.labels.length; i += labelStep) {
+            var x = padding + (i / (chartData.labels.length - 1)) * graphWidth;
             var y = canvas.height - padding + 20;
-            ctx.fillText(labels[i], x, y);
+            ctx.fillText(chartData.labels[i], x, y);
         }
 
         ctx.textAlign = 'right';
@@ -138,33 +184,63 @@
         }
     }
 
-    drawChart();
-
-    canvas.addEventListener('mousemove', function(event) {
-        var rect = canvas.getBoundingClientRect();
-        var x = event.clientX - rect.left;
-        var y = event.clientY - rect.top;
-        drawChart();
-
-        dataSets.forEach(dataSet => {
-            var points = dataSet.data.map((value, index) => {
-                var x = padding + (index / (labels.length - 1)) * graphWidth;
-                var y = canvas.height - padding - ((value - minData) / (maxData - minData)) * graphHeight;
-                return [x, y, value];
-            });
-
-            points.forEach(point => {
-                if (Math.abs(x - point[0]) < 5 && Math.abs(y - point[1]) < 5) {
-                    ctx.beginPath();
-                    ctx.arc(point[0], point[1], 5, 0, Math.PI * 2, true);
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
-                    ctx.fill();
-                    ctx.fillStyle = '#000';
-                    ctx.fillText(point[2], point[0] + 10, point[1] - 10);
-                }
-            });
+    function drawLegend(chartData) {
+        var legend = document.getElementById('legend');
+        legend.innerHTML = '';
+        chartData.datasets.forEach(dataSet => {
+            var legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+            legendItem.innerHTML = '<span class="legend-color" style="background-color: ' + dataSet.color + ';"></span>' + dataSet.label;
+            legend.appendChild(legendItem);
         });
-    });
+    }
+
+
+    function loading(data) {
+        var notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.innerText = '加载中...';
+        document.body.appendChild(notification);
+
+        canvas.width = document.getElementById('container').clientWidth * 0.9;
+        canvas.height = document.getElementById('container').clientHeight * 0.8;
+        drawChart(data);
+        drawLegend(data);
+
+        notification.innerText = '加载成功';
+        setTimeout(function () {
+            document.body.removeChild(notification);
+        }, 2000);
+
+    }
+
+    function notice(msg, handler, afterMsg, delay) {
+        // 创建一个新的div元素作为通知
+        var notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.innerText = msg; // 设置初始消息
+        document.body.appendChild(notification); // 将通知添加到body中
+
+        // 如果提供了处理程序，则执行它
+        if (handler && typeof handler === 'function') {
+            handler();
+        }
+
+        if (afterMsg !== undefined && afterMsg !== null && typeof afterMsg === 'string' && afterMsg.trim().length > 0) {
+            notification.innerText = afterMsg;
+        }
+
+        if (delay > 0) {
+            setTimeout(function () {
+                document.body.removeChild(notification);
+            }, delay);
+        } else {
+            document.body.removeChild(notification);
+        }
+
+    }
+
+
 </script>
 </body>
 </html>
