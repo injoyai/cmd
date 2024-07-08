@@ -38,7 +38,7 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 		result["Sheet1"], _ = r.ReadAll()
 
 	default:
-		result, err = excel.FromExcel(f)
+		result, err = excel.From(f)
 
 	}
 	if err != nil {

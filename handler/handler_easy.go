@@ -189,12 +189,11 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
 	count := flags.GetBool("count")
 	show := flags.GetBool("show")
-	ty := flags.GetString("type")
+	ty := strings.ToLower(flags.GetString("type"))
 	output := flags.GetString("output", "./output.mp4")
 
-	switch strings.ToLower(ty) {
-	case "merge_ts", "mergets":
-
+	//和并ts文件
+	if ty == "merge_ts" || ty == "mergets" {
 		out, err := os.Create(output)
 		if err != nil {
 			logs.Err(err)
@@ -218,32 +217,35 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 		logs.PrintErr(err)
 		return
-
 	}
 
-	countFile := 0
-	countDir := 0
-	err := oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+	var (
+		doSomething bool
+		before      []func(info *oss.FileInfo)
+		after       []func()
+	)
 
-		if count {
+	//统计数量
+	if count {
+		doSomething = true
+		countFile := 0
+		countDir := 0
+		before = append(before, func(info *oss.FileInfo) {
 			if info.IsDir() {
 				countDir++
 			} else {
 				countFile++
 			}
-		}
+		})
+		after = append(after, func() {
+			logs.Infof("共计文件数: %d, 共计文件夹数: %d \n", countFile, countDir)
+		})
+	}
 
-		if show {
-			if info.IsDir() {
-				fmt.Printf("> %s \n", info.Filename())
-			} else if info.Dir == args[0] {
-				fmt.Printf("- %s \t%s\n", info.Name(), oss.SizeString(info.Size()))
-			} else {
-				fmt.Printf("  - %s \t%s\n", info.Name(), oss.SizeString(info.Size()))
-			}
-		}
-
-		if len(replace) == 2 {
+	//替换文件内容
+	if len(replace) == 2 {
+		doSomething = true
+		before = append(before, func(info *oss.FileInfo) {
 			if !info.IsDir() {
 				bs, err := oss.ReadBytes(info.Filename())
 				if !logs.PrintErr(err) {
@@ -257,15 +259,27 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 					logs.PrintErr(err)
 				}
 			}
+		})
+	}
+
+	if doSomething {
+		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+			for _, f := range before {
+				f(info)
+			}
+			return true, nil
+		}, level)
+		for _, f := range after {
+			f()
 		}
+	}
 
-		return true, nil
-
-	}, level)
-
-	if !logs.PrintErr(err) && count {
-		logs.Infof("共计文件数: %d, 共计文件夹数: %d \n", countFile, countDir)
-
+	//打印目录和文件结构
+	if show || !doSomething {
+		d, err := oss.ReadTree(args[0])
+		if !logs.PrintErr(err) {
+			fmt.Println(d)
+		}
 	}
 
 }
