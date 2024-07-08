@@ -310,7 +310,7 @@ func (this *Config) TempDir() string {
 	return filepath.Join(this.Dir, this.GetName())
 }
 
-func (this *Config) Merge(retry uint) error {
+func (this *Config) Merge(retry int) error {
 	cacheDir := this.TempDir()
 	return g.Retry(func() error {
 		//合并视频,删除分片等信息
