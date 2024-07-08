@@ -192,8 +192,8 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	ty := flags.GetString("type")
 	output := flags.GetString("output", "./output.mp4")
 
-	switch ty {
-	case "merge_ts":
+	switch strings.ToLower(ty) {
+	case "merge_ts", "mergets":
 
 		out, err := os.Create(output)
 		if err != nil {
