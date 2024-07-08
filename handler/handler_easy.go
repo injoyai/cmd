@@ -2,6 +2,8 @@ package handler
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
@@ -178,59 +180,6 @@ func PushUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 }
 
-func Json(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 {
-		args = []string{""}
-	}
-	m := conv.NewMap(args[0])
-
-	flags.Range(func(key string, val *Flag) bool {
-		switch key {
-		case "append":
-			if list := strings.SplitN(val.Value, "=", 2); len(list) == 2 {
-				m.Append(list[0], list[1])
-			}
-		case "set":
-			if list := strings.SplitN(val.Value, "=", 2); len(list) == 2 {
-				m.Set(list[0], list[1])
-			}
-		case "del":
-			m.Del(val.Value)
-		case "get":
-			s := m.GetString(val.Value)
-			fmt.Println(s)
-		}
-		return true
-	})
-}
-
-func Read(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 {
-		logs.Err("未填写资源地址,例./file.txt")
-	}
-	bs, err := oss.Read(args[0])
-	if err != nil {
-		logs.Err(err)
-		return
-	}
-	codecStr := strings.ToLower(flags.GetString("codec", "json"))
-	_codec := codec.Json
-	switch codecStr {
-	case "json":
-		_codec = codec.Json
-	case "yaml":
-		_codec = codec.Yaml
-	case "toml":
-		_codec = codec.Toml
-	case "ini":
-		_codec = codec.Ini
-	}
-	m := conv.NewMap(bs, _codec)
-	get := flags.GetString("get")
-	s := m.GetString(get)
-	fmt.Println(s)
-}
-
 func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		args = []string{"./"}
@@ -323,48 +272,129 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 
 func Text(cmd *cobra.Command, args []string, flags *Flags) {
 
-	split := flags.GetString("split")
-	indexStr := strings.Split(flags.GetString("index"), ",")
-	length := flags.GetBool("length")
-	replace := strings.SplitN(flags.GetString("replace"), "=", 2)
+	//判断是否是路径,如果是路径,则加载文件
+	for i, v := range args {
+		fi, err := os.Stat(v)
+		if err == nil && !fi.IsDir() {
+			//说明是路径
+			bs, err := os.ReadFile(v)
+			if err != nil {
+				logs.Err(err)
+				return
+			}
+			args[i] = string(bs)
+		}
+	}
 
-	if length {
+	//字符取长
+	if l := flags.GetString("length"); len(l) > 0 && conv.Bool(l) {
 		for _, v := range args {
 			fmt.Println(len(v))
+			return
 		}
 	}
 
-	if len(replace) == 2 {
-		for i, v := range args {
-			args[i] = strings.Replace(v, replace[0], replace[1], -1)
+	{ //替换字符
+		replace := strings.SplitN(flags.GetString("replace"), "=", 2)
+		if len(replace) == 2 {
+			for i, v := range args {
+				args[i] = strings.Replace(v, replace[0], replace[1], -1)
+			}
 		}
 	}
 
-	lists := [][]string(nil)
-	for _, v := range args {
-		if len(split) > 0 {
-			lists = append(lists, strings.Split(v, split))
-		} else {
-			lists = append(lists, []string{v})
-		}
-	}
-
-	if len(indexStr) > 0 && indexStr[0] != "" {
-		for i, v := range lists {
-			ls := []string(nil)
-			for ii, vv := range v {
-				for _, j := range indexStr {
-					if conv.String(ii) == j {
+	{ //分割字符
+		indexStr := strings.Split(flags.GetString("index"), ",")
+		split := flags.GetString("split")
+		if len(indexStr) > 0 && indexStr[0] != "" && len(split) > 0 {
+			indexMap := make(map[int]bool)
+			for _, v := range indexStr {
+				indexMap[conv.Int(v)] = true
+			}
+			for i, v := range args {
+				ls := []string(nil)
+				for ii, vv := range strings.Split(v, split) {
+					if indexMap[ii] {
 						ls = append(ls, vv)
 					}
 				}
+				args[i] = strings.Join(ls, split)
 			}
-			lists[i] = ls
 		}
 	}
 
-	for _, v := range lists {
-		fmt.Println(strings.Join(v, split))
+	{ //解析数据,并添加/设置/删除/读取数据
+		_append := strings.SplitN(flags.GetString("append"), "=", 2)
+		set := strings.SplitN(flags.GetString("set"), "=", 2)
+		del := flags.GetString("del")
+		get := flags.GetString("get")
+		if len(_append) == 2 || len(set) == 2 || len(del) == 2 || len(get) > 0 {
+			codecStr := strings.ToLower(flags.GetString("marshal", "json"))
+			_codec := codec.Json
+			switch codecStr {
+			case "json":
+				_codec = codec.Json
+			case "yaml":
+				_codec = codec.Yaml
+			case "toml":
+				_codec = codec.Toml
+			case "ini":
+				_codec = codec.Ini
+			}
+			for i, v := range args {
+				m := conv.NewMap(v, _codec)
+				if len(_append) == 2 {
+					m.Append(_append[0], _append[1])
+				}
+				if len(set) == 2 {
+					m.Set(set[0], set[1])
+				}
+				if len(del) > 0 {
+					m.Del(del)
+				}
+				if len(get) > 0 {
+					args[i] = m.GetString(get)
+				}
+			}
+		}
+	}
+
+	{ //编解码字符串
+		codecList := strings.SplitN(flags.GetString("codec", "utf8"), ">", 2)
+		if len(codecList) == 1 {
+			codecList = append(codecList, "utf8")
+		}
+		if codecList[1] == "" {
+			codecList[1] = "utf8"
+		}
+		for i, v := range args {
+			bs := []byte(nil)
+			switch strings.ToLower(codecList[0]) {
+			case "utf8", "ascii":
+				bs = []byte(v)
+			case "base64":
+				bs, _ = base64.StdEncoding.DecodeString(v)
+			case "hex":
+				bs, _ = hex.DecodeString(v)
+			default:
+				bs = []byte(v)
+			}
+			switch strings.ToLower(codecList[1]) {
+			case "utf8", "ascii":
+				args[i] = string(bs)
+			case "base64":
+				args[i] = base64.StdEncoding.EncodeToString(bs)
+			case "hex":
+				args[i] = hex.EncodeToString(bs)
+			default:
+				args[i] = string(bs)
+			}
+		}
+	}
+
+	//打印字符串
+	for _, v := range args {
+		fmt.Println(v)
 	}
 
 }
