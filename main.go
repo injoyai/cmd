@@ -649,38 +649,20 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
+				{Name: "split", Short: "S", Memo: "分割数据,和取下标配合使用"},
+				{Name: "index", Short: "i", Memo: "选取分割后的下标"},
+				{Name: "replace", Short: "r", Memo: "替换 -r a=b ,优先级2"},
+				{Name: "length", Short: "l", Memo: "输出长度,优先级1"},
+				{Name: "marshal", Short: "m", Memo: "解析方式(json,yaml,toml,ini),默认json"},
 				{Name: "append", Short: "a", Memo: "设置数据,优先级1,例 -a a[0].b=1"},
 				{Name: "set", Short: "s", Memo: "设置数据,优先级2,例 -s a[0].b=1"},
 				{Name: "del", Short: "d", Memo: "删除数据,优先级3,例 -d a[0].b"},
 				{Name: "get", Short: "g", Memo: "获取数据,优先级4,例 -g a[0].b"},
-			},
-			Use:     "json",
-			Short:   "解析json",
-			Example: `in json {"a":1,"b":2} -g=a`,
-			Run:     handler.Json,
-		},
-
-		&Command{
-			Flag: []*Flag{
-				{Name: "codec", Short: "c", Memo: "解析方式(json,yaml,toml,ini),默认json"},
-				{Name: "get", Short: "g", Memo: "获取数据,例 -g a[0].b"},
-			},
-			Use:     "read",
-			Short:   "读取文件",
-			Example: `in read ./xx.txt -g=a`,
-			Run:     handler.Read,
-		},
-
-		&Command{
-			Flag: []*Flag{
-				{Name: "split", Short: "s", Memo: "分割数据"},
-				{Name: "index", Short: "i", Memo: "选取分割后的下标"},
-				{Name: "replace", Short: "r", Memo: "替换 -r a=b ,优先级2"},
-				{Name: "length", Short: "l", Memo: "输出长度,优先级1"},
+				{Name: "codec", Short: "c", Memo: "编解码字符串成字节,例utf8>hex", DefaultValue: "utf8"},
 			},
 			Use:     "text",
 			Short:   "文本操作",
-			Example: `in text "a.n.s.f" -s=:`,
+			Example: `in text "a.n.s.f" -set a=b`,
 			Run:     handler.Text,
 		},
 
