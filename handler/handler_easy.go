@@ -276,7 +276,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 
 	//打印目录和文件结构
 	if show || !doSomething {
-		d, err := oss.ReadTree(args[0])
+		d, err := oss.ReadTree(args[0], level)
 		if !logs.PrintErr(err) {
 			fmt.Println(d)
 		}
