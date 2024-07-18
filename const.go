@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.3.2: 优化了in text,集读文件/替换/切割/获取/编解码于一身,去除了in read和in json",
+		"v1.3.2: 优化了in text,集读文件/替换/切割/获取/编解码于一身,去除了in read和in json,增加PS5的资源",
 		"v1.3.1: 增加曲线绘制in chart ./xxx.csv,数据量小于3.6万时,可以无损绘制,增加in memo open参数",
 		"v1.3.0: 增加in dir对文件目录的操作(替换,统计,合并ts),增加了全局变量忽略代理正则,增加文本操作in text xxx",
 		"v1.2.9: 修复部署时默认没有重启的问题,修复where无效的问题",
