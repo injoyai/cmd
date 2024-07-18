@@ -72,6 +72,21 @@ var (
 				return nil
 			},
 		},
+		"ps5": {
+			Name: "ipinfo.exe",
+			Url:  "http://oss.qianlangyun.com/qianlang-store/PhotoShop CS5.zip",
+			Handler: func(url, dir, filename string, proxy ...string) error {
+				zipFilename := filepath.Join(dir, "ps5.zip")
+				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+					return err
+				}
+				if err := zip.Decode(zipFilename, filepath.Join(dir, "PhotoShop CS5/")); err != nil {
+					return err
+				}
+				logs.PrintErr(os.Remove(zipFilename))
+				return nil
+			},
+		},
 		"rsrc": {
 			Name: "rsrc.exe",
 			Url:  "https://oss.qianlangyun.com/qianlang-store/rsrc.exe", // "https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
