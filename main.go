@@ -362,9 +362,15 @@ func main() {
 					Flag: []*Flag{
 						{Name: "addr", Short: "a", DefaultValue: "127.0.0.1:80", Memo: "本地代理地址"},
 					},
+					Use:     "forward",
+					Short:   "转发服务",
+					Example: "in server forward",
+					Run:     handler.ForwardServer,
+				},
+				{
 					Use:     "proxy",
 					Short:   "Proxy服务",
-					Example: "in server proxy",
+					Example: "in server proxy 80=>8080 -p=7000",
 					Run:     handler.ProxyServer,
 				},
 				{

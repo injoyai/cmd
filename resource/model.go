@@ -201,7 +201,10 @@ var (
 			Name: "zerotier.exe",
 			Url:  "https://download.zerotier.com/dist/ZeroTier%20One.msi",
 		},
-
+		"proxy": {
+			Name: "proxy.exe",
+			Url:  "http://oss.qianlangyun.com/qianlang-store/proxy.exe",
+		},
 		"edge": {
 			Name: "edge.exe",
 			Url:  "https://oss.qianlangyun.com/qianlang-store/edge.exe",
