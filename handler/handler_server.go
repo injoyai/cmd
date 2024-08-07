@@ -255,6 +255,24 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
+func ForwardServer2(cmd *cobra.Command, args []string, flags *Flags) {
+	userDir := oss.UserInjoyDir()
+	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "proxy",
+		Dir:          userDir,
+		ReDownload:   flags.GetBool("download"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
+
+	proxy := "80->:8080"
+	if len(args) > 0 {
+		proxy = args[0]
+	}
+	s := fmt.Sprintf(`%s forward "%s"`, filename, proxy)
+	logs.PrintErr(tool.ShellRun(s))
+}
+
 //====================ProxyServer====================//
 
 func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
@@ -267,7 +285,7 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 
-	proxy := "80=>:8080"
+	proxy := "80->:8080"
 	if len(args) > 0 {
 		proxy = args[0]
 	}

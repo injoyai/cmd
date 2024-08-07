@@ -18,4 +18,5 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/tebeka/selenium v0.9.9
 	go.bug.st/serial v1.5.0
+	golang.org/x/crypto v0.1.0
 )

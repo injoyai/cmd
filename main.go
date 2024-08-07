@@ -365,7 +365,7 @@ func main() {
 					Use:     "forward",
 					Short:   "转发服务",
 					Example: "in server forward",
-					Run:     handler.ForwardServer,
+					Run:     handler.ForwardServer2,
 				},
 				{
 					Use:     "proxy",
