@@ -129,7 +129,7 @@ func main() {
 				{Name: "get", Short: "g", Memo: "筛选body数据,例 -g=code"},
 			},
 			Use:     "http",
-			Short:   "文字转语音",
+			Short:   "简单的HTTP连接",
 			Example: "in http https://localhost:8080/ping",
 			Run:     handler.HTTP,
 		},
