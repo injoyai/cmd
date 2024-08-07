@@ -73,7 +73,7 @@ var (
 			},
 		},
 		"ps5": {
-			Name: "ipinfo.exe",
+			Name: "ps5.exe",
 			Url:  "http://oss.qianlangyun.com/qianlang-store/PhotoShop CS5.zip",
 			Handler: func(url, dir, filename string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "ps5.zip")
