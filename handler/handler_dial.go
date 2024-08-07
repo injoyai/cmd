@@ -16,6 +16,7 @@ import (
 	"github.com/injoyai/io/dial"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
 	"os"
 	"strings"
 )
@@ -136,12 +137,13 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 		}
 		c, err := dial.NewSSH(&dial.SSHConfig{
-			Addr:     addr,
-			User:     username,
-			Password: password,
-			Timeout:  flags.GetMillisecond("timeout"),
-			High:     flags.GetInt("high"),
-			Wide:     flags.GetInt("wide"),
+			Addr:          addr,
+			User:          username,
+			Password:      password,
+			Timeout:       flags.GetMillisecond("timeout"),
+			High:          flags.GetInt("high"),
+			Wide:          flags.GetInt("wide"),
+			TerminalModes: ssh.TerminalModes{},
 		})
 		if err != nil {
 			logs.Err(err)
