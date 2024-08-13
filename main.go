@@ -341,6 +341,12 @@ func main() {
 					Run:     handler.EdgeServer,
 				},
 				{
+					Use:     "edge_mini",
+					Short:   "EdgeMini服务",
+					Example: "in server edge_mini",
+					Run:     handler.EdgeMiniServer,
+				},
+				{
 					Use:     "influx",
 					Short:   "Influx服务",
 					Example: "in server influx",

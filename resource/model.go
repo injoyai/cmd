@@ -209,6 +209,10 @@ var (
 			Name: "edge.exe",
 			Url:  "https://oss.qianlangyun.com/qianlang-store/edge.exe",
 		},
+		"edge_mini": {
+			Name: "edge_mini.exe",
+			Url:  "https://oss.qianlangyun.com/qianlang-store/edge_mini.exe",
+		},
 		"build.sh": {
 			Key:  []string{"build"},
 			Name: "build.sh",
