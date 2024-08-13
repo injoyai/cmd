@@ -183,6 +183,28 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 }
 
+func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) > 0 {
+		switch args[0] {
+		case "stop":
+			shell.Stop("edge_mini.exe")
+			return
+		}
+	}
+	{
+		fmt.Println("开始运行EdgeMini服务...")
+		shell.Stop("edge_mini.exe")
+		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+			Resource:     "edge_mini",
+			Dir:          oss.UserInjoyDir(),
+			ReDownload:   flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
+			ProxyEnable:  true,
+			ProxyAddress: flags.GetString("proxy"),
+		})
+		logs.PrintErr(tool.Exec(filename, flags.GetString("runType")))
+	}
+}
+
 //====================InfluxServer====================//
 
 func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
