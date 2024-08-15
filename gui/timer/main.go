@@ -15,6 +15,8 @@ import (
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/logs"
 	"github.com/injoyai/lorca"
+	"os"
+	"path/filepath"
 	"xorm.io/xorm"
 )
 
@@ -80,7 +82,7 @@ type ico struct {
 
 func (this *ico) onReady() {
 	systray.SetIcon(IcoTimer)
-	systray.SetTooltip("定时器")
+	systray.SetTooltip("定时任务")
 
 	//显示菜单,这个库不能区分左键和右键,固设置了该菜单
 	mShow := systray.AddMenuItem("显示", "显示界面")
@@ -90,6 +92,27 @@ func (this *ico) onReady() {
 			<-mShow.ClickedCh
 			//show会阻塞,多次点击无效
 			this.gui.show()
+		}
+	}()
+
+	filename := oss.ExecName()
+	name := filepath.Base(filename)
+	startLnk := oss.UserStartupDir(name + ".lnk")
+	startup := oss.Exists(startLnk)
+	mStartup := systray.AddMenuItemCheckbox("自启", "开机自启", startup)
+	go func() {
+		for {
+			<-mStartup.ClickedCh
+			if mStartup.Checked() {
+				os.Remove(startLnk)
+			} else {
+				Shortcut(oss.UserStartupDir(name+".lnk"), filename)
+			}
+			if oss.Exists(startLnk) {
+				mStartup.Check()
+			} else {
+				mStartup.Uncheck()
+			}
 		}
 	}()
 
