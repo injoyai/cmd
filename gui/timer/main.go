@@ -34,11 +34,14 @@ func init() {
 	DB.Sync2(new(Timer))
 	data := []*Timer(nil)
 	DB.Find(&data)
-	for _, v := range data {
+	for i := range data {
+		v := data[i]
+		logs.Debug(v)
 		if !v.Enable {
 			continue
 		}
 		Corn.SetTask(conv.String(v.ID), v.Cron, func() {
+			logs.Trace(v.ExecText())
 			if _, err := Script.Exec(v.Content); err != nil {
 				notice.DefaultWindows.Publish(&notice.Message{
 					Title:   fmt.Sprintf("定时任务[%s]执行错误:", v.Name),
@@ -51,13 +54,23 @@ func init() {
 		result, err := ip.Ping(args.GetString(1), args.Get(2).Second(1))
 		return result.String(), err
 	})
+
+	Script.SetFunc("notice", func(args *script.Args) (interface{}, error) {
+		target := args.GetString(2)
+		notice.DefaultWindows.Publish(&notice.Message{
+			Content: args.GetString(1),
+			Target:  target,
+		})
+		return nil, nil
+	})
+
 }
 
 func main() {
 	ui := &ico{
 		gui: &gui{
 			cfg: &lorca.Config{
-				Width:  960,
+				Width:  1080,
 				Height: 560,
 				Html:   html,
 			},
@@ -127,7 +140,7 @@ func (this *ico) onReady() {
 }
 
 func (this *ico) onExit() {
-	logs.Debug(666)
+	logs.Debug("退出")
 }
 
 type gui struct {
@@ -172,7 +185,6 @@ func (this *gui) show() {
 
 		app.Bind("enableTimer", func(id string, enable bool) {
 			defer this.Refresh(app)
-			logs.Debug("enableTimer: ", id, enable)
 			if err := this.EnableTimer(id, enable); err != nil {
 				app.Eval(fmt.Sprintf(`alert("%s");`, err.Error()))
 				return
@@ -270,7 +282,7 @@ func (this *gui) EnableTimer(id string, enable bool) error {
 		return err
 	}
 	t.Enable = enable
-
+	logs.Debugf("[%s][%s][%d:%s] %s", conv.SelectString(t.Enable, "启用", "禁用"), t.Cron, t.ID, t.Name, t.Content)
 	return DB.SessionFunc(func(session *xorm.Session) error {
 		if _, err := session.ID(id).AllCols().Update(t); err != nil {
 			return err
@@ -286,6 +298,8 @@ func (this *gui) EnableTimer(id string, enable bool) error {
 			}); err != nil {
 				return err
 			}
+		} else {
+			Corn.DelTask(id)
 		}
 		return nil
 	})
@@ -306,4 +320,12 @@ type Timer struct {
 	Cron    string
 	Content string
 	Enable  bool
+}
+
+func (this *Timer) String() string {
+	return fmt.Sprintf("[%s][%s][%02d:%s] %s", conv.SelectString(this.Enable, "启用", "禁用"), this.Cron, this.ID, this.Name, this.Content)
+}
+
+func (this *Timer) ExecText() string {
+	return fmt.Sprintf("[执行][%s][%02d:%s] %s", this.Cron, this.ID, this.Name, this.Content)
 }
