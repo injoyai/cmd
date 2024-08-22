@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.3.3: 增加资源proxy.exe,修改ssh的bug,替换in server forward,增加edge_mini资源",
+		"v1.3.3: 增加资源proxy.exe,修改ssh的bug,替换in server forward,增加edge_mini资源,修复mqtt客户端的bug",
 		"v1.3.2: 优化了in text,集读文件/替换/切割/获取/编解码于一身,去除了in read和in json,增加PS5的资源",
 		"v1.3.1: 增加曲线绘制in chart ./xxx.csv,数据量小于3.6万时,可以无损绘制,增加in memo open参数",
 		"v1.3.0: 增加in dir对文件目录的操作(替换,统计,合并ts),增加了全局变量忽略代理正则,增加文本操作in text xxx",

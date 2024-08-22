@@ -80,7 +80,8 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 	retained := flags.GetBool("retained")
 	qos := byte(flags.GetInt("qos"))
 	timeout := flags.GetMillisecond("timeout", 3000)
-	c := dial.RedialMQTT(&dial.MQTTIOConfig{
+	var c *io.Client
+	c = dial.RedialMQTT(&dial.MQTTIOConfig{
 		Subscribe: func() []dial.MQTTSubscribe {
 			list := []dial.MQTTSubscribe(nil)
 			for _, v := range strings.Split(subscribe, ",") {
@@ -109,6 +110,11 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 		SetClientID(g.RandString(8)).
 		SetWriteTimeout(timeout).
 		SetAutoReconnect(false).
+		SetConnectionLostHandler(func(client mqtt.Client, err error) {
+			if c != nil {
+				c.CloseWithErr(err)
+			}
+		}).
 		SetConnectTimeout(timeout), func(c *io.Client) {
 		DialDeal(c, flags, true)
 	})
