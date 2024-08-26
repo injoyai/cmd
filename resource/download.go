@@ -50,11 +50,26 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 			op.Name = strings.Split(val.Name, ".")[0]
 			op.suffix = filepath.Ext(val.Name)
 		}
-		op.Resource = val.GetUrl()
-		if val.Handler != nil {
-			download = func(ctx context.Context, op *Config) error {
-				return val.Handler(op.Resource, op.Dir, op.Filename())
+		//自带资源可能有多个源,按顺序挨个尝试
+		urls := val.GetUrl()
+		download = func(ctx context.Context, op *Config) (err error) {
+			defer func(s string) { op.Resource = s }(op.Resource)
+			for i, u := range urls {
+				op.Resource = u
+				if val.Handler == nil {
+					if err = downloadOther(ctx, op); err == nil {
+						return
+					}
+				} else {
+					if err = val.Handler(u, op.Dir, op.Filename()); err == nil {
+						return
+					}
+				}
+				if i < len(urls)-1 {
+					fmt.Println(err)
+				}
 			}
+			return
 		}
 	}
 

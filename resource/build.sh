@@ -33,4 +33,4 @@ if [ -f "./bin/windows/$name.000" ]; then
   rm "./bin/windows/$name.000"
 fi
 
-sleep 20
+sleep 8
