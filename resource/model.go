@@ -218,6 +218,13 @@ var (
 			Name: "edge_mini.exe",
 			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/edge_mini.exe"},
 		},
+		"motrix": {
+			Name: "motrix.exe",
+			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/Motrix.exe", "https://dl.motrix.app/release/Motrix-1.8.19-x64.exe", "https://github.com/agalwood/Motrix/releases/download/v1.8.19/Motrix-1.8.19-x64.exe"},
+		},
+
+		/**/
+
 		"build.sh": {
 			Key:  []string{"build"},
 			Name: "build.sh",
