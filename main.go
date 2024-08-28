@@ -301,6 +301,7 @@ func main() {
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 				{Name: "timeout", Short: "t", Memo: "设置超时时间"},
 				{Name: "logPort", Memo: "日志端口,部分服务有效,例MQTT"},
+				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
 			},
 			Use:     "server",
 			Short:   "服务",
@@ -560,8 +561,9 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "download", Memo: "重新下载", Short: "d"},
+				{Name: "download", Memo: "重新下载", Short: "d"}, //runType
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
+				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
 			},
 			Use:     "open",
 			Short:   "打开",
