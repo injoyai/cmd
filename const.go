@@ -9,6 +9,7 @@ import (
 
 var (
 	details = []string{
+		"v1.3.5: 增加in dial proxy :7000 \"8080->192.168.0.3:8080\"",
 		"v1.3.4: 简单的内置多资源轮训下载(下载失败),增加资源motrix替代迅雷,增加edge服务的flag(runType,运行在本窗口或者新窗口)",
 		"v1.3.3: 增加资源proxy.exe,修改ssh的bug,替换in server forward,增加edge_mini资源,修复mqtt客户端的bug",
 		"v1.3.2: 优化了in text,集读文件/替换/切割/获取/编解码于一身,去除了in read和in json,增加PS5的资源",
