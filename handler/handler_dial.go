@@ -322,6 +322,26 @@ remotePort = %s
 	logs.PrintErr(tool.ShellRun(filename))
 }
 
+func DialProxy(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("请填写代理地址")
+		return
+	}
+	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "proxy",
+		Dir:          oss.UserInjoyDir(),
+		ReDownload:   flags.GetBool("download"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
+	proxy := "80->:8080"
+	if len(args) > 1 {
+		proxy = args[1]
+	}
+	s := fmt.Sprintf(`%s client %s "%s" `, filename, args[0], proxy)
+	logs.PrintErr(tool.ShellRun(s))
+}
+
 /*
 
 

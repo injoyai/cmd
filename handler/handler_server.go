@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/DrmagicE/gmqtt"
 	"github.com/DrmagicE/gmqtt/pkg/packets"
@@ -15,7 +14,6 @@ import (
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/io"
-	"github.com/injoyai/io/dial"
 	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
@@ -248,36 +246,6 @@ func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================ForwardServer====================//
 
 func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
-	port := flags.GetInt("port", 10089)
-	addr := flags.GetString("addr")
-	debug := flags.GetBool("debug")
-	listen.RunTCPServer(port, func(s *io.Server) {
-		s.SetKey(fmt.Sprintf(":%d", port))
-		s.SetTimeout(flags.GetSecond("timeout", -1))
-		s.Debug(false)
-		s.SetLevel(io.LevelError)
-		s.SetBeforeFunc(func(client *io.Client) error {
-			if debug {
-				logs.Infof("代理 [%s >>> %s]\n", client.GetKey(), addr)
-			}
-			_, err := dial.NewTCP(addr, func(c *io.Client) {
-				c.Debug(false)
-				c.SetDealWithWriter(client)
-				c.SetCloseFunc(func(ctx context.Context, c *io.Client, msg io.Message) {
-					client.CloseWithErr(errors.New(msg.String()))
-				})
-				go c.Run()
-				client.SetReadWithWriter(c)
-			})
-			if err != nil && err != io.EOF && debug {
-				logs.Err(err)
-			}
-			return err
-		})
-	})
-}
-
-func ForwardServer2(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "proxy",

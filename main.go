@@ -290,6 +290,18 @@ func main() {
 					Example: "in dial frp",
 					Run:     handler.DialFrp,
 				},
+				{
+					Flag: []*Flag{
+						{Name: "port", Short: "p", Memo: "映射关系(本地地址/端口:服务端口)", DefaultValue: "80:80"},
+						{Name: "type", Memo: "连接类型", DefaultValue: "tcp"},
+						{Name: "name", Memo: "客户端名称", DefaultValue: g.RandString(8)},
+						{Name: "download", Memo: "重新下载"},
+					},
+					Use:     "proxy",
+					Short:   "连接内网穿透服务",
+					Example: "in dial proxy",
+					Run:     handler.DialProxy,
+				},
 			},
 		},
 
@@ -372,7 +384,7 @@ func main() {
 					Use:     "forward",
 					Short:   "转发服务",
 					Example: "in server forward",
-					Run:     handler.ForwardServer2,
+					Run:     handler.ForwardServer,
 				},
 				{
 					Use:     "proxy",
