@@ -15,6 +15,7 @@ import (
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/logs"
 	"github.com/injoyai/lorca"
+	"net"
 	"os"
 	"path/filepath"
 	"xorm.io/xorm"
@@ -62,6 +63,16 @@ func init() {
 			Target:  target,
 		})
 		return nil, nil
+	})
+	Script.SetFunc("dialTCP", func(args *script.Args) (interface{}, error) {
+		address := args.GetString(1)
+		timeout := args.Get(2).Second(2)
+		c, err := net.DialTimeout("tcp", address, timeout)
+		if err != nil {
+			return nil, err
+		}
+		c.Close()
+		return "成功", nil
 	})
 
 }
