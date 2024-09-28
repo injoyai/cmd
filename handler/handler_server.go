@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
-	"github.com/injoyai/goutil/frame/in"
+	"github.com/injoyai/goutil/frame/in/v3"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
@@ -225,7 +225,7 @@ func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.Infof("[:%d] 开启Websocket服务成功...\n", port)
 	logs.PrintErr(http.ListenAndServe(
 		fmt.Sprintf(":%d", port),
-		in.InitGo(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ws, err := websocket.Upgrade(w, r, r.Header, 4096, 4096)
 			in.CheckErr(err)
 			defer ws.Close()
@@ -320,7 +320,7 @@ func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(
 		http.ListenAndServe(
 			fmt.Sprintf(":%d", port),
-			in.InitGo(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				defer r.Body.Close()
 				body, err := io.ReadAll(r.Body)
 				in.CheckErr(err)

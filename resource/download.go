@@ -246,7 +246,7 @@ func downloadStream(ctx context.Context, op *Config) error {
 	oss.RemoveAll(op.TempDir())
 	oss.New(op.TempDir())
 
-	if err := shell.Runf("ffmpeg -i %s -c copy -f hls %s", op.Resource, filepath.Join(op.TempDir(), "/out.m3u8")); err != nil {
+	if err := shell.Run(fmt.Sprintf("ffmpeg -i %s -c copy -f hls %s", op.Resource, filepath.Join(op.TempDir(), "/out.m3u8"))); err != nil {
 		return err
 	}
 
