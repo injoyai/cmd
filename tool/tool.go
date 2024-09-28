@@ -2,21 +2,22 @@ package tool
 
 import (
 	"fmt"
-	"github.com/injoyai/goutil/oss/shell"
+	"os/exec"
 )
 
 func ShellStart(filename string) error {
-	fmt.Println("打开文件: ", filename)
-	return shell.Start(filename)
+	fmt.Printf("打开文件: %#v\n", filename)
+	return exec.Command("cmd", "/c", "start "+filename).Start()
+	//return shell.Start(filename)
 }
 
 func ShellStart2(filename string) error {
-	fmt.Println("打开文件: ", filename)
+	fmt.Printf("打开文件: %#v\n", filename)
 	return shellStart2(filename)
 }
 
 func ShellRun(filename string) error {
-	fmt.Println("运行文件: ", filename)
+	fmt.Printf("运行文件: %#v\n", filename)
 	return shellRun(filename)
 }
 
