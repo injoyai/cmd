@@ -29,9 +29,10 @@ const (
 )
 
 type _deployFile struct {
-	Name    string `json:"name"`    //文件路径
-	Data    string `json:"data"`    //文件内容
-	Restart bool   `json:"restart"` //是否重启
+	Name    string   `json:"name"`    //文件路径
+	Data    string   `json:"data"`    //文件内容
+	Restart bool     `json:"restart"` //是否重启
+	Args    []string `json:"args"`    //参数
 }
 
 func (this *_deployFile) deal() *_deployFile {
@@ -177,11 +178,13 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 			case deployFile:
 
 				for _, v := range m.File {
+					dir, _ := filepath.Split(v.Name)
 					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
-						zipPath := filepath.Join(v.Name, time.Now().Format("20060102150405.zip"))
-						logs.Debugf("下载文件: %s\n", zipPath)
+						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+						logs.Debugf("保存文件: %s\n", zipPath)
 						if err = oss.New(zipPath, fileBytes); err == nil {
-							err = zip.Decode(zipPath, v.Name)
+							logs.Info("解压文件: ", dir)
+							err = zip.Decode(zipPath, dir)
 							os.Remove(zipPath)
 						}
 					}
