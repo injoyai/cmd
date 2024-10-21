@@ -45,15 +45,26 @@ var (
 	All = map[string]*Entity{
 		"hfs": {
 			Name: "hfs.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/hfs.exe", "https://github.com/injoyai/cmd/raw/main/resource/hfs.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/hfs.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=hfs.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/hfs.exe",
+			},
 		},
 		"swag": {
 			Name: "swag.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/swag.exe", "https://github.com/injoyai/cmd/raw/main/resource/swag.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/swag.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=swag.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/swag.exe",
+			},
 		},
 		"win_active": {
 			Name: "win_active.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/win_active.exe", "https://github.com/injoyai/cmd/raw/main/resource/win_active.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/win_active.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/win_active.exe",
+			},
 		},
 		"downloader": {
 			Key:  []string{"download"},
@@ -79,7 +90,10 @@ var (
 		},
 		"ps5": {
 			Name: "ps5.exe",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/PhotoShop CS5.zip", "https://github.com/injoyai/resource/releases/download/v0.0.1/PhotoShop.CS5.zip"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/PhotoShop CS5.zip",
+				"https://github.com/injoyai/resource/releases/download/v0.0.1/PhotoShop.CS5.zip",
+			},
 			Handler: func(url, dir, filename string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "ps5.zip")
 				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
@@ -94,19 +108,34 @@ var (
 		},
 		"rsrc": {
 			Name: "rsrc.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/rsrc.exe", "https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/rsrc.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=rsrc.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/rsrc.exe",
+			},
 		},
 		"nac": {
 			Name: "nac.syso",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/nac.syso", "https://github.com/injoyai/cmd/raw/main/nac/nac.syso"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/nac.syso",
+				"https://github.com/injoyai/cmd/raw/main/nac/nac.syso",
+			},
 		},
 		"upx": {
 			Name: "upx.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/upx.exe", "https://github.com/injoyai/cmd/raw/main/resource/upx.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/upx.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=upx.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/upx.exe",
+			},
 		},
 		"npc": {
 			Name: "npc.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/npc.exe", "https://github.com/injoyai/cmd/raw/main/resource/npc.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/npc.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=npc.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/npc.exe",
+			},
 		},
 		"listen": {
 			Key:  []string{"listen"},
@@ -116,18 +145,32 @@ var (
 		"upgrade": {
 			Key:  []string{"in_upgrade"},
 			Name: "in_upgrade.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/in_upgrade.exe", "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/in_upgrade.exe",
+				"https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
+			},
 		},
 		"server": {
 			Key:  []string{"in_server"},
 			Name: "in_server.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/in_server.exe", "https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/in_server.exe",
+				"https://github.com/injoyai/cmd/raw/main/upgrade/in_upgrade.exe",
+			},
 		},
 		"in": {
-			Name:          "in.exe",
-			Url:           []string{"https://oss.qianlangyun.com/qianlang-store/in.exe", "https://github.com/injoyai/cmd/raw/main/in.exe"},
-			UrlLinuxAmd64: []string{"https://oss.qianlangyun.com/qianlang-store/in", "https://github.com/injoyai/cmd/raw/main/in"},
-			UrlLinuxArm7:  []string{"https://oss.qianlangyun.com/qianlang-store/in7"},
+			Name: "in.exe",
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/in.exe",
+				"https://github.com/injoyai/cmd/raw/main/in.exe",
+			},
+			UrlLinuxAmd64: []string{
+				"https://oss.qianlangyun.com/qianlang-store/in",
+				"https://github.com/injoyai/cmd/raw/main/in",
+			},
+			UrlLinuxArm7: []string{
+				"https://oss.qianlangyun.com/qianlang-store/in7",
+			},
 		},
 		"timer": {
 			Name: "timer.exe",
@@ -155,7 +198,10 @@ var (
 		},
 		"chrome104": {
 			Name: "chrome.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/chrome.zip", "https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/chrome.zip",
+				"https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip",
+			},
 			Handler: func(url, dir, filename string, proxy ...string) error {
 				zipFilename := filepath.Join(dir, "chrome.zip")
 				if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
@@ -166,32 +212,52 @@ var (
 			},
 		},
 		"frpc": {
-			Name:            "frpc.exe",
-			Url:             []string{"https://oss.qianlangyun.com/qianlang-store/frpc.exe", "https://github.com/injoyai/cmd/raw/main/resource/frpc.exe"},
+			Name: "frpc.exe",
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/frpc.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=frpc.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/frpc.exe",
+			},
 			UrlWindowsAmd64: []string{"https://github.com/injoyai/cmd/raw/main/resource/frpc.exe"},
 			UrlLinuxAmd64:   []string{"https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_amd64"},
 			UrlLinuxArm7:    []string{"https://github.com/injoyai/cmd/raw/main/resource/frpc_linux_arm7"},
 		},
 		"frps": {
 			Name: "frps.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/frps.exe", "https://github.com/injoyai/cmd/raw/main/resource/frps.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/frps.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=frps.exe",
+				"https://github.com/injoyai/cmd/raw/main/resource/frps.exe",
+			},
 		},
 		"ffmpeg": {
 			Name: "ffmpeg.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/ffmpeg.exe", "https://github.com/injoyai/resource/releases/download/v0.0.4/ffmpeg.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/ffmpeg.exe",
+				"https://github.com/injoyai/resource/releases/download/v0.0.4/ffmpeg.exe",
+			},
 		},
 		"ffplay": {
 			Name: "ffplay.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/ffplay.exe", "https://github.com/injoyai/resource/releases/download/v0.0.4/ffplay.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/ffplay.exe",
+				"https://github.com/injoyai/resource/releases/download/v0.0.4/ffplay.exe",
+			},
 		},
 		"ffprobe": {
 			Name: "ffplay.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/ffplay.exe", "https://github.com/injoyai/resource/releases/download/v0.0.4/ffprobe.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/ffplay.exe",
+				"https://github.com/injoyai/resource/releases/download/v0.0.4/ffprobe.exe",
+			},
 		},
 		"ModbusPoll": {
 			Key:  []string{"modbuspoll"},
 			Name: "ModbusPoll.exe",
-			Url:  []string{"https://oss.qianlangyun.com/qianlang-store/ModbusPoll.exe1", "https://github.com/injoyai/resource/releases/download/v0.0.4/ModbusPoll.exe"},
+			Url: []string{
+				"https://oss.qianlangyun.com/qianlang-store/ModbusPoll.exe1",
+				"https://github.com/injoyai/resource/releases/download/v0.0.4/ModbusPoll.exe",
+			},
 		},
 		"livego": {
 			Key:  []string{"stream"},
@@ -204,7 +270,10 @@ var (
 		},
 		"zerotier": {
 			Name: "zerotier.exe",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/ZeroTier One.msi", "https://download.zerotier.com/dist/ZeroTier%20One.msi"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/ZeroTier One.msi",
+				"https://download.zerotier.com/dist/ZeroTier%20One.msi",
+			},
 		},
 		"proxy": {
 			Name: "proxy.exe",
@@ -220,7 +289,18 @@ var (
 		},
 		"motrix": {
 			Name: "motrix.exe",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/Motrix.exe", "https://dl.motrix.app/release/Motrix-1.8.19-x64.exe", "https://github.com/agalwood/Motrix/releases/download/v1.8.19/Motrix-1.8.19-x64.exe"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/Motrix.exe",
+				"https://dl.motrix.app/release/Motrix-1.8.19-x64.exe",
+				"https://github.com/agalwood/Motrix/releases/download/v1.8.19/Motrix-1.8.19-x64.exe",
+			},
+		},
+		"notice_client": {
+			Name: "notice_client.exe",
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/notice_client.exe",
+				"http://aiot.qianlangtech.com:8080/download?name=notice_client.exe",
+			},
 		},
 
 		/**/
@@ -228,31 +308,49 @@ var (
 		"build.sh": {
 			Key:  []string{"build"},
 			Name: "build.sh",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/build.sh", "https://github.com/injoyai/resource/releases/download/v0.0.2/build.sh"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/build.sh",
+				"https://github.com/injoyai/resource/releases/download/v0.0.2/build.sh",
+			},
 		},
 		"dockerfile": {
 			Name: "dockerfile",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/Dockerfile", "https://github.com/injoyai/resource/releases/download/v0.0.2/Dockerfile"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/Dockerfile",
+				"https://github.com/injoyai/resource/releases/download/v0.0.2/Dockerfile",
+			},
 		},
 		"service.service": {
 			Key:  []string{"service"},
 			Name: "service.service",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/service.service", "https://github.com/injoyai/resource/releases/download/v0.0.2/service.service"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/service.service",
+				"https://github.com/injoyai/resource/releases/download/v0.0.2/service.service",
+			},
 		},
 		"install_minio.sh": {
 			Key:  []string{"install_minio"},
 			Name: "install_minio.sh",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/install_minio.sh", "https://github.com/injoyai/resource/releases/download/v0.0.2/install_minio.sh"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/install_minio.sh",
+				"https://github.com/injoyai/resource/releases/download/v0.0.2/install_minio.sh",
+			},
 		},
 		"install_nodered.sh": {
 			Key:  []string{"install_nodered"},
 			Name: "install_nodered.sh",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/install_nodered.sh", "https://github.com/injoyai/resource/releases/download/v0.0.2/install_nodered.sh"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/install_nodered.sh",
+				"https://github.com/injoyai/resource/releases/download/v0.0.2/install_nodered.sh",
+			},
 		},
 		"install_v2raya.sh": {
 			Key:  []string{"install_v2raya"},
 			Name: "install_v2raya.sh",
-			Url:  []string{"http://oss.qianlangyun.com/qianlang-store/install_v2raya.sh", "https://github.com/injoyai/resource/releases/download/v0.0.2/install_v2raya.sh"},
+			Url: []string{
+				"http://oss.qianlangyun.com/qianlang-store/install_v2raya.sh",
+				"https://github.com/injoyai/resource/releases/download/v0.0.2/install_v2raya.sh",
+			},
 		},
 	}
 )
