@@ -7,6 +7,8 @@ import (
 	"github.com/injoyai/base/safe"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/database/sqlite"
+	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/net/http"
 	"github.com/injoyai/goutil/net/ip"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -73,6 +75,32 @@ func init() {
 		}
 		c.Close()
 		return "成功", nil
+	})
+	Script.SetFunc("notice_wechat_friend", func(args *script.Args) (interface{}, error) {
+		address := args.GetString(1)
+		target := args.GetString(2)
+		msg := args.GetString(3)
+		err := http.Url(fmt.Sprintf("http://%s/api/notice", address)).
+			SetToken("147258369").
+			SetContentType("application/json").
+			SetBody(g.Map{
+				"output":  []string{"wechat:friend:" + target},
+				"content": msg,
+			}).Debug().Post().Err()
+		return nil, err
+	})
+	Script.SetFunc("notice_wechat_group", func(args *script.Args) (interface{}, error) {
+		address := args.GetString(1)
+		target := args.GetString(2)
+		msg := args.GetString(3)
+		err := http.Url(fmt.Sprintf("http://%s/api/notice", address)).
+			SetToken("147258369").
+			SetContentType("application/json").
+			SetBody(g.Map{
+				"output":  []string{"wechat:group:" + target},
+				"content": msg,
+			}).Debug().Post().Err()
+		return nil, err
 	})
 
 }
@@ -293,7 +321,7 @@ func (this *gui) EnableTimer(id string, enable bool) error {
 		return err
 	}
 	t.Enable = enable
-	logs.Debugf("[%s][%s][%d:%s] %s", conv.SelectString(t.Enable, "启用", "禁用"), t.Cron, t.ID, t.Name, t.Content)
+	logs.Debugf("[%s][%s][%d:%s] %s\n", conv.SelectString(t.Enable, "启用", "禁用"), t.Cron, t.ID, t.Name, t.Content)
 	return DB.SessionFunc(func(session *xorm.Session) error {
 		if _, err := session.ID(id).AllCols().Update(t); err != nil {
 			return err
