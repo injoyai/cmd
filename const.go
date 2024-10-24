@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.3.6: 切换软件源到自建服务oss.injoy.ink和配置自定义软件源",
+		"v1.3.6: 修改合并ts方式为ffmpeg，使用字节衔接合并会有卡顿，升级部分包的版本",
 		"v1.3.5: 增加in dial proxy :7000 \"8080->192.168.0.3:8080\"",
 		"v1.3.4: 简单的内置多资源轮训下载(下载失败),增加资源motrix替代迅雷,增加edge服务的flag(runType,运行在本窗口或者新窗口)",
 		"v1.3.3: 增加资源proxy.exe,修改ssh的bug,替换in server forward,增加edge_mini资源,修复mqtt客户端的bug",
