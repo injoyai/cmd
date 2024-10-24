@@ -109,7 +109,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 	default:
 
 		//尝试在内置资源查找
-		if resource.All[strings.ToLower(args[0])] != nil {
+		if resource.Resources[strings.ToLower(args[0])] != nil {
 			filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),

@@ -45,10 +45,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	var download func(ctx context.Context, op *Config) error
 
-	if val, ok := All[op.Resource]; ok {
+	if val, ok := Resources[op.Resource]; ok {
 		if len(op.Name) == 0 {
-			op.Name = strings.Split(val.Name, ".")[0]
-			op.suffix = filepath.Ext(val.Name)
+			op.Name = strings.Split(val.GetName(), ".")[0]
+			op.suffix = filepath.Ext(val.GetName())
 		}
 		//自带资源可能有多个源,按顺序挨个尝试
 		urls := val.GetUrl()
