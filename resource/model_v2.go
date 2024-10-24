@@ -121,7 +121,7 @@ var Resources = map[string]*Info{
 	"timer":         {Name: Name{WindowsAmd64: "timer.exe"}},
 	"edge":          {Name: Name{WindowsAmd64: "edge.exe"}},
 	"edge_mini":     {Name: Name{WindowsAmd64: "edge_mini.exe"}},
-	"notice_client": {Name: Name{WindowsAmd64: "notice_client.exe"}},
+	"notice_client": {Name: Name{WindowsAmd64: "notice_client.exe"}, Key: []string{"notice_cli", "notice-cli"}},
 	"upgrade":       {Name: Name{WindowsAmd64: "in_upgrade.exe"}, Key: []string{"in_upgrade"}},
 	"server":        {Name: Name{WindowsAmd64: "in_server.exe"}, Key: []string{"in_server"}},
 	"in":            {Name: Name{WindowsAmd64: "in.exe", LinuxAmd64: "in", LinuxArm: "in7"}},
