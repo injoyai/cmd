@@ -44,6 +44,7 @@ func GetString(key string, def ...string) string {
 func GetConfigs() []Nature {
 	natures := []Nature{
 		{Key: "nickName", Name: "昵称"},
+		{Key: "resource", Name: "资源地址"},
 		{Key: "proxy", Name: "默认代理地址"},
 		{Key: "proxyIgnore", Name: "忽略代理正则"},
 		{Key: "memoHost", Name: "备注请求地址"},

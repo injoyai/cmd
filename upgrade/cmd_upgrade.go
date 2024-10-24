@@ -19,6 +19,7 @@ import (
 
 const (
 	details = `
+v1.0.4: 增加软件源oss.injoy.ink
 v1.0.3: 升级下载方式
 v1.0.2: 整理代码
 v1.0.1: 增加对linux的支持
