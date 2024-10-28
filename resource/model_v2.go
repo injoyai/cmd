@@ -139,6 +139,18 @@ var Resources = map[string]*Info{
 		Url:  []Url{"https://github.com/injoyai/downloader/releases/latest/download/downloader.exe"},
 	},
 
+	"adb": {
+		Name: Name{WindowsAmd64: "adb.zip"},
+		Handler: func(url, dir, filename string, proxy ...string) error {
+			zipFilename := filepath.Join(dir, "adb.zip")
+			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+				return err
+			}
+			defer os.Remove(zipFilename)
+			return zip.Decode(zipFilename, dir)
+		},
+	},
+
 	"chrome104": {
 		Name: Name{WindowsAmd64: "chrome.zip"},
 		Url:  []Url{"https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip"},
