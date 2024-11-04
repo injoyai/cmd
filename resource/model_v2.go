@@ -78,6 +78,9 @@ func (this Name) GetName() string {
 
 // GetResourceName 获取资源名称,指的下载地址里面的名称
 func (this Name) GetResourceName() string {
+	if this.All != "" {
+		return this.All
+	}
 	switch runtime.GOOS {
 	case "windows":
 		return this.WindowsAmd64
@@ -89,7 +92,7 @@ func (this Name) GetResourceName() string {
 			return this.LinuxArm
 		}
 	}
-	return this.All
+	return ""
 }
 
 // Url 例如minio https://oss.xxx.com/store/{name}
