@@ -130,6 +130,7 @@ var Resources = map[string]*Info{
 	"in":            {Name: Name{WindowsAmd64: "in.exe", LinuxAmd64: "in", LinuxArm: "in7"}},
 
 	"build.sh":           {Name: Name{All: "build.sh"}, Key: []string{"build"}},
+	"build_win.sh":       {Name: Name{All: "build_win.sh"}, Key: []string{"build_win"}},
 	"service.service":    {Name: Name{All: "service.service"}, Key: []string{"service"}},
 	"dockerfile":         {Name: Name{All: "dockerfile"}, Key: []string{"Dockerfile"}},
 	"install_minio.sh":   {Name: Name{All: "install_minio.sh"}, Key: []string{"install_minio"}},
