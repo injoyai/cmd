@@ -124,7 +124,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		})
 	}
 
-	//播放声音
+	//播放声音,不能协程执行,不然来不及播放
 	if op.VoiceEnable {
 		notice.DefaultVoice.Speak(op.VoiceText)
 	}
