@@ -132,7 +132,7 @@ var Resources = map[string]*Info{
 	"build.sh":           {Name: Name{All: "build.sh"}, Key: []string{"build"}},
 	"build_win.sh":       {Name: Name{All: "build_win.sh"}, Key: []string{"build_win"}},
 	"service.service":    {Name: Name{All: "service.service"}, Key: []string{"service"}},
-	"dockerfile":         {Name: Name{All: "dockerfile"}, Key: []string{"Dockerfile"}},
+	"dockerfile":         {Name: Name{All: "Dockerfile"}, Key: []string{"Dockerfile"}},
 	"install_minio.sh":   {Name: Name{All: "install_minio.sh"}, Key: []string{"install_minio"}},
 	"install_nodered.sh": {Name: Name{All: "install_nodered.sh"}, Key: []string{"install_nodered"}},
 	"install_v2raya.sh":  {Name: Name{All: "install_v2raya.sh"}, Key: []string{"install_v2raya"}},
