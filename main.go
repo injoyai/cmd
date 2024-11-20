@@ -693,6 +693,9 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "label", Short: "S", Memo: "分割数据,和取下标配合使用"},
+			},
 			Use:     "chart",
 			Short:   "生成曲线图",
 			Example: `in chart ./a.csv`,
