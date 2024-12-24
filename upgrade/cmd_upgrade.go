@@ -11,7 +11,6 @@ import (
 	"github.com/injoyai/goutil/other/command"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -114,7 +113,7 @@ func main() {
 			//打开本地文件
 			fmt.Printf("通过本地文件(%s)升级\n", os.Args[1])
 			for {
-				bs, err := ioutil.ReadFile(os.Args[1])
+				bs, err := os.ReadFile(os.Args[1])
 				if !logs.PrintErr(err) {
 					if !logs.PrintErr(oss.New(filepath.Join(oss.ExecDir(), inName), bs)) {
 						break
