@@ -45,23 +45,23 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	var download func(ctx context.Context, op *Config) error
 
-	if val, ok := Resources[op.Resource]; ok {
+	if val, ok := Resources.Get(op.Resource); ok {
 		if len(op.Name) == 0 {
-			op.Name = strings.Split(val.GetName(), ".")[0]
-			op.suffix = filepath.Ext(val.GetName())
+			op.Name = strings.Split(val.GetLocalName(), ".")[0]
+			op.suffix = filepath.Ext(val.GetLocalName())
 		}
 		//自带资源可能有多个源,按顺序挨个尝试
-		urls := val.GetUrl()
+		urls := val.GetFullUrls()
 		download = func(ctx context.Context, op *Config) (err error) {
 			defer func(s string) { op.Resource = s }(op.Resource)
 			for i, u := range urls {
 				op.Resource = u
-				if val.Handler == nil {
+				if handler := val.GetHandler(); handler == nil {
 					if err = downloadOther(ctx, op); err == nil {
 						return
 					}
 				} else {
-					if err = val.Handler(u, op.Dir, op.Filename()); err == nil {
+					if err = handler(u, op.Dir, op.Filename()); err == nil {
 						return
 					}
 				}
