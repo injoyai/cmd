@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-func MustDownload(ctx context.Context, op *Config) (filename string, exist bool) {
+func MustDownload(ctx context.Context, op *Config) (string, bool) {
 
 	//忽略正则的资源地址
 	op.ProxyIgnore = strings.Split(global.GetString("proxyIgnore"), ",")
@@ -141,8 +141,10 @@ func downloadOther(ctx context.Context, op *Config) error {
 		os.Remove(op.TempFilename())
 		return err
 	}
-	//可能源文件不存在
-	os.Remove(op.Filename())
+	//可能源文件不存在,忽略错误,可以直接重命名覆盖
+	//os.Remove(op.Filename())
+	//延迟0.05秒,有可能错误: rename proxy.exe.temp proxy.exe: The process cannot access the file because it is being used by another process.
+	<-time.After(time.Millisecond * 50)
 	return os.Rename(op.TempFilename(), op.Filename())
 }
 
