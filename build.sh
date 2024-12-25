@@ -2,43 +2,49 @@
 #-ldflags="-H windowsgui"
 #-ldflags="-X "
 
-name="in"
 date=`date -d -0day +%Y-%m-%d`
 
-GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s -X main.BuildDate=$date" -o ./$name.exe
-echo "Windows编译完成..."
+name="in"
+GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s -X main.BuildDate=$date" -o ./bin/$name.exe
+echo "$name编译完成..."
 echo "开始压缩..."
-upx -9 -k "./$name.exe"
-if [ -f "./$name.ex~" ]; then
-  rm "./$name.ex~"
+#upx -9 -k "./bin/$name.exe"
+if [ -f "./bin/$name.ex~" ]; then
+  rm "./bin/$name.ex~"
 fi
-if [ -f "./$name.000" ]; then
-  rm "./$name.000"
+if [ -f "./bin/$name.000" ]; then
+  rm "./bin/$name.000"
 fi
+echo "开始上传..."
+cmd.exe /c "in upload minio ./bin/$name.exe"
 
-GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./$name
-echo "Linux编译完成..."
+name="in_linux_amd64"
+GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./bin/$name
+echo "$name编译完成..."
 echo "开始压缩..."
-upx -9 -k "./$name"
-if [ -f "../$name.~" ]; then
-  rm "../$name.~"
+#upx -9 -k "./bin/$name"
+if [ -f "./bin/$name.~" ]; then
+  rm "./bin/$name.~"
 fi
-if [ -f "./$name.000" ]; then
-  rm "./$name.000"
+if [ -f "./bin/$name.000" ]; then
+  rm "./bin/$name.000"
 fi
+echo "开始上传..."
+cmd.exe /c "in upload minio ./bin/$name"
 
-GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./in7
-echo "Linux编译完成..."
+name="in_linux_arm"
+GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./bin/$name
+echo "$name编译完成..."
 echo "开始压缩..."
-upx -9 -k "./in7"
-if [ -f "../in7.~" ]; then
-  rm "../in7.~"
+#upx -9 -k "./bin/$name"
+if [ -f "./bin/$name.~" ]; then
+  rm "./bin/$name.~"
 fi
-if [ -f "./in7.000" ]; then
-  rm "./in7.000"
+if [ -f "./bin/$name.000" ]; then
+  rm "./bin/$name.000"
 fi
-
-./upload.sh
+echo "开始上传..."
+cmd.exe /c "in upload minio ./bin/$name"
 
 sleep 2
 

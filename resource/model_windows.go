@@ -34,7 +34,7 @@ var Exclusive = MResource{
 	"upgrade":       {Local: "in_upgrade.exe", Key: []string{"in_upgrade"}},
 	"server":        {Local: "in_server.exe", Key: []string{"in_server"}},
 	"in":            {Local: "in.exe"},
-	"forward":       {Local: "forward.exe"},
+	"forward":       {Local: "forward.exe", Remote: "forward_windows_amd64.exe"},
 
 	"downloader": {
 		Key:     []string{"download"},

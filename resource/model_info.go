@@ -64,10 +64,21 @@ func init() {
 		}
 	}
 
+	//建立索引
+	for k, v := range Resources {
+		Resources[k] = v
+		Resources[v.Local] = v
+		for _, k2 := range v.Key {
+			Resources[k2] = v
+		}
+	}
+
 	//合并资源
-	for _, v := range Exclusive {
-		for _, k := range v.Key {
-			Resources[k] = v
+	for k, v := range Exclusive {
+		Resources[k] = v
+		Resources[v.Local] = v
+		for _, k2 := range v.Key {
+			Resources[k2] = v
 		}
 	}
 
