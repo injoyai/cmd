@@ -20,4 +20,5 @@ require (
 	github.com/tebeka/selenium v0.9.9
 	go.bug.st/serial v1.5.0
 	golang.org/x/crypto v0.23.0
+	golang.org/x/sys v0.20.0
 )
