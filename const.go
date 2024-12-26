@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.3.9: 优化resource到v3版本,去除文件资源",
+		"v1.3.9: 优化resource到v3版本,去除文件资源,增加linux资源",
 		"v1.3.8: 增加adb资源,修复bug,增加资源build_win.sh,增加资源forward",
 		"v1.3.7: 切换软件源到自建服务oss.injoy.ink和配置自定义软件源",
 		"v1.3.6: 修改合并ts方式为ffmpeg，使用字节衔接合并会有卡顿，升级部分包的版本",

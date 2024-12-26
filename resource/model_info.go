@@ -2,15 +2,17 @@ package resource
 
 import (
 	"github.com/injoyai/cmd/global"
+	"runtime"
 	"strings"
 )
 
 type Info struct {
-	Key     []string //索引
-	Local   string   //本地资源名称
-	Remote  string   //远程资源名称
-	FullUrl []Url    //完整的资源地址,todo 缓存和最新目前在一起
-	Handler Handler  //自定义处理,例如压缩文件
+	Key       []string //索引
+	Local     string   //本地资源名称
+	Remote    string   //远程资源名称,默认amd64
+	RemoteArm string   //远程资源名称,arm架构
+	FullUrl   []Url    //完整的资源地址,todo 缓存和最新目前在一起
+	Handler   Handler  //自定义处理,例如压缩文件
 }
 
 func (this *Info) GetLocalName() string {
@@ -20,9 +22,18 @@ func (this *Info) GetLocalName() string {
 func (this *Info) GetFullUrls() []string {
 	ls := []string(nil)
 	for _, v := range this.FullUrl {
-		ls = append(ls, v.Format(this.Remote))
+		ls = append(ls, v.Format(this.GetRemote()))
 	}
 	return ls
+}
+
+func (this *Info) GetRemote() string {
+	switch runtime.GOARCH {
+	case "arm":
+		return this.RemoteArm
+	default:
+		return this.Remote
+	}
 }
 
 func (this *Info) GetHandler() Handler {
@@ -30,10 +41,11 @@ func (this *Info) GetHandler() Handler {
 }
 
 func (this *Info) init() {
-	if len(this.Local) == 0 && len(this.Remote) >= 0 {
-		this.Local = this.Remote
-	} else if len(this.Remote) == 0 && len(this.Local) >= 0 {
+	if len(this.Local) == 0 && len(this.GetRemote()) >= 0 {
+		this.Local = this.GetRemote()
+	} else if len(this.GetRemote()) == 0 && len(this.Local) >= 0 {
 		this.Remote = this.Local
+		this.RemoteArm = this.Local
 	}
 }
 
