@@ -35,6 +35,7 @@ var Exclusive = MResource{
 	"server":         {Local: "in_server.exe", Key: []string{"in_server"}},
 	"in":             {Local: "in.exe"},
 	"forward":        {Local: "forward.exe"},
+	"hls-player":     {Local: "hls-player.exe", Key: []string{"hls_player", "hlsplayer"}},
 
 	"downloader": {
 		Key:     []string{"download"},
