@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/injoyai/conv"
+	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/oss/shell"
@@ -15,7 +16,6 @@ import (
 	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,17 +29,17 @@ const (
 )
 
 type _deployFile struct {
-	Name    string   `json:"name"`    //文件路径
-	Data    string   `json:"data"`    //文件内容
-	Restart bool     `json:"restart"` //是否重启
-	Args    []string `json:"args"`    //参数
+	Filename string   `json:"filename"` //文件路径
+	Data     string   `json:"data"`     //文件内容
+	Restart  bool     `json:"restart"`  //是否重启
+	Args     []string `json:"args"`     //参数
 }
 
 func (this *_deployFile) deal() *_deployFile {
-	this.Name = strings.ReplaceAll(this.Name, "{user}", oss.UserDir())
-	this.Name = strings.ReplaceAll(this.Name, "{appdata}", oss.UserDataDir())
-	this.Name = strings.ReplaceAll(this.Name, "{injoy}", oss.UserInjoyDir())
-	this.Name = strings.ReplaceAll(this.Name, "{startup}", oss.UserStartupDir())
+	this.Filename = strings.ReplaceAll(this.Filename, "{user}", oss.UserDir())
+	this.Filename = strings.ReplaceAll(this.Filename, "{appdata}", oss.UserDataDir())
+	this.Filename = strings.ReplaceAll(this.Filename, "{injoy}", oss.UserInjoyDir())
+	this.Filename = strings.ReplaceAll(this.Filename, "{startup}", oss.UserStartupDir())
 	return this
 }
 
@@ -102,23 +102,29 @@ func DeployClient(addr string, flags *Flags) {
 		}
 		defer os.Remove(zipPath)
 
-		bs, err := ioutil.ReadFile(zipPath)
+		bs, err := os.ReadFile(zipPath)
 		if err != nil {
 			logs.Err(err)
 			return
 		}
 
 		file = append(file, (&_deployFile{
-			Name:    target,
-			Data:    base64.StdEncoding.EncodeToString(bs),
-			Restart: restart,
+			Filename: target,
+			Data:     base64.StdEncoding.EncodeToString(bs),
+			Restart:  restart,
 		}).deal())
 	}
 
-	bs := conv.Bytes(&Deploy{
-		Type:  Type,
-		File:  file,
-		Shell: []string{shell},
+	//bs := conv.Bytes(&Deploy{
+	//	Type:  Type,
+	//	File:  file,
+	//	Shell: []string{shell},
+	//})
+
+	bs := conv.Bytes(g.Map{
+		"type":  Type,
+		"data":  file,
+		"shell": []string{shell},
 	})
 
 	bs, _ = io.WriteWithPkg(bs)
@@ -155,30 +161,10 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 					Msg:  conv.New(err).String("成功"),
 				})
 
-				//for _, v := range m.File {
-				//	dir, name := filepath.Split(v.Name)
-				//	shell.Stop(name)
-				//	if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
-				//		zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
-				//		err = oss.New(zipPath, fileBytes)
-				//		logs.Infof("下载文件(%s),结果: %s\n", zipPath, conv.New(err).String("成功"))
-				//		if err == nil {
-				//			err = zip.Decode(zipPath, dir)
-				//			logs.Infof("解压文件(%s)到(%s),结果: %s\n", zipPath, dir, conv.New(err).String("成功"))
-				//			os.Remove(zipPath)
-				//			shell.Start(v.Name)
-				//		}
-				//	}
-				//	c.WriteAny(&resp{
-				//		Code: conv.SelectInt(err == nil, 200, 500),
-				//		Msg:  conv.New(err).String("成功"),
-				//	})
-				//}
-
 			case deployFile:
 
 				for _, v := range m.File {
-					dir, _ := filepath.Split(v.Name)
+					dir, _ := filepath.Split(v.Filename)
 					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
 						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
 						logs.Debugf("保存文件: %s\n", zipPath)
@@ -223,7 +209,7 @@ func DeployV1(bytes io.Message) error {
 	}
 
 	for _, v := range m.File {
-		dir, name := filepath.Split(v.Name)
+		dir, name := filepath.Split(v.Filename)
 		if v.Restart {
 			logs.Info("关闭文件: ", name)
 			shell.Stop(name)
@@ -248,9 +234,9 @@ func DeployV1(bytes io.Message) error {
 		os.Remove(zipPath)
 
 		if v.Restart {
-			logs.Info("执行文件: ", v.Name)
-			if err := shell.Start(v.Name); err != nil {
-				return fmt.Errorf("执行文件(%s)错误: %s", v.Name, err)
+			logs.Info("执行文件: ", v.Filename)
+			if err := shell.Start(v.Filename); err != nil {
+				return fmt.Errorf("执行文件(%s)错误: %s", v.Filename, err)
 			}
 		}
 	}
