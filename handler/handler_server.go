@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strings"
 )
 
 //====================SeleniumServer====================//
@@ -338,22 +339,32 @@ func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 	name := "in_server.exe"
 
-	switch {
-	case len(args) > 0 && args[0] == "stop":
-		shell.Stop(name)
+	if len(args) == 0 {
+		args = []string{""}
+	}
+
+	switch args[0] {
+	case "stop":
+		if err := shell.Stop(name); err != nil {
+			logs.Err(err)
+			return
+		}
+		logs.Info("关闭服务成功")
 		return
 
-	case len(args) > 0 && args[0] == "startup":
-		if err := tool.Shortcut(oss.UserStartupDir(name+".lnk"), oss.UserInjoyDir(name)); err != nil {
+	case "startup":
+		if err := tool.Shortcut(oss.UserStartupDir(strings.Split(name, ".")[0]+".lnk"), oss.UserInjoyDir(name)); err != nil {
 			logs.Err(err)
 			return
 		}
 		logs.Info("设置开机自启成功")
 		return
 
+	case "restart":
+
 	}
 
-	shell.Stop(name)
+	shell.Exec("taskkill.exe", "/f", "/im", name)
 	fmt.Println("开始运行In服务...")
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
