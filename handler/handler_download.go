@@ -92,7 +92,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 			logs.PrintErr(tool.ShellStart("C:\\Windows\\System32\\drivers\\etc\\"))
 		}
 	case "injoy":
-		logs.PrintErr(tool.ShellStart(oss.UserDefaultDir()))
+		logs.PrintErr(tool.ShellStart(oss.UserInjoyDir()))
 	case "appdata":
 		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
 	case "startup":
@@ -111,7 +111,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 
 		//尝试在内置资源查找
 		if r := resource.Resources[strings.ToLower(args[0])]; r != nil {
-			shell.Exec("taskkill.exe", "/f", "/im", r.GetLocalName())
+			shell.Stop(r.GetLocalName())
 			filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),

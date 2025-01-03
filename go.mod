@@ -9,9 +9,9 @@ require (
 	github.com/go-ole/go-ole v1.2.6
 	github.com/go-toast/toast v0.0.0-20190211030409-01e6764cf0a4
 	github.com/gorilla/websocket v1.5.0
-	github.com/injoyai/base v1.0.15
+	github.com/injoyai/base v1.0.19
 	github.com/injoyai/conv v1.1.10
-	github.com/injoyai/goutil v0.0.0-20240926081425-2c4277ded31e
+	github.com/injoyai/goutil v0.0.0-20250102071326-e128c38723c1
 	github.com/injoyai/io v0.1.8
 	github.com/injoyai/logs v1.0.9
 	github.com/injoyai/lorca v0.0.0-20230816093842-66a8b4247238
