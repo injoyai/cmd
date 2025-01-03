@@ -364,7 +364,7 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	}
 
-	shell.Exec("taskkill.exe", "/f", "/im", name)
+	shell.Stop(name)
 	fmt.Println("开始运行In服务...")
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
