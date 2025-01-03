@@ -2,11 +2,9 @@ package handler
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/injoyai/conv"
-	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/oss/shell"
@@ -30,7 +28,7 @@ const (
 
 type _deployFile struct {
 	Filename string   `json:"filename"` //文件路径
-	Data     string   `json:"data"`     //文件内容
+	Data     []byte   `json:"data"`     //文件内容
 	Restart  bool     `json:"restart"`  //是否重启
 	Args     []string `json:"args"`     //参数
 }
@@ -45,15 +43,8 @@ func (this *_deployFile) deal() *_deployFile {
 
 type Deploy struct {
 	Type  string         `json:"type"`  //类型
-	File  []*_deployFile `json:"file"`  //文件
+	Data  []*_deployFile `json:"data"`  //文件
 	Shell []string       `json:"shell"` //脚本
-}
-
-type _deployRes struct {
-	Type   string `json:"shell"`
-	Text   string `json:"text"`
-	Result string `json:"result"`
-	Error  string `json:"error"`
 }
 
 type resp struct {
@@ -110,21 +101,15 @@ func DeployClient(addr string, flags *Flags) {
 
 		file = append(file, (&_deployFile{
 			Filename: target,
-			Data:     base64.StdEncoding.EncodeToString(bs),
+			Data:     bs,
 			Restart:  restart,
 		}).deal())
 	}
 
-	//bs := conv.Bytes(&Deploy{
-	//	Type:  Type,
-	//	File:  file,
-	//	Shell: []string{shell},
-	//})
-
-	bs := conv.Bytes(g.Map{
-		"type":  Type,
-		"data":  file,
-		"shell": []string{shell},
+	bs := conv.Bytes(&Deploy{
+		Type:  Type,
+		Data:  file,
+		Shell: []string{shell},
 	})
 
 	bs, _ = io.WriteWithPkg(bs)
@@ -163,16 +148,14 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 			case deployFile:
 
-				for _, v := range m.File {
+				for _, v := range m.Data {
 					dir, _ := filepath.Split(v.Filename)
-					if fileBytes, err := base64.StdEncoding.DecodeString(v.Data); err == nil {
-						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
-						logs.Debugf("保存文件: %s\n", zipPath)
-						if err = oss.New(zipPath, fileBytes); err == nil {
-							logs.Info("解压文件: ", dir)
-							err = zip.Decode(zipPath, dir)
-							os.Remove(zipPath)
-						}
+					zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+					logs.Debugf("保存文件: %s\n", zipPath)
+					if err = oss.New(zipPath, v.Data); err == nil {
+						logs.Info("解压文件: ", dir)
+						err = zip.Decode(zipPath, dir)
+						os.Remove(zipPath)
 					}
 					c.WriteAny(&resp{
 						Code: conv.SelectInt(err == nil, 200, 500),
@@ -208,22 +191,16 @@ func DeployV1(bytes io.Message) error {
 		return err
 	}
 
-	for _, v := range m.File {
+	for _, v := range m.Data {
 		dir, name := filepath.Split(v.Filename)
 		if v.Restart {
 			logs.Info("关闭文件: ", name)
 			shell.Stop(name)
 		}
 
-		logs.Info("解析文件")
-		fileBytes, err := base64.StdEncoding.DecodeString(v.Data)
-		if err != nil {
-			return err
-		}
-
 		zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
 		logs.Info("保存文件: ", zipPath)
-		if err = oss.New(zipPath, fileBytes); err != nil {
+		if err = oss.New(zipPath, v.Data); err != nil {
 			return fmt.Errorf("保存文件(%s)错误: %s", zipPath, err)
 		}
 

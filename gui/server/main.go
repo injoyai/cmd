@@ -236,7 +236,7 @@ func (this *gui) deal(c *io.Client, msg io.Message) {
 		} else {
 			data = g.Map{
 				"version":   this.version,
-				"startTime": g.StartTime.Unix(),
+				"startTime": g.Uptime.Unix(),
 			}
 		}
 
