@@ -36,6 +36,7 @@ var Exclusive = MResource{
 	"in":             {Local: "in.exe"},
 	"forward":        {Local: "forward.exe"},
 	"hls-player":     {Local: "hls-player.exe", Key: []string{"hls_player", "hlsplayer"}},
+	"quark-signin":   {Local: "quark-signin.exe", Key: []string{"quark_sign", "quark-sign", "quarksign", "quarksignin"}},
 
 	"downloader": {
 		Key:     []string{"download"},
