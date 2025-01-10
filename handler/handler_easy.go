@@ -7,7 +7,6 @@ import (
 	"fmt"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
-	"github.com/injoyai/cmd/gui/broadcast"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/resource/crud"
 	"github.com/injoyai/cmd/tool"
@@ -122,16 +121,6 @@ func DocPython(cmd *cobra.Command, args []string, flags *Flags) {
 func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("未填写发送内容")
-		return
-	}
-
-	if args[0] == "gui" && !flags.GetBool("byGui") {
-		broadcast.RunGUI(func(input, selected string) {
-			PushServer(&cobra.Command{}, []string{input}, NewFlags([]*Flag{
-				{Name: "self", Value: conv.String(selected == "self")},
-				{Name: "byGui", Value: "true"},
-			}))
-		})
 		return
 	}
 

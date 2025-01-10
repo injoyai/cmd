@@ -18,7 +18,6 @@ func main() {
 	root := &cobra.Command{
 		Use:   "in",
 		Short: "Cli工具",
-		Run:   handler.Root,
 	}
 
 	addCommand := func(cmd ...*handler.Command) {
@@ -26,16 +25,6 @@ func main() {
 			root.AddCommand(v.Deal())
 		}
 	}
-
-	//command.Command{
-	//	Command:cobra.Command{
-	//		Use:   "in",
-	//		Short: "Cli工具",
-	//	},
-	//	Child: []&cobra.Command{
-	//
-	//	},
-	//}
 
 	addCommand(
 

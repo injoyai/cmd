@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.4.0: 增加资源quark-signin,夸克网盘自动签到",
+		"v1.4.0: 增加资源quark-signin,夸克网盘自动签到,细节优化",
 		"v1.3.9: 优化resource到v3版本,去除文件资源,增加linux资源,增加资源hls-player",
 		"v1.3.8: 增加adb资源,修复bug,增加资源build_win.sh,增加资源forward",
 		"v1.3.7: 切换软件源到自建服务oss.injoy.ink和配置自定义软件源",
