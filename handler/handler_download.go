@@ -106,7 +106,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 	case "edge_mini":
 		EdgeMiniServer(cmd, args[1:], flags)
 	case "server":
-		InServer(cmd, args, flags)
+		InServer(cmd, args[1:], flags)
 	default:
 
 		//尝试在内置资源查找
