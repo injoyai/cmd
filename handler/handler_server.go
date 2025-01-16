@@ -165,7 +165,7 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
-		shell.Start(filename)
+		go shell.Start(filename)
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
