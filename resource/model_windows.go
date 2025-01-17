@@ -38,6 +38,30 @@ var Exclusive = MResource{
 	"hls-player":     {Local: "hls-player.exe", Key: []string{"hls_player", "hlsplayer"}},
 	"quark-signin":   {Local: "quark-signin.exe", Key: []string{"quark_sign", "quark-sign", "quarksign", "quarksignin"}},
 
+	"cursor-register": {
+		Key:     []string{"cursor-auto-free"},
+		Local:   "cursor-register.exe",
+		FullUrl: []Url{"https://github.com/chengazhen/cursor-auto-free/releases/latest/download/CursorPro-Windows.zip"},
+		Handler: func(url, dir, filename string, proxy ...string) error {
+			zipFilename := filepath.Join(dir, "cursor-register.zip")
+			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+				return err
+			}
+			err := zip.Decode(zipFilename, dir)
+			if err != nil {
+				return err
+			}
+			os.Remove(zipFilename)
+
+			err = os.Rename(filepath.Join(dir, "CursorPro-Windows/CursorPro.exe"), filename)
+			if err != nil {
+				return err
+			}
+			os.RemoveAll(filepath.Join(dir, "CursorPro-Windows"))
+			return nil
+		},
+	},
+
 	"downloader": {
 		Key:     []string{"download"},
 		Local:   "downloader.exe",
