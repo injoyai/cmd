@@ -61,7 +61,9 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 						return
 					}
 				} else {
-					if err = handler(u, op.Dir, op.Filename()); err == nil {
+					proxy := op.Proxy()
+					fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
+					if err = handler(u, op.Dir, op.Filename(), proxy); err == nil {
 						return
 					}
 				}
