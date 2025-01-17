@@ -597,11 +597,19 @@ func main() {
 				},
 			},
 		},
+
 		&Command{
 			Use:     "kill",
 			Short:   "杀死进程",
 			Example: "in kill 12345(进程id)",
 			Run:     handler.Kill,
+		},
+
+		&Command{
+			Use:     "forward",
+			Short:   "端口转发",
+			Example: "in forward 80->:8080",
+			Run:     handler.ForwardServer,
 		},
 
 		&Command{

@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
+	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/frame/in/v3"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
@@ -16,6 +17,8 @@ import (
 	"github.com/injoyai/io"
 	"github.com/injoyai/io/listen"
 	"github.com/injoyai/logs"
+	"github.com/injoyai/proxy/core"
+	"github.com/injoyai/proxy/forward"
 	"github.com/spf13/cobra"
 	"github.com/tebeka/selenium"
 	"log"
@@ -247,21 +250,21 @@ func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================ForwardServer====================//
 
 func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
-	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
-		Resource:     "proxy",
-		Dir:          userDir,
-		ReDownload:   flags.GetBool("download"),
-		ProxyEnable:  true,
-		ProxyAddress: flags.GetString("proxy"),
-	})
+	port := flags.GetInt("port")
+	address := flags.GetString("address")
 
-	proxy := "80->:8080"
-	if len(args) > 0 {
-		proxy = args[0]
+	proxy := conv.DefaultString("", args...)
+	if ls := strings.Split(proxy, "->"); len(ls) == 2 {
+		port = conv.Int(ls[0])
+		address = ls[1]
 	}
-	s := fmt.Sprintf(`%s forward "%s"`, filename, proxy)
-	logs.PrintErr(tool.ShellRun(s))
+
+	f := &forward.Forward{
+		Listen:  core.NewListenTCP(port),
+		Forward: core.NewDialTCP(address),
+	}
+	err := f.Run(context.Background())
+	logs.PrintErr(err)
 }
 
 //====================ProxyServer====================//
