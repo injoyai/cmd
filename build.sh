@@ -46,5 +46,5 @@ fi
 echo "开始上传..."
 cmd.exe /c "in upload minio ./bin/$name"
 
-sleep 2
+sleep 8
 
