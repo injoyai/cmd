@@ -368,7 +368,7 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "addr", Short: "a", DefaultValue: "127.0.0.1:80", Memo: "本地代理地址"},
+						{Name: "address", Short: "a", DefaultValue: "127.0.0.1:80", Memo: "本地代理地址"},
 					},
 					Use:     "forward",
 					Short:   "转发服务",
@@ -378,7 +378,7 @@ func main() {
 				{
 					Use:     "proxy",
 					Short:   "Proxy服务",
-					Example: "in server proxy 80=>8080 -p=7000",
+					Example: "in server proxy 80->8080 -p=7000",
 					Run:     handler.ProxyServer,
 				},
 				{
@@ -606,6 +606,10 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "port", Short: "p", Memo: "监听端口"},
+				{Name: "address", Short: "a", DefaultValue: ":8080", Memo: "代理地址"},
+			},
 			Use:     "forward",
 			Short:   "端口转发",
 			Example: "in forward 80->:8080",
