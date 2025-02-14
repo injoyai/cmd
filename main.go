@@ -698,6 +698,16 @@ func main() {
 			Example: `in chart ./a.csv`,
 			Run:     handler.Chart,
 		},
+
+		&Command{
+			Flag: []*Flag{
+				{Name: "find", Short: "f", Memo: "模糊搜索"},
+			},
+			Use:     "resources",
+			Short:   "资源列表",
+			Example: `in resources -f=notice`,
+			Run:     handler.Resources,
+		},
 	)
 
 	root.Execute()
