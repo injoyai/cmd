@@ -7,12 +7,13 @@ import (
 )
 
 type Info struct {
-	Key       []string //索引
-	Local     string   //本地资源名称
-	Remote    string   //远程资源名称,默认amd64
-	RemoteArm string   //远程资源名称,arm架构
-	FullUrl   []Url    //完整的资源地址,todo 缓存和最新目前在一起
-	Handler   Handler  //自定义处理,例如压缩文件
+	Key         []string //索引
+	Local       string   //本地资源名称
+	Remote      string   //远程资源名称,默认amd64
+	RemoteArm   string   //远程资源名称,arm架构
+	RemoteArm64 string   //远程资源名称,arm64架构
+	FullUrl     []Url    //完整的资源地址,todo 缓存和最新目前在一起
+	Handler     Handler  //自定义处理,例如压缩文件
 }
 
 func (this *Info) GetLocalName() string {
@@ -31,6 +32,8 @@ func (this *Info) GetRemote() string {
 	switch runtime.GOARCH {
 	case "arm":
 		return this.RemoteArm
+	case "arm64":
+		return this.RemoteArm64
 	default:
 		return this.Remote
 	}
