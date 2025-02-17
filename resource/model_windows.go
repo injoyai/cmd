@@ -68,6 +68,12 @@ var Exclusive = MResource{
 		FullUrl: []Url{"https://github.com/injoyai/downloader/releases/latest/download/downloader.exe"},
 	},
 
+	"youtube-dl": {
+		Key:     []string{"ytdl", "yt-dl"},
+		Local:   "youtube-dl.exe",
+		FullUrl: []Url{"https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl.exe"},
+	},
+
 	"adb": {
 		Local:  "adb.exe",
 		Remote: "adb.zip",
