@@ -23,7 +23,9 @@ var Exclusive = MResource{
 	"motrix":     {Local: "motrix.exe"},
 	"frpc":       {Local: "frpc.exe"},
 	"frps":       {Local: "frps.exe"},
-	"ModbusPoll": {Local: "ModbusPoll.exe", Key: []string{"modbuspoll"}},
+	"in":         {Local: "in.exe"},
+	"forward":    {Local: "forward.exe"},
+	"gomobile":   {Local: "gomobile.exe"},
 
 	"proxy":          {Local: "proxy.exe"},
 	"listen":         {Local: "listen.exe"},
@@ -33,8 +35,7 @@ var Exclusive = MResource{
 	"notice_desktop": {Local: "notice_desktop.exe", Key: []string{"notice_cli", "notice-cli", "notice_client"}},
 	"upgrade":        {Local: "in_upgrade.exe", Key: []string{"in_upgrade"}},
 	"server":         {Local: "in_server.exe", Key: []string{"in_server"}},
-	"in":             {Local: "in.exe"},
-	"forward":        {Local: "forward.exe"},
+	"ModbusPoll":     {Local: "ModbusPoll.exe", Key: []string{"modbuspoll"}},
 	"hls-player":     {Local: "hls-player.exe", Key: []string{"hls_player", "hlsplayer"}},
 	"quark-signin":   {Local: "quark-signin.exe", Key: []string{"quark_sign", "quark-sign", "quarksign", "quarksignin"}},
 
