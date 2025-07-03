@@ -21,6 +21,50 @@ import (
 	"strings"
 )
 
+const (
+	DialTypeTCP       = "tcp"
+	DialTypeUDP       = "udp"
+	DialTypeLog       = "log"
+	DialTypeWS        = "ws"
+	DialTypeWebsocket = "websocket"
+	DialTypeMQTT      = "mqtt"
+	DialTypeSSH       = "ssh"
+	DialTypeSerial    = "serial"
+	DialTypeDeploy    = "deploy"
+	DialTypeNPS       = "nps"
+	DialTypeFrp       = "frp"
+	DialTypeProxy     = "proxy"
+)
+
+func Dial(cmd *cobra.Command, args []string, flags *Flags) {
+	switch flags.GetString("type") {
+	case DialTypeTCP:
+		DialTCP(cmd, args, flags)
+	case DialTypeUDP:
+		DialUDP(cmd, args, flags)
+	case DialTypeLog:
+		DialLog(cmd, args, flags)
+	case DialTypeWS, DialTypeWebsocket:
+		DialWebsocket(cmd, args, flags)
+	case DialTypeMQTT:
+		DialMQTT(cmd, args, flags)
+	case DialTypeSSH:
+		DialSSH(cmd, args, flags)
+	case DialTypeSerial:
+		DialSerial(cmd, args, flags)
+	case DialTypeDeploy:
+		DialDeploy(cmd, args, flags)
+	case DialTypeNPS:
+		DialNPS(cmd, args, flags)
+	case DialTypeFrp:
+		DialFrp(cmd, args, flags)
+	case DialTypeProxy:
+		DialProxy(cmd, args, flags)
+	default:
+		DialTCP(cmd, args, flags)
+	}
+}
+
 func DialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")

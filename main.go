@@ -167,6 +167,7 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
+				{Name: "type", Memo: "连接类型", DefaultValue: handler.DialTypeTCP},
 				{Name: "redial", Short: "r", Memo: "自动重连", DefaultValue: "true"},
 				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefaultValue: "500"},
@@ -176,6 +177,7 @@ func main() {
 			Use:     "dial",
 			Short:   "连接",
 			Example: "in dial tcp 127.0.0.1:80 -r false",
+			Run:     handler.Dial,
 			Child: []*Command{
 				{
 					Use:     "tcp",
