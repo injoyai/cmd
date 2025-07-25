@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.4.3: 增加in dial默认使用tcp",
+		"v1.4.3: 增加in dial默认使用tcp,修改in dir默认level为2",
 		"v1.4.2: 增加资源youtube-dl,支持下载youtube视频,增加gomobile资源,增加monitor-price资源",
 		"v1.4.1: 修改forward为代码执行,增加in forward port->address,增加in resources用于查看资源列表",
 		"v1.4.0: 增加资源quark-signin,夸克网盘自动签到,细节优化,增加资源cursor-register(自动注册更新cursor)",

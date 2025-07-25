@@ -174,7 +174,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 		args = []string{"./"}
 	}
 
-	level := flags.GetInt("level")
+	level := flags.GetInt("level", 2)
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
 	count := flags.GetBool("count")
 	show := flags.GetBool("show")
