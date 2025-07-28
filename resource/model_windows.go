@@ -27,6 +27,7 @@ var Exclusive = MResource{
 	"forward":       {Local: "forward.exe"},
 	"gomobile":      {Local: "gomobile.exe"},
 	"monitor-price": {Local: "monitor-price.exe"},
+	"mitmweb":       {Local: "mitmweb.exe"},
 
 	"proxy":          {Local: "proxy.exe"},
 	"listen":         {Local: "listen.exe"},
