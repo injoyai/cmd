@@ -109,6 +109,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	//尝试按照存储库下载
 	if download == nil {
+		op.Name = op.Resource
 		download = func(ctx context.Context, op *Config) (err error) {
 			name := op.Resource
 			defer func(s string) { op.Resource = s }(name)
