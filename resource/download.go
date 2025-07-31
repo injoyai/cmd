@@ -45,6 +45,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	var download func(ctx context.Context, op *Config) error
 
+	if len(op.Resource) == 0 {
+		return "", false, errors.New("请输入需要下载的资源")
+	}
+
 	if val, ok := Resources.Get(op.Resource); ok {
 		if len(op.Name) == 0 {
 			op.Name = strings.Split(val.GetLocalName(), ".")[0]
@@ -75,35 +79,48 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		}
 	}
 
-	if len(op.Resource) == 0 {
-		return "", false, errors.New("请输入需要下载的资源")
-	}
-
+	//尝试按照网址下载
 	if download == nil {
 		u, err := url.Parse(op.Resource)
-		if err != nil {
-			return "", false, err
-		}
-		ext := path.Ext(u.Path)
-		switch ext {
-		case ".m3u8":
-			op.suffix = ".ts"
-			download = downloadM3u8
-
-		default:
-
-			switch {
-			case strings.HasPrefix(op.Resource, "rtsp://") ||
-				strings.HasPrefix(op.Resource, "rtmp://"):
+		if err == nil && u.Host != "" {
+			ext := path.Ext(u.Path)
+			switch ext {
+			case ".m3u8":
 				op.suffix = ".ts"
-				download = downloadStream
+				download = downloadM3u8
 
 			default:
-				op.suffix = ext
-				download = downloadOther
+
+				switch {
+				case strings.HasPrefix(op.Resource, "rtsp://") ||
+					strings.HasPrefix(op.Resource, "rtmp://"):
+					op.suffix = ".ts"
+					download = downloadStream
+
+				default:
+					op.suffix = ext
+					download = downloadOther
+
+				}
 
 			}
+		}
+	}
 
+	//尝试按照存储库下载
+	if download == nil {
+		download = func(ctx context.Context, op *Config) (err error) {
+			defer func(s string) { op.Resource = s }(op.Resource)
+			for _, v := range strings.Split(global.GetString("resource"), ",") {
+				if len(v) != 0 {
+					op.suffix = filepath.Ext(op.Resource)
+					op.Resource = Url(v).Format(op.Resource)
+					if err = downloadOther(ctx, op); err == nil {
+						return
+					}
+				}
+			}
+			return
 		}
 	}
 
