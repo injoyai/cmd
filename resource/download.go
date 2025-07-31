@@ -110,11 +110,12 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	//尝试按照存储库下载
 	if download == nil {
 		download = func(ctx context.Context, op *Config) (err error) {
-			defer func(s string) { op.Resource = s }(op.Resource)
+			name := op.Resource
+			defer func(s string) { op.Resource = s }(name)
 			for _, v := range strings.Split(global.GetString("resource"), ",") {
 				if len(v) != 0 {
-					op.suffix = filepath.Ext(op.Resource)
-					op.Resource = Url(v).Format(op.Resource)
+					op.suffix = filepath.Ext(name)
+					op.Resource = Url(v).Format(name)
 					if err = downloadOther(ctx, op); err == nil {
 						return
 					}
