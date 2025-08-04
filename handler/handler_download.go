@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func Download(cmd *cobra.Command, args []string, flags *Flags) {
@@ -112,13 +113,16 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		//尝试在内置资源查找
 		if r := resource.Resources[strings.ToLower(args[0])]; r != nil {
 			shell.Stop(r.GetLocalName())
-			filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+			filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),
 				ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 				ProxyEnable:  true,
 				ProxyAddress: flags.GetString("proxy"),
 			})
+			if !exist {
+				<-time.After(time.Millisecond * 500)
+			}
 			fmt.Print("内置资源")
 			logs.PrintErr(tool.ShellStart(filename))
 			return
