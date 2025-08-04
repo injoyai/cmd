@@ -98,7 +98,7 @@ var Exclusive = MResource{
 			if err != nil {
 				return err
 			}
-			return nil
+			return os.Remove(zipFilename)
 		},
 	},
 
