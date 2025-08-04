@@ -86,7 +86,19 @@ var Exclusive = MResource{
 				return err
 			}
 			defer os.Remove(zipFilename)
-			return zip.Decode(zipFilename, dir)
+			err := zip.Decode(zipFilename, dir)
+			if err != nil {
+				return err
+			}
+			err = os.Rename(filepath.Join(dir, "/adb/adb.exe"), filepath.Join(dir, "/adb.exe"))
+			if err != nil {
+				return err
+			}
+			err = os.Rename(filepath.Join(dir, "/adb/AdbWinApi.dll"), filepath.Join(dir, "/AdbWinApi.dll"))
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 	},
 
