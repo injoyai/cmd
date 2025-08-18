@@ -386,7 +386,7 @@ func FileServer(cmd *cobra.Command, args []string, flags *Flags) {
 		args = []string{"./"}
 	}
 	port := flags.GetInt("port", 8080)
-	logs.Info("[:%d] 开启文件服务成功...\n", port)
+	logs.Infof("[:%d] 开启文件服务成功...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(args[0])))
 	logs.Err(err)
 }
