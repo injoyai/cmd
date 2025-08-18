@@ -413,6 +413,18 @@ func main() {
 					Example: "in server file",
 					Run:     handler.FileServer,
 				},
+				{
+					Use:     "file",
+					Short:   "HTTP文件服务",
+					Example: "in server file",
+					Run:     handler.FileServer,
+				},
+				{
+					Use:     "website",
+					Short:   "静态资源服务",
+					Example: "in server website",
+					Run:     handler.FileServer,
+				},
 			},
 		},
 

@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.4.4: 增加download尝试从存储中下载未定义的资源,优化adb下载函数",
+		"v1.4.4: 增加download尝试从存储中下载未定义的资源,优化adb下载函数,增加in server website同file",
 		"v1.4.3: 增加in dial默认使用tcp,修改in dir默认level为2,增加资源mitmweb.exe",
 		"v1.4.2: 增加资源youtube-dl,支持下载youtube视频,增加gomobile资源,增加monitor-price资源",
 		"v1.4.1: 修改forward为代码执行,增加in forward port->address,增加in resources用于查看资源列表",
