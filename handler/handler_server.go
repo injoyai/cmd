@@ -167,7 +167,7 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "edge",
 			Dir:          userDir,
-			ReDownload:   flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
+			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
@@ -190,7 +190,7 @@ func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) {
 		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "edge_mini",
 			Dir:          oss.UserInjoyDir(),
-			ReDownload:   flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
+			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyEnable:  true,
 			ProxyAddress: flags.GetString("proxy"),
 		})
@@ -205,7 +205,7 @@ func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "influxdb",
 		Dir:          userDir,
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -265,7 +265,7 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "proxy",
 		Dir:          userDir,
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -286,7 +286,7 @@ func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "livego",
 		Dir:          userDir,
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -300,7 +300,7 @@ func FrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "frps",
 		Dir:          userDir,
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -363,7 +363,7 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),
-		ReDownload:   flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
+		Cover:        flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})

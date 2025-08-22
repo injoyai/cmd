@@ -1,9 +1,7 @@
 package resource
 
 import (
-	"github.com/injoyai/cmd/global"
 	"runtime"
-	"strings"
 )
 
 type Info struct {
@@ -73,12 +71,7 @@ var Resources = MResource{
 func init() {
 
 	//从配置中读取配置的基础地址,例 https://oss.xxx.com/store/{name}
-	urls := []Url(nil)
-	for _, v := range strings.Split(global.GetString("resource", DefaultUrl), ",") {
-		if len(v) != 0 {
-			urls = append(urls, Url(v))
-		}
-	}
+	urls := GetUrls()
 
 	//建立索引
 	for k, v := range Resources {

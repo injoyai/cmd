@@ -38,7 +38,7 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		Coroutine:    flags.GetInt("coroutine"),
 		Retry:        flags.GetInt("retry"),
 		Name:         flags.GetString("name"),
-		ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
+		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 		NoticeEnable: flags.GetBool("noticeEnable"),
@@ -57,7 +57,7 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
-		ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
+		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -116,7 +116,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 			filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),
-				ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
+				Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 				ProxyEnable:  true,
 				ProxyAddress: flags.GetString("proxy"),
 			})

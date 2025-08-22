@@ -72,7 +72,7 @@ func main() {
 								Dir:          oss.ExecDir(),
 								ProxyEnable:  true,
 								ProxyAddress: global.GetString("proxy"),
-								ReDownload:   true,
+								Cover:        true,
 							})
 
 							//运行
@@ -131,7 +131,7 @@ func main() {
 			Dir:          oss.ExecDir(),
 			ProxyEnable:  true,
 			ProxyAddress: global.GetString("proxy"),
-			ReDownload:   true,
+			Cover:        true,
 		})
 
 	}

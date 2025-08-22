@@ -278,9 +278,9 @@ func DialDeal(c *client.Client, flags *Flags, run bool) {
 
 func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
-		Resource:   "npc",
-		Dir:        oss.ExecDir(),
-		ReDownload: flags.GetBool("download"),
+		Resource: "npc",
+		Dir:      oss.ExecDir(),
+		Cover:    flags.GetBool("download"),
 	})
 	addr := conv.Default("", args...)
 	file := cache.NewFile("dial", "nps")
@@ -299,7 +299,7 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "frpc",
 		Dir:          oss.ExecDir(),
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
@@ -365,7 +365,7 @@ func DialProxy(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "proxy",
 		Dir:          oss.UserInjoyDir(),
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})

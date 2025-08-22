@@ -91,7 +91,7 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "upgrade",
 		Dir:          oss.ExecDir(),
-		ReDownload:   flags.GetBool("download"),
+		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
