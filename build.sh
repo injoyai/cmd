@@ -9,12 +9,8 @@ GOOS=windows GOARCH=amd64 go build -v -ldflags="-w -s -X main.BuildDate=$date" -
 echo "$name编译完成..."
 echo "开始压缩..."
 upx -9 -k "./bin/$name.exe"
-if [ -f "./bin/$name.ex~" ]; then
-  rm "./bin/$name.ex~"
-fi
-if [ -f "./bin/$name.000" ]; then
-  rm "./bin/$name.000"
-fi
+rm "./bin/$name.ex~"
+rm "./bin/$name.000"
 echo "开始上传..."
 cmd.exe /c "in upload minio ./bin/$name.exe"
 
@@ -23,12 +19,8 @@ GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o 
 echo "$name编译完成..."
 echo "开始压缩..."
 upx -9 -k "./bin/$name"
-if [ -f "./bin/$name.~" ]; then
-  rm "./bin/$name.~"
-fi
-if [ -f "./bin/$name.000" ]; then
-  rm "./bin/$name.000"
-fi
+rm "./bin/$name.~"
+rm "./bin/$name.000"
 echo "开始上传..."
 cmd.exe /c "in upload minio ./bin/$name"
 
@@ -37,12 +29,8 @@ GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w -X main.BuildDate=$dat
 echo "$name编译完成..."
 echo "开始压缩..."
 upx -9 -k "./bin/$name"
-if [ -f "./bin/$name.~" ]; then
-  rm "./bin/$name.~"
-fi
-if [ -f "./bin/$name.000" ]; then
-  rm "./bin/$name.000"
-fi
+rm "./bin/$name.~"
+rm "./bin/$name.000"
 echo "开始上传..."
 cmd.exe /c "in upload minio ./bin/$name"
 

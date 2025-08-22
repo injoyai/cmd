@@ -12,11 +12,17 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/str"
-	"github.com/injoyai/io"
-	"github.com/injoyai/io/dial"
+	"github.com/injoyai/ios"
+	"github.com/injoyai/ios/client"
+	"github.com/injoyai/ios/client/dial"
+	"github.com/injoyai/ios/client/redial"
+	mqtt2 "github.com/injoyai/ios/module/mqtt"
+	"github.com/injoyai/ios/module/serial"
+	ssh2 "github.com/injoyai/ios/module/ssh"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
+	"net"
 	"os"
 	"strings"
 )
@@ -69,29 +75,32 @@ func DialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	<-dial.RedialTCP(args[0], func(c *io.Client) {
+	redial.TCP(args[0], func(c *client.Client) {
 		DialDeal(c, flags, true)
-	}).DoneAll()
+	}).Run(context.Background())
 }
 
 func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	<-dial.RedialUDP(args[0], func(c *io.Client) {
+	client.Run(func(ctx context.Context) (ios.ReadWriteCloser, string, error) {
+		c, err := net.Dial("udp", args[0])
+		return c, args[0], err
+	}, func(c *client.Client) {
 		DialDeal(c, flags, true)
-		c.WriteString(io.Pong)
-	}).DoneAll()
+		//c.WriteString(io.Pong)
+	})
 }
 
 func DialLog(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	<-dial.RedialTCP(args[0], func(c *io.Client) {
-		c.SetLogger(&_log{})
+	redial.RunTCP(args[0], func(c *client.Client) {
+		//c.SetLogger(&_log{})
 		DialDeal(c, flags, true)
-	}).DoneAll()
+	})
 }
 
 func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
@@ -109,9 +118,9 @@ func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if !strings.HasPrefix(args[0], "wss://") || !strings.HasPrefix(args[0], "ws://") {
 		args[0] = "ws://" + args[0]
 	}
-	<-dial.RedialWebsocket(args[0], nil, func(c *io.Client) {
+	redial.Websocket(args[0], nil, func(c *client.Client) {
 		DialDeal(c, flags, true)
-	}).DoneAll()
+	})
 }
 
 func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
@@ -124,45 +133,27 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 	retained := flags.GetBool("retained")
 	qos := byte(flags.GetInt("qos"))
 	timeout := flags.GetMillisecond("timeout", 3000)
-	var c *io.Client
-	c = dial.RedialMQTT(&dial.MQTTIOConfig{
-		Subscribe: func() []dial.MQTTSubscribe {
-			list := []dial.MQTTSubscribe(nil)
-			for _, v := range strings.Split(subscribe, ",") {
-				if len(v) > 0 {
-					list = append(list, dial.MQTTSubscribe{
-						Topic: v,
-						Qos:   qos,
-					})
-				}
-			}
-			return list
-		}(),
-		Publish: func() []dial.MQTTPublish {
-			list := []dial.MQTTPublish(nil)
-			for _, v := range strings.Split(publish, ",") {
-				list = append(list, dial.MQTTPublish{
-					Topic:    v,
-					Qos:      qos,
-					Retained: retained,
-				})
-			}
-			return list
-		}(),
-	}, mqtt.NewClientOptions().
-		AddBroker(args[0]).
-		SetClientID(g.RandString(8)).
-		SetWriteTimeout(timeout).
-		SetAutoReconnect(false).
-		SetConnectionLostHandler(func(client mqtt.Client, err error) {
-			if c != nil {
-				c.CloseWithErr(err)
-			}
-		}).
-		SetConnectTimeout(timeout), func(c *io.Client) {
-		DialDeal(c, flags, true)
-	})
-	<-c.DoneAll()
+
+	redial.RunMQTT(
+		mqtt.NewClientOptions().
+			AddBroker(args[0]).
+			SetClientID(g.RandString(8)).
+			SetWriteTimeout(timeout).
+			SetAutoReconnect(false).
+			SetConnectTimeout(timeout),
+		mqtt2.Subscribe{
+			Topic: subscribe,
+			Qos:   qos,
+		},
+		mqtt2.Publish{
+			Topic:    publish,
+			Qos:      qos,
+			Retained: retained,
+		},
+		func(c *client.Client) {
+			DialDeal(c, flags, true)
+		})
+
 }
 
 func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
@@ -186,8 +177,8 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 				password = "root"
 			}
 		}
-		c, err := dial.NewSSH(&dial.SSHConfig{
-			Addr:          addr,
+		c, err := dial.SSH(&ssh2.Config{
+			Address:       addr,
 			User:          username,
 			Password:      password,
 			Timeout:       flags.GetMillisecond("timeout"),
@@ -200,15 +191,15 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 			continue
 		}
 		DialDeal(c, flags, false)
-		c.Debug(false)
-		c.SetDealFunc(func(c *io.Client, msg io.Message) {
-			fmt.Print(msg.String())
-		})
-		go c.Run()
+		c.Logger.Debug(false)
+		c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
+			fmt.Print(string(msg.Payload()))
+		}
+		go c.Run(context.Background())
 		reader := bufio.NewReader(os.Stdin)
 		for {
 			select {
-			case <-c.CtxAll().Done():
+			case <-c.Done():
 				return
 			default:
 				msg, _ := reader.ReadString('\n')
@@ -222,16 +213,16 @@ func DialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	<-dial.RedialSerial(&dial.SerialConfig{
+	redial.Serial(&serial.Config{
 		Address:  args[0],
 		BaudRate: flags.GetInt("baudRate"),
 		DataBits: flags.GetInt("dataBits"),
 		StopBits: flags.GetInt("stopBits"),
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
-	}, func(c *io.Client) {
+	}, func(c *client.Client) {
 		DialDeal(c, flags, true)
-	}).DoneAll()
+	})
 }
 
 func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
@@ -242,24 +233,24 @@ func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 	DeployClient(args[0], flags)
 }
 
-func DialDeal(c *io.Client, flags *Flags, run bool) {
+func DialDeal(c *client.Client, flags *Flags, run bool) {
 	oss.ListenExit(func() { c.CloseAll() })
 	r := bufio.NewReader(os.Stdin)
-	c.SetOptions(func(c *io.Client) {
-		c.Debug(flags.GetBool("debug"))
+	c.SetOption(func(c *client.Client) {
+		c.Logger.Debug(flags.GetBool("debug"))
 		switch strings.ToLower(flags.GetString("printType")) {
 		case "utf8", "ascii":
-			c.SetPrintWithUTF8()
+			c.Logger.WithUTF8()
 		case "hex":
-			c.SetPrintWithHEX()
+			c.Logger.WithHEX()
 		}
 		if !flags.GetBool("redial") {
-			c.SetRedialWithNil()
+			c.SetRedial(false)
 		}
-		go func(ctx context.Context) {
+		go func() {
 			for {
 				select {
-				case <-ctx.Done():
+				case <-c.Runner2.Done():
 					return
 				default:
 					bs, _, err := r.ReadLine()
@@ -270,7 +261,7 @@ func DialDeal(c *io.Client, flags *Flags, run bool) {
 						if len(msg)%2 != 0 {
 							msg = "0" + msg
 						}
-						_, err := c.WriteHEX(msg)
+						err = c.WriteHEX(msg)
 						logs.PrintErr(err)
 					} else {
 						_, err := c.WriteString(msg)
@@ -278,10 +269,10 @@ func DialDeal(c *io.Client, flags *Flags, run bool) {
 					}
 				}
 			}
-		}(c.Ctx())
+		}()
 	})
 	if run {
-		go c.Run()
+		go c.Run(context.Background())
 	}
 }
 
@@ -291,7 +282,7 @@ func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 		Dir:        oss.ExecDir(),
 		ReDownload: flags.GetBool("download"),
 	})
-	addr := conv.GetDefaultString("", args...)
+	addr := conv.Default("", args...)
 	file := cache.NewFile("dial", "nps")
 	addr = flags.GetString("addr", file.GetString("addr", addr))
 	key := flags.GetString("key", file.GetString("key"))
@@ -319,7 +310,7 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("连接方式: ", file.GetString("type"))
 		fmt.Println("连接名称: ", file.GetString("name"))
 	}
-	serverAddr := conv.GetDefaultString(file.GetString("serverAddr"), args...)
+	serverAddr := conv.Default(file.GetString("serverAddr"), args...)
 	if len(serverAddr) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 		return

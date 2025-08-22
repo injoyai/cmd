@@ -14,14 +14,14 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/io"
-	"github.com/injoyai/io/listen"
+	server2 "github.com/injoyai/ios/server"
+	"github.com/injoyai/ios/server/listen"
 	"github.com/injoyai/logs"
 	"github.com/injoyai/proxy/core"
 	"github.com/injoyai/proxy/forward"
 	"github.com/spf13/cobra"
 	"github.com/tebeka/selenium"
-	"log"
+	"io"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -55,35 +55,26 @@ func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================TCPServer====================//
 
 func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
-	s, err := listen.NewTCPServer(
+	err := listen.RunTCP(
 		flags.GetInt("port", 10086),
-		func(s *io.Server) {
-			s.SetTimeout(flags.GetSecond("timeout", -1))
-			s.Debug(flags.GetBool("debug"))
-			s.Logger.SetPrintWithUTF8()
+		func(s *server2.Server) {
+			s.Timeout.SetTimeout(flags.GetSecond("timeout", -1))
+			s.Logger.Debug(flags.GetBool("debug"))
+			s.Logger.WithUTF8()
 		})
-	if err != nil {
-		logs.Err(err)
-		return
-	}
-	logs.PrintErr(s.Run())
+	logs.PrintErr(err)
 }
 
 //====================UDPServer====================//
 
 func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
-	s, err := listen.NewUDPServer(port, func(s *io.Server) {
-		s.SetTimeout(flags.GetSecond("timeout", -1))
-		s.Debug(flags.GetBool("debug"))
-		s.Logger.SetPrintWithUTF8()
-		s.SetKey(fmt.Sprintf(":%d", port))
+	err := listen.RunTCP(port, func(s *server2.Server) {
+		s.Timeout.SetTimeout(flags.GetSecond("timeout", -1))
+		s.Logger.Debug(flags.GetBool("debug"))
+		s.Logger.WithUTF8()
 	})
-	if err != nil {
-		log.Printf("[错误] %s", err.Error())
-		return
-	}
-	logs.PrintErr(s.Run())
+	logs.PrintErr(err)
 }
 
 //====================MQTTServer====================//
@@ -253,7 +244,7 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port")
 	address := flags.GetString("address")
 
-	proxy := conv.DefaultString("", args...)
+	proxy := conv.Default("", args...)
 	if ls := strings.Split(proxy, "->"); len(ls) == 2 {
 		port = conv.Int(ls[0])
 		address = ls[1]

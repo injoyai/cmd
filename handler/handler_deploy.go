@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/injoyai/conv"
@@ -9,9 +10,13 @@ import (
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
-	"github.com/injoyai/io"
-	"github.com/injoyai/io/dial"
-	"github.com/injoyai/io/listen"
+	"github.com/injoyai/ios"
+	"github.com/injoyai/ios/client"
+	"github.com/injoyai/ios/client/dial"
+	"github.com/injoyai/ios/client/frame"
+	"github.com/injoyai/ios/module/common"
+	"github.com/injoyai/ios/server"
+	"github.com/injoyai/ios/server/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"os"
@@ -65,15 +70,14 @@ func DeployClient(addr string, flags *Flags) {
 		Type = deployShell
 	}
 	restart := flags.GetBool("restart", Type == deployDeploy)
-	c, err := dial.NewTCP(addr, func(c *io.Client) {
-		c.Debug()
-		c.SetLevel(io.LevelInfo)
-		c.SetReadWithPkg()
-		c.SetWriteWithNil()
-		c.SetDealFunc(func(c *io.Client, msg io.Message) {
-			fmt.Println(msg.String())
+	c, err := dial.TCP(addr, func(c *client.Client) {
+		c.Logger.Debug()
+		c.Logger.SetLevel(common.LevelInfo)
+		c.WithFrame(frame.Default)
+		c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
+			fmt.Println(string(msg.Payload()))
 			c.Close()
-		})
+		}
 	})
 	if err != nil {
 		logs.Err(err)
@@ -112,10 +116,10 @@ func DeployClient(addr string, flags *Flags) {
 		Shell: []string{shell},
 	})
 
-	bs, _ = io.WriteWithPkg(bs)
+	bs, _ = frame.WriteWith(bs)
 	bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs))
 
-	c.Run()
+	c.Run(context.Background())
 }
 
 //====================DeployServer====================//
@@ -123,57 +127,59 @@ func DeployClient(addr string, flags *Flags) {
 func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	port := flags.GetInt("port", 10088)
-	s, err := listen.NewTCPServer(port, func(s *io.Server) {
-		s.Debug()
-		s.SetLevel(io.LevelInfo)
-		s.SetReadWriteWithPkg()
-		s.SetDealFunc(func(c *io.Client, msg io.Message) {
-			defer c.Close()
+	s, err := listen.TCP(port, func(s *server.Server) {
+		s.Logger.Debug()
+		s.Logger.SetLevel(common.LevelInfo)
+		s.SetClientOption(func(c *client.Client) {
+			c.WithFrame(frame.Default)
+			c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
+				defer c.Close()
 
-			var m *Deploy
-			err := json.Unmarshal(msg.Bytes(), &m)
-			if err != nil {
-				logs.Err(err)
-				return
-			}
-
-			switch m.Type {
-			case deployDeploy:
-
-				err := DeployV1(msg)
-				c.WriteAny(&resp{
-					Code: conv.SelectInt(err == nil, 200, 500),
-					Msg:  conv.New(err).String("成功"),
-				})
-
-			case deployFile:
-
-				for _, v := range m.Data {
-					dir, _ := filepath.Split(v.Filename)
-					zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
-					logs.Debugf("保存文件: %s\n", zipPath)
-					if err = oss.New(zipPath, v.Data); err == nil {
-						logs.Info("解压文件: ", dir)
-						err = zip.Decode(zipPath, dir)
-						os.Remove(zipPath)
-					}
-					c.WriteAny(&resp{
-						Code: conv.SelectInt(err == nil, 200, 500),
-						Msg:  conv.New(err).String("成功"),
-					})
-
+				var m *Deploy
+				err := json.Unmarshal(msg.Payload(), &m)
+				if err != nil {
+					logs.Err(err)
+					return
 				}
 
-			case deployShell:
+				switch m.Type {
+				case deployDeploy:
 
-				for _, v := range m.Shell {
-					logs.Debugf("执行脚本: %s\n", v)
-					result, err := shell.Exec(v)
+					err := DeployV1(msg.Payload())
 					c.WriteAny(&resp{
-						Code: conv.SelectInt(err == nil, 200, 500),
-						Data: result,
+						Code: conv.Select(err == nil, 200, 500),
 						Msg:  conv.New(err).String("成功"),
 					})
+
+				case deployFile:
+
+					for _, v := range m.Data {
+						dir, _ := filepath.Split(v.Filename)
+						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
+						logs.Debugf("保存文件: %s\n", zipPath)
+						if err = oss.New(zipPath, v.Data); err == nil {
+							logs.Info("解压文件: ", dir)
+							err = zip.Decode(zipPath, dir)
+							os.Remove(zipPath)
+						}
+						c.WriteAny(&resp{
+							Code: conv.Select(err == nil, 200, 500),
+							Msg:  conv.New(err).String("成功"),
+						})
+
+					}
+
+				case deployShell:
+
+					for _, v := range m.Shell {
+						logs.Debugf("执行脚本: %s\n", v)
+						result, err := shell.Exec(v)
+						c.WriteAny(&resp{
+							Code: conv.Select(err == nil, 200, 500),
+							Data: result,
+							Msg:  conv.New(err).String("成功"),
+						})
+					}
 				}
 			}
 		})
@@ -181,10 +187,10 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if logs.PrintErr(err) {
 		return
 	}
-	logs.Err(s.Run())
+	logs.Err(s.Run(context.Background()))
 }
 
-func DeployV1(bytes io.Message) error {
+func DeployV1(bytes []byte) error {
 	var m *Deploy
 	err := json.Unmarshal(bytes, &m)
 	if err != nil {

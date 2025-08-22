@@ -72,10 +72,10 @@ func (this *Command) Deal(flags ...*Flag) *cobra.Command {
 	}
 	flags = append(this.Flag, flags...)
 
-	this.Command.Use = conv.SelectString(this.Command.Use == "", this.Use, this.Command.Use)
-	this.Command.Short = conv.SelectString(this.Command.Short == "", this.Short, this.Command.Short)
-	this.Command.Long = conv.SelectString(this.Command.Long == "", this.Long, this.Command.Long)
-	this.Command.Example = conv.SelectString(this.Command.Example == "", this.Example, this.Command.Example)
+	this.Command.Use = conv.Select(this.Command.Use == "", this.Use, this.Command.Use)
+	this.Command.Short = conv.Select(this.Command.Short == "", this.Short, this.Command.Short)
+	this.Command.Long = conv.Select(this.Command.Long == "", this.Long, this.Command.Long)
+	this.Command.Example = conv.Select(this.Command.Example == "", this.Example, this.Command.Example)
 	this.Command.Run = func(cmd *cobra.Command, args []string) {
 		if this.Run != nil {
 			this.Run(cmd, args, newFlags(flags))
