@@ -24,6 +24,16 @@ rm "./bin/$name.000"
 echo "开始上传..."
 cmd.exe /c "in upload minio ./bin/$name"
 
+name="in_linux_arm64"
+GOOS=linux GOARCH=arm64 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./bin/$name
+echo "$name编译完成..."
+echo "开始压缩..."
+upx -9 -k "./bin/$name"
+rm "./bin/$name.~"
+rm "./bin/$name.000"
+echo "开始上传..."
+cmd.exe /c "in upload minio ./bin/$name"
+
 name="in_linux_arm"
 GOOS=linux GOARCH=arm GOARM=7 go build -v -ldflags="-s -w -X main.BuildDate=$date" -o ./bin/$name
 echo "$name编译完成..."
