@@ -35,8 +35,8 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          flags.GetString("dir"),
-		Coroutine:    flags.GetUint("coroutine"),
-		Retry:        flags.GetUint("retry"),
+		Coroutine:    flags.GetInt("coroutine"),
+		Retry:        flags.GetInt("retry"),
 		Name:         flags.GetString("name"),
 		ReDownload:   flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
@@ -46,7 +46,7 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		VoiceEnable:  flags.GetBool("voiceEnable"),
 		VoiceText:    flags.GetString("voiceText"),
 	})
-	fmt.Println("下载完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
+	fmt.Println("下载完成: ", filename, conv.Select(exist, "(已存在)", ""))
 }
 
 func Install(cmd *cobra.Command, args []string, flags *Flags) {
@@ -61,7 +61,7 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
-	fmt.Println("安装完成: ", filename, conv.SelectString(exist, "(已存在)", ""))
+	fmt.Println("安装完成: ", filename, conv.Select(exist, "(已存在)", ""))
 }
 
 func Uninstall(cmd *cobra.Command, args []string, flags *Flags) {

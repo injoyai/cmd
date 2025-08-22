@@ -16,7 +16,7 @@ import (
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/io"
+	"github.com/injoyai/ios/client/frame"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"log"
@@ -126,7 +126,7 @@ func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if flags.GetBool("self") {
 		c, err := net.DialTimeout("udp", ":10067", time.Millisecond*100)
 		if err == nil {
-			c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+			c.Write(frame.New(0, []byte(args[0])).Bytes())
 			c.Close()
 		}
 		return
@@ -137,7 +137,7 @@ func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 			if !self {
 				c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
 				if err == nil {
-					c.Write(io.NewPkg(0, []byte(args[0])).Bytes())
+					c.Write(frame.New(0, []byte(args[0])).Bytes())
 					c.Close()
 				}
 			}

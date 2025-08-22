@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 	"net/http"
 )
@@ -14,6 +16,7 @@ type (
 )
 
 func main() {
+	fmt.Println(oss.ExecDir())
 
 	root := &cobra.Command{
 		Use:   "in",
@@ -503,12 +506,12 @@ func main() {
 					Example: "in scan task -f xx.exe",
 					Run:     handler.ScanTask,
 				},
-				{
-					Use:     "server",
-					Short:   "扫描运行的进程",
-					Example: "in scan server",
-					Run:     handler.ScanServer,
-				},
+				//{
+				//	Use:     "server",
+				//	Short:   "扫描运行的进程",
+				//	Example: "in scan server",
+				//	Run:     handler.ScanServer,
+				//},
 			},
 		},
 

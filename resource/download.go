@@ -14,7 +14,7 @@ import (
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/goutil/task"
-	"github.com/injoyai/io"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -66,7 +66,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 					}
 				} else {
 					proxy := op.Proxy()
-					fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
+					fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.Select(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
 					if err = handler(u, op.Dir, op.Filename(), proxy); err == nil {
 						return
 					}
@@ -157,7 +157,7 @@ func downloadOther(ctx context.Context, op *Config) error {
 	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
 	//以防出现下载失败,直接覆盖了源文件
 	proxy := op.Proxy()
-	fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
+	fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.Select(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
 	if _, err := bar.Download(op.Resource, op.TempFilename(), proxy); err != nil {
 		os.Remove(op.TempFilename())
 		return err
@@ -287,8 +287,8 @@ type Config struct {
 	Dir          string
 	Name         string
 	suffix       string
-	Retry        uint
-	Coroutine    uint
+	Retry        int
+	Coroutine    int
 	ProxyEnable  bool
 	ProxyAddress string
 	ProxyIgnore  []string
