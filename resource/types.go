@@ -17,3 +17,7 @@ type Resource interface {
 	GetFullUrls() []string
 	GetHandler() Handler
 }
+
+const (
+	DefaultUrl = "https://oss.002246.xyz/in-store/{name}"
+)

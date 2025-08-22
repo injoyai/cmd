@@ -48,7 +48,6 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	if len(op.Resource) == 0 {
 		return "", false, errors.New("请输入需要下载的资源")
 	}
-
 	if val, ok := Resources.Get(op.Resource); ok {
 		if len(op.Name) == 0 {
 			op.Name = strings.Split(val.GetLocalName(), ".")[0]
@@ -107,13 +106,14 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		}
 	}
 
-	//尝试按照存储库下载
+	//尝试按照存储库下载 https://example.com/store/{name}
 	if download == nil {
 		op.Name = op.Resource
 		download = func(ctx context.Context, op *Config) (err error) {
 			name := op.Resource
 			defer func(s string) { op.Resource = s }(name)
-			for _, v := range strings.Split(global.GetString("resource"), ",") {
+			hostStr := global.GetString("resource", DefaultUrl)
+			for _, v := range strings.Split(hostStr, ",") {
 				if len(v) != 0 {
 					op.suffix = filepath.Ext(name)
 					op.Resource = Url(v).Format(name)
@@ -124,6 +124,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 			}
 			return
 		}
+	}
+
+	if download == nil {
+		return "", false, errors.New("资源不存在: " + op.Resource)
 	}
 
 	//判断文件是否存在,存在是否需要重新下载

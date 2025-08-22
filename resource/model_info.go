@@ -43,6 +43,7 @@ func (this *Info) GetHandler() Handler {
 	return this.Handler
 }
 
+// init 初始化,补充各个架构的值
 func (this *Info) init() {
 	if len(this.Local) == 0 && len(this.GetRemote()) >= 0 {
 		this.Local = this.GetRemote()
@@ -72,10 +73,10 @@ var Resources = MResource{
 func init() {
 
 	//从配置中读取配置的基础地址,例 https://oss.xxx.com/store/{name}
-	lsConfig := []Url(nil)
-	for _, v := range strings.Split(global.GetString("resource"), ",") {
+	urls := []Url(nil)
+	for _, v := range strings.Split(global.GetString("resource", DefaultUrl), ",") {
 		if len(v) != 0 {
-			lsConfig = append(lsConfig, Url(v))
+			urls = append(urls, Url(v))
 		}
 	}
 
@@ -100,7 +101,7 @@ func init() {
 	//补充配置的地址
 	for _, v := range Resources {
 		v.init()
-		v.FullUrl = append(v.FullUrl, lsConfig...)
+		v.FullUrl = append(v.FullUrl, urls...)
 	}
 
 }
