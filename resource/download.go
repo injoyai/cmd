@@ -7,7 +7,6 @@ import (
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/resource/m3u8"
 	"github.com/injoyai/cmd/tool"
-	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -48,27 +47,19 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	if len(op.Resource) == 0 {
 		return "", false, errors.New("请输入需要下载的资源")
 	}
+
+	//1. 尝试下载自带资源
 	if val, ok := Resources.Get(op.Resource); ok {
-		if len(op.Name) == 0 {
-			op.Name = strings.Split(val.GetLocalName(), ".")[0]
-			op.suffix = filepath.Ext(val.GetLocalName())
-		}
+		op.init(val.GetLocalName())
 		//自带资源可能有多个源,按顺序挨个尝试
 		urls := val.GetFullUrls()
 		download = func(ctx context.Context, op *Config) (err error) {
-			defer func(s string) { op.Resource = s }(op.Resource)
 			for i, u := range urls {
-				op.Resource = u
-				if handler := val.GetHandler(); handler == nil {
-					if err = downloadOther(ctx, op); err == nil {
-						return
-					}
-				} else {
-					proxy := op.Proxy()
-					fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.Select(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
-					if err = handler(u, op.Dir, op.Filename(), proxy); err == nil {
-						return
-					}
+				op.SetUrl(u)
+				//获取自定义下载函数
+				handler := val.GetHandler()
+				if err = op.Download(handler); err == nil {
+					return
 				}
 				if i < len(urls)-1 {
 					fmt.Println(err)
@@ -78,7 +69,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		}
 	}
 
-	//尝试按照网址下载
+	//2. 尝试按照网址下载
 	if download == nil {
 		u, err := url.Parse(op.Resource)
 		if err == nil && u.Host != "" {
@@ -98,7 +89,9 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 				default:
 					op.suffix = ext
-					download = downloadOther
+					download = func(ctx context.Context, op *Config) error {
+						return op.Download()
+					}
 
 				}
 
@@ -106,72 +99,61 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		}
 	}
 
-	//尝试按照存储库下载 https://example.com/store/{name}
+	//3. 尝试按照存储库下载 https://example.com/store/{name}
 	if download == nil {
-		op.Name = op.Resource
+		op.init("")
 		download = func(ctx context.Context, op *Config) (err error) {
-			name := op.Resource
-			defer func(s string) { op.Resource = s }(name)
-			hostStr := global.GetString("resource", DefaultUrl)
-			for _, v := range strings.Split(hostStr, ",") {
-				if len(v) != 0 {
-					op.suffix = filepath.Ext(name)
-					op.Resource = Url(v).Format(name)
-					if err = downloadOther(ctx, op); err == nil {
-						return
-					}
+			for _, u := range GetUrls() {
+				op.SetUrl(u.Format(op.Resource))
+				if err = op.Download(); err == nil {
+					return
 				}
 			}
 			return
 		}
 	}
 
+	//判断是否有资源
 	if download == nil {
 		return "", false, errors.New("资源不存在: " + op.Resource)
 	}
 
 	//判断文件是否存在,存在是否需要重新下载
-	if oss.Exists(op.Filename()) && !op.ReDownload {
+	if oss.Exists(op.Filename()) && !op.Cover {
 		return op.Filename(), true, nil
 	}
 
-	//开始下载
-	//fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.SelectString(op.ProxyEnable, fmt.Sprintf("使用代理: %s", op.ProxyAddress), ""))
+	//开始下载,打印下载信息
+	fmt.Println(op)
 	if err = download(ctx, op); err != nil {
 		return "", false, err
 	}
 
-	//提示消息
-	if op.NoticeEnable {
-		tool.PublishNotice(&notice.Message{
-			Title:   "下载完成",
-			Content: op.NoticeText,
-		})
-	}
+	//提示消息,windows右下角通知
+	op.PlayNotice()
 
 	//播放声音,不能协程执行,不然来不及播放
-	if op.VoiceEnable {
-		notice.DefaultVoice.Speak(op.VoiceText)
-	}
+	op.PlayVoice()
 
 	return op.Filename(), false, nil
 }
 
-func downloadOther(ctx context.Context, op *Config) error {
-	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
-	//以防出现下载失败,直接覆盖了源文件
-	proxy := op.Proxy()
-	fmt.Printf("开始下载: %s  %s\n", op.Resource, conv.Select(len(proxy) > 0, fmt.Sprintf("代理: %s", proxy), ""))
-	if _, err := bar.Download(op.Resource, op.TempFilename(), proxy); err != nil {
-		os.Remove(op.TempFilename())
-		return err
-	}
-	//可能源文件不存在,忽略错误,可以直接重命名覆盖
-	//os.Remove(op.Filename())
-	//延迟0.05秒,有可能错误: rename proxy.exe.temp proxy.exe: The process cannot access the file because it is being used by another process.
-	<-time.After(time.Millisecond * 50)
-	return os.Rename(op.TempFilename(), op.Filename())
-}
+//func downloadOther(ctx context.Context, op *Config) error {
+//	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
+//	//以防出现下载失败,直接覆盖了源文件
+//	if err := op.Download(op.TempFilename()); err != nil {
+//		os.Remove(op.TempFilename())
+//		return err
+//	}
+//
+//	//可能源文件不存在,忽略错误,可以直接重命名覆盖
+//	//os.Remove(op.Filename())
+//	//延迟0.05秒,有可能错误: rename proxy.exe.temp proxy.exe: The process cannot access the file because it is being used by another process.
+//	<-time.After(time.Millisecond * 50)
+//
+//	//重命名
+//	return os.Rename(op.TempFilename(), op.Filename())
+//}
 
 func downloadM3u8(ctx context.Context, op *Config) error {
 
@@ -287,20 +269,69 @@ func downloadStream(ctx context.Context, op *Config) error {
  */
 
 type Config struct {
-	Resource     string
-	Dir          string
-	Name         string
-	suffix       string
-	Retry        int
-	Coroutine    int
-	ProxyEnable  bool
-	ProxyAddress string
-	ProxyIgnore  []string
-	NoticeEnable bool
-	NoticeText   string
-	VoiceEnable  bool
-	VoiceText    string
-	ReDownload   bool
+	Resource     string   //资源 upx , https://xxx.com/xxx
+	url          string   //下载地址
+	Dir          string   //下载目录
+	Name         string   //资源名称,可自定义名称,否则从url中获取
+	suffix       string   //文件后缀
+	Retry        int      //重试次数
+	Coroutine    int      //协程数量
+	ProxyEnable  bool     //是否使用代理
+	ProxyAddress string   //代理地址
+	ProxyIgnore  []string //忽略代理地址
+	NoticeEnable bool     //是否使用消息通知
+	NoticeText   string   //通知消息内容
+	VoiceEnable  bool     //是否使用通知语音
+	VoiceText    string   //通知语音内容
+	Cover        bool     //是否覆盖下载
+}
+
+func (this *Config) init(name string) {
+	if len(this.Name) == 0 {
+		if len(name) == 0 {
+			name = this.Resource
+		}
+		this.Name = strings.Split(name, ".")[0]
+		this.suffix = filepath.Ext(name)
+	}
+}
+
+func (this *Config) Download(h ...Handler) error {
+
+	if len(h) > 0 && h[0] != nil {
+		//使用自定义的下载函数
+		return h[0](this.Url(), this.Dir, this.Filename(), this.Proxy())
+	}
+
+	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
+	//以防出现下载失败,直接覆盖了源文件
+	if _, err := bar.Download(this.Url(), this.TempFilename(), this.Proxy()); err != nil {
+		os.Remove(this.TempFilename())
+		return err
+	}
+
+	//可能源文件不存在,忽略错误,可以直接重命名覆盖
+	//os.Remove(op.Filename())
+	//延迟0.05秒,有可能错误: rename proxy.exe.temp proxy.exe: The process cannot access the file because it is being used by another process.
+	<-time.After(time.Millisecond * 50)
+
+	//重命名
+	return os.Rename(this.TempFilename(), this.Filename())
+}
+
+func (this *Config) String() string {
+	return fmt.Sprintf("开始下载: %s  代理: %s", this.Url(), this.Proxy())
+}
+
+func (this *Config) SetUrl(url string) {
+	this.url = url
+}
+
+func (this *Config) Url() string {
+	if len(this.url) > 0 {
+		return this.url
+	}
+	return this.Resource
 }
 
 func (this *Config) Proxy() string {
@@ -375,4 +406,17 @@ func (this *Config) Merge(retry int) error {
 			return true, nil
 		})
 	}, retry)
+}
+
+func (this *Config) PlayNotice() {
+	tool.PublishNotice(&notice.Message{
+		Title:   "下载完成",
+		Content: this.NoticeText,
+	})
+}
+
+func (this *Config) PlayVoice() {
+	if this.VoiceEnable {
+		notice.DefaultVoice.Speak(this.VoiceText)
+	}
 }
