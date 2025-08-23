@@ -5,9 +5,10 @@ import (
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
-	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type (
@@ -16,7 +17,7 @@ type (
 )
 
 func main() {
-	fmt.Println(oss.ExecDir())
+	fmt.Println("执行:", strings.Join(os.Args, " "))
 
 	root := &cobra.Command{
 		Use:   "in",

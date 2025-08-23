@@ -409,10 +409,12 @@ func (this *Config) Merge(retry int) error {
 }
 
 func (this *Config) PlayNotice() {
-	tool.PublishNotice(&notice.Message{
-		Title:   "下载完成",
-		Content: this.NoticeText,
-	})
+	if this.NoticeEnable {
+		tool.PublishNotice(&notice.Message{
+			Title:   "下载完成",
+			Content: this.NoticeText,
+		})
+	}
 }
 
 func (this *Config) PlayVoice() {

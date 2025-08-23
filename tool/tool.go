@@ -1,11 +1,25 @@
 package tool
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
+	"runtime"
 )
 
 func ShellStart(filename string) error {
+	fmt.Printf("打开文件: %#v\n", filename)
+	switch runtime.GOOS {
+	case "windows":
+		return exec.Command("cmd", "/c", "start "+filename).Start()
+	case "linux":
+		return exec.Command("sh", "-c", filename).Start()
+	default:
+		return errors.New("未知操作系统: " + runtime.GOOS)
+	}
+}
+
+func ShellStart3(filename string) error {
 	fmt.Printf("打开文件: %#v\n", filename)
 	return exec.Command("cmd", "/c", "start "+filename).Start()
 	//return shell.Start(filename)
