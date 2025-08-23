@@ -57,6 +57,7 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
+		Name:         flags.GetString("name"),
 		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
@@ -97,7 +98,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 	case "appdata":
 		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
 	case "startup":
-		logs.PrintErr(tool.ShellStart2(oss.UserStartupDir()))
+		logs.PrintErr(tool.ShellStart(oss.UserStartupDir()))
 	case "gopath":
 		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
 	case "regedit", "注册表":
@@ -131,7 +132,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		//尝试在注册表查找
 		if list, _ := tool.APPPath(args[0]); len(list) > 0 {
 			fmt.Print("注册表")
-			logs.PrintErr(tool.ShellStart2(list[0]))
+			logs.PrintErr(tool.ShellStart(list[0]))
 			return
 		}
 

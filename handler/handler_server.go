@@ -171,7 +171,6 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
-		//logs.PrintErr(tool.ShellRun(filename))
 		logs.PrintErr(tool.Exec(filename, flags.GetString("runType")))
 	}
 }

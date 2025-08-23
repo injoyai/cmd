@@ -12,7 +12,7 @@ import (
 func Upgrade(_ *cobra.Command, args []string, flags *Flags) {
 	filename := oss.ExecName()
 	name := filepath.Base(filename)
-	cmd := exec.Command("sh", "-c", filename+" download in -d=true -n="+name)
+	cmd := exec.Command("sh", "-c", filename+" install in -d=true -n="+name)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

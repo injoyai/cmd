@@ -3,15 +3,22 @@ package tool
 import (
 	"errors"
 	"github.com/injoyai/goutil/notice"
-	"github.com/injoyai/goutil/oss/shell"
+	"os"
+	"os/exec"
 )
 
-func shellStart2(filename string) error {
-	return shell.Start(filename)
+func shellStart(cmd string) error {
+	c := exec.Command("sh", "-c", cmd)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Start()
 }
 
-func shellRun(filename string) error {
-	return shell.Run(filename)
+func shellRun(cmd string) error {
+	c := exec.Command("sh", "-c", cmd)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Run()
 }
 
 func PublishNotice(message *notice.Message) error {

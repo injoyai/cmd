@@ -87,17 +87,6 @@ func Kill(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(resp)
 }
 
-//func Upgrade2(cmd *cobra.Command, args []string, flags *Flags) {
-//	resource.MustDownload(g.Ctx(), &resource.Config{
-//		Resource:     "upgrade",
-//		Dir:          oss.ExecDir(),
-//		Cover:        flags.GetBool("download"),
-//		ProxyEnable:  true,
-//		ProxyAddress: flags.GetString("proxy"),
-//	})
-//	logs.PrintErr(tool.ShellStart("in_upgrade " + strings.Join(args, " ")))
-//}
-
 func IP(cmd *cobra.Command, args []string, flags *Flags) {
 	for i := range args {
 		if args[i] == "self" {
