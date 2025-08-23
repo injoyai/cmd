@@ -36,11 +36,11 @@ build_and_upload() {
 }
 
 # 不同平台编译
-build_and_upload windows amd64 "" in.exe
-build_and_upload windows arm64 "" in_windows_arm64.exe
+#build_and_upload windows amd64 "" in.exe
+#build_and_upload windows arm64 "" in_windows_arm64.exe
 build_and_upload linux amd64 "" in_linux_amd64
-build_and_upload linux arm64 "" in_linux_arm64
-build_and_upload linux arm 7 in_linux_arm
+#build_and_upload linux arm64 "" in_linux_arm64
+#build_and_upload linux arm 7 in_linux_arm
 
 echo "全部完成 ✅, 8秒后自动退出..."
 sleep 8
