@@ -48,5 +48,5 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 	//然后执行in_upgrade install in
-	logs.PrintErr(tool.ShellStart(upgradeFilename + " download in --noticeEnable=false --voiceEnable=false -d=true -n=" + execName))
+	logs.PrintErr(tool.ShellStart(upgradeFilename + " install in -d=true -n=" + execName))
 }

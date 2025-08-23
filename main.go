@@ -560,6 +560,7 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
+				{Name: "name", Memo: "自定义保存名称", Short: "n"},
 				{Name: "download", Short: "d", Memo: "重新下载"},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
 			},
