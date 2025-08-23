@@ -1,7 +1,5 @@
 /output/
 .idea
-/in
+/bin
 /in.exe
-/in7
-/upgrade/in_upgrade
-/upgrade/in_upgrade.exe
+/cmd.exe
