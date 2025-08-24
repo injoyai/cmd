@@ -96,7 +96,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 	case "injoy":
 		logs.PrintErr(tool.ShellStart(oss.UserInjoyDir()))
 	case "appdata":
-		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
+		cmd := `"" "` + oss.UserDataDir() + `"`
+		logs.PrintErr(tool.ShellStart(cmd))
 	case "startup":
 		logs.PrintErr(tool.ShellStart(oss.UserStartupDir()))
 	case "gopath":
@@ -132,7 +133,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		//尝试在注册表查找
 		if list, _ := tool.APPPath(args[0]); len(list) > 0 {
 			fmt.Print("注册表")
-			logs.PrintErr(tool.ShellStart(list[0]))
+			cmd := `"" "` + list[0] + `"`
+			logs.PrintErr(tool.ShellStart(cmd))
 			return
 		}
 
