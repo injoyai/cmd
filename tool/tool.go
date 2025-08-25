@@ -5,12 +5,12 @@ import (
 )
 
 func ShellStart(filename string) error {
-	fmt.Printf("执行: %#v\n", filename)
+	fmt.Printf("执行: %s\n", filename)
 	return shellStart(filename)
 }
 
 func ShellRun(filename string) error {
-	fmt.Printf("执行: %#v\n", filename)
+	fmt.Printf("执行: %s\n", filename)
 	return shellRun(filename)
 }
 

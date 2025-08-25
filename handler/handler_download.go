@@ -99,7 +99,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		cmd := `"" "` + oss.UserDataDir() + `"`
 		logs.PrintErr(tool.ShellStart(cmd))
 	case "startup":
-		logs.PrintErr(tool.ShellStart(oss.UserStartupDir()))
+		cmd := `"" "` + oss.UserStartupDir() + `"`
+		logs.PrintErr(tool.ShellStart(cmd))
 	case "gopath":
 		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
 	case "regedit", "注册表":
