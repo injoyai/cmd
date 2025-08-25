@@ -47,8 +47,6 @@ func GetConfigs() []Nature {
 		{Key: "resource", Name: "资源地址"},
 		{Key: "proxy", Name: "默认代理地址"},
 		{Key: "proxyIgnore", Name: "忽略代理正则"},
-		{Key: "memoHost", Name: "备注请求地址"},
-		{Key: "memoToken", Name: "备注API秘钥"},
 		{Key: "uploadMinio", Name: "Minio上传配置", Type: "object2", Value: []Nature{
 			{Name: "请求地址", Key: "endpoint"},
 			{Name: "AccessKey", Key: "access"},

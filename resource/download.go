@@ -77,7 +77,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 			switch ext {
 			case ".m3u8":
 				op.suffix = ".ts"
-				download = downloadM3u8
+				download = func(ctx context.Context, op *Config) error {
+					fmt.Println(op)
+					return downloadM3u8(ctx, op)
+				}
 
 			default:
 
@@ -85,7 +88,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 				case strings.HasPrefix(op.Resource, "rtsp://") ||
 					strings.HasPrefix(op.Resource, "rtmp://"):
 					op.suffix = ".ts"
-					download = downloadStream
+					download = func(ctx context.Context, op *Config) error {
+						fmt.Println(op)
+						return downloadStream(ctx, op)
+					}
 
 				default:
 					op.suffix = ext
@@ -124,7 +130,6 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	}
 
 	//开始下载,打印下载信息
-	fmt.Println(op)
 	if err = download(ctx, op); err != nil {
 		return "", false, err
 	}
@@ -297,6 +302,8 @@ func (this *Config) init(name string) {
 }
 
 func (this *Config) Download(h ...Handler) error {
+
+	fmt.Println(this)
 
 	if len(h) > 0 && h[0] != nil {
 		//使用自定义的下载函数
