@@ -642,8 +642,6 @@ func main() {
 				{Name: "downloadNoticeText", Memo: "下载是否通知内容", DefaultValue: global.Null},
 				{Name: "downloadVoiceEnable", Memo: "下载是否启用语音", DefaultValue: global.Null},
 				{Name: "downloadVoiceText", Memo: "下载是否语音内容", DefaultValue: global.Null},
-				{Name: "memoHost", Memo: "备忘录主机", DefaultValue: global.Null},
-				{Name: "memoToken", Memo: "备忘录token", DefaultValue: global.Null},
 			},
 			Use:     "global",
 			Short:   "全局配置",
@@ -653,21 +651,6 @@ func main() {
 		},
 
 		&Command{
-			Flag: []*Flag{
-				{Name: "add", Short: "a", Memo: "添加备注"},
-				{Name: "del", Short: "d", Memo: "删除备注"},
-			},
-			Use:     "memo",
-			Short:   "备注",
-			Example: "in memo --add 记得买xx",
-			Run:     handler.Memo,
-		},
-
-		&Command{
-			Flag: []*Flag{
-				{Name: "add", Short: "a", Memo: "添加备注"},
-				{Name: "del", Short: "d", Memo: "删除备注"},
-			},
 			Use:     "ip",
 			Short:   "ip",
 			Example: "in ip self/8.8.8.8",
