@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.4.6: 优化升级方式,支持linux,整理代码,修复改版之后的bug",
+		"v1.4.6: 优化升级方式,支持linux,整理代码,修复改版之后的bug...",
 		"v1.4.5: 升级引用库版本,因为阿里和七牛的库之前用的版本被删除了,优化下载,增加默认地址,linux测试通过",
 		"v1.4.4: 增加download尝试从存储中下载未定义的资源,优化adb下载函数,增加in server website同file",
 		"v1.4.3: 增加in dial默认使用tcp,修改in dir默认level为2,增加资源mitmweb.exe",

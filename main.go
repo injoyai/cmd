@@ -5,6 +5,7 @@ import (
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -17,6 +18,9 @@ type (
 )
 
 func main() {
+	if len(os.Args) > 0 {
+		os.Args[0] = oss.ExecName()
+	}
 	fmt.Println("执行:", strings.Join(os.Args, " "))
 
 	root := &cobra.Command{
