@@ -18,10 +18,8 @@ type (
 )
 
 func main() {
-	if len(os.Args) > 0 {
-		os.Args[0] = oss.ExecName()
-	}
-	fmt.Println("执行:", strings.Join(os.Args, " "))
+	os.Args[0] = oss.ExecName()
+	fmt.Printf("执行: \"%s\"\n", strings.Join(os.Args, " "))
 
 	root := &cobra.Command{
 		Use:   "in",
