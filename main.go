@@ -1,15 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
-	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 	"net/http"
-	"os"
-	"strings"
 )
 
 type (
@@ -18,8 +14,6 @@ type (
 )
 
 func main() {
-	os.Args[0] = oss.ExecName()
-	fmt.Printf("执行: %s\n", strings.Join(os.Args, " "))
 
 	root := &cobra.Command{
 		Use:   "in",
