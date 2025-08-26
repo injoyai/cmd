@@ -68,35 +68,6 @@ func main() {
 		},
 
 		&Command{
-			Use:   "build",
-			Short: "build",
-			Long:  "编译go文件",
-			Run:   handler.Build,
-		},
-
-		&Command{
-			Use:     "go",
-			Short:   "go",
-			Long:    "go cmd",
-			Example: "in go version",
-			Run:     handler.Go,
-		},
-
-		&Command{
-			Use:     "heap",
-			Short:   "heap",
-			Example: "in heap localhost:6060",
-			Run:     handler.Pprof,
-		},
-
-		&Command{
-			Use:     "profile",
-			Short:   "profile",
-			Example: "in profile localhost:6060",
-			Run:     handler.Pprof,
-		},
-
-		&Command{
 			Use:     "crud",
 			Short:   "生成增删改查",
 			Example: "in curd test",
@@ -138,6 +109,7 @@ func main() {
 			Use:     "push",
 			Short:   "发生通知信息",
 			Example: "in push voice 哈哈哈",
+			Run:     handler.Hint("[错误] 未填写子命令"),
 			Child: []*Command{
 				{
 					Flag: []*Flag{
@@ -438,6 +410,7 @@ func main() {
 			Use:     "scan",
 			Short:   "扫描",
 			Example: "in scan icmp",
+			Run:     handler.ScanICMP,
 			Child: []*Command{
 				{
 					Use:     "network",
@@ -483,9 +456,7 @@ func main() {
 					Run:     handler.ScanSerial,
 				},
 				{
-					Flag: []*Flag{
-						{Name: "open", Short: "o", Memo: "是否打开"},
-					},
+					Flag:    []*Flag{{Name: "open", Short: "o", Memo: "是否打开"}},
 					Use:     "edge",
 					Short:   "网关扫描",
 					Example: "in scan edge",
@@ -503,12 +474,6 @@ func main() {
 					Example: "in scan task -f xx.exe",
 					Run:     handler.ScanTask,
 				},
-				//{
-				//	Use:     "server",
-				//	Short:   "扫描运行的进程",
-				//	Example: "in scan server",
-				//	Run:     handler.ScanServer,
-				//},
 			},
 		},
 
@@ -537,6 +502,7 @@ func main() {
 		&Command{
 			Use:   "upload",
 			Short: "上传资源",
+			Run:   handler.Hint("请输入上传类型: 例in upload minio"),
 			Child: []*Command{
 				{
 					Flag: []*Flag{
