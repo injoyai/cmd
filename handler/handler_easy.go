@@ -26,6 +26,12 @@ import (
 	"time"
 )
 
+func Hint(msg string) func(cmd *cobra.Command, args []string, flags *Flags) {
+	return func(cmd *cobra.Command, args []string, flags *Flags) {
+		fmt.Println(msg)
+	}
+}
+
 func Where(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 || args[0] == "self" {
 		fmt.Println(oss.ExecDir())
