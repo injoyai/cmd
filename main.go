@@ -599,7 +599,9 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
+				{Name: "resource", Memo: "资源地址", DefaultValue: global.Null},
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.Null},
+				{Name: "proxyIgnore", Memo: "忽略使用代理正则", DefaultValue: global.Null},
 				{Name: "customOpen", Memo: `自定义打开文件,格式{"c":"C:/","baidu":"https://www.baidu.com"}`, DefaultValue: global.Null},
 				{Name: "setCustomOpen", Memo: "添加自定义打开文件", DefaultValue: global.Null},
 				{Name: "delCustomOpen", Memo: "删除自定义打开文件", DefaultValue: global.Null},

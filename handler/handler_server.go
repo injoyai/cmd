@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -330,6 +331,13 @@ func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================InServer====================//
 
 func InServer(cmd *cobra.Command, args []string, flags *Flags) {
+
+	switch runtime.GOOS {
+	case "linux":
+		TCPServer(cmd, args, flags)
+		return
+	}
+
 	name := "in_server.exe"
 
 	if len(args) == 0 {

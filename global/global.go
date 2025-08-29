@@ -4,7 +4,6 @@ import (
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/cache"
 	"github.com/injoyai/goutil/g"
-	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"strings"
 )
@@ -14,12 +13,12 @@ const (
 )
 
 func init() {
-	oss.New(oss.UserInjoyDir())           //默认缓存文件夹
+	_init()
+
 	logs.SetFormatter(logs.TimeFormatter) //输出格式只有时间
 	logs.SetWriter(logs.Stdout)           //标准输出,不写入文件
 	logs.SetShowColor(false)              //不显示颜色
 
-	cache.DefaultDir = oss.UserInjoyDir("data/cache/")
 	File = cache.NewFile("cmd", "global")
 	DMap = conv.NewMap(File.GMap())
 }
@@ -43,7 +42,6 @@ func GetString(key string, def ...string) string {
 
 func GetConfigs() []Nature {
 	natures := []Nature{
-		{Key: "nickName", Name: "昵称"},
 		{Key: "resource", Name: "资源地址"},
 		{Key: "proxy", Name: "默认代理地址"},
 		{Key: "proxyIgnore", Name: "忽略代理正则"},
