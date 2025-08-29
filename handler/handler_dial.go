@@ -248,29 +248,32 @@ func DialDeal(c *client.Client, flags *Flags) {
 		if !flags.GetBool("redial") {
 			c.SetRedial(false)
 		}
-		go func() {
-			for {
-				select {
-				case <-c.Runner2.Done():
-					return
-				default:
-					bs, _, err := r.ReadLine()
-					logs.PrintErr(err)
-					msg := string(bs)
-					if len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X') {
-						msg = msg[2:]
-						if len(msg)%2 != 0 {
-							msg = "0" + msg
+		c.OnConnected = func(c *client.Client) error {
+			go func() {
+				for {
+					select {
+					case <-c.Runner2.Done():
+						return
+					default:
+						bs, _, err := r.ReadLine()
+						logs.PrintErr(err)
+						msg := string(bs)
+						if len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X') {
+							msg = msg[2:]
+							if len(msg)%2 != 0 {
+								msg = "0" + msg
+							}
+							err = c.WriteHEX(msg)
+							logs.PrintErr(err)
+						} else {
+							_, err := c.WriteString(msg)
+							logs.PrintErr(err)
 						}
-						err = c.WriteHEX(msg)
-						logs.PrintErr(err)
-					} else {
-						_, err := c.WriteString(msg)
-						logs.PrintErr(err)
 					}
 				}
-			}
-		}()
+			}()
+			return nil
+		}
 	})
 }
 
