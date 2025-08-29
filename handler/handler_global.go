@@ -6,13 +6,18 @@ import (
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/spf13/cobra"
+	"runtime"
 	"sort"
 	"strings"
 )
 
+func IsWindows() bool {
+	return runtime.GOOS == "windows"
+}
+
 func Global(cmd *cobra.Command, args []string, flags *Flags) {
 
-	if flags.GetBool("gui") || (len(args) > 0 && args[0] == "gui") {
+	if IsWindows() && (flags.GetBool("gui") || (len(args) > 0 && args[0] == "gui")) {
 		global.RunGUI()
 		return
 	}
