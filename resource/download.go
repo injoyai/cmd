@@ -344,7 +344,7 @@ func (this *Config) Url() string {
 func (this *Config) Proxy() string {
 	if this.ProxyEnable {
 		for _, v := range this.ProxyIgnore {
-			if regexp.MustCompile(v).MatchString(this.Resource) {
+			if regexp.MustCompile(v).MatchString(this.Url()) {
 				return ""
 			}
 		}
