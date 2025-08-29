@@ -1,13 +1,9 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/conv"
-	"github.com/injoyai/goutil/g"
 	"github.com/spf13/cobra"
 	"runtime"
-	"sort"
 	"strings"
 )
 
@@ -22,46 +18,32 @@ func Global(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	config := g.Map{}
-	for _, nature := range global.GetConfigs() {
-		key := nature.Key
-		value := flags.GetString(key)
-		if value == global.Null {
-			switch v := nature.Value.(type) {
-			case global.Natures:
-				value = conv.String(v.Map())
-			default:
-				value = conv.String(nature.Value)
+	flags.Range(func(_type string, val *Flag) bool {
+		switch _type {
+		case "set":
+			for _, item := range strings.Split(val.Value, ",") {
+				if ls := strings.Split(item, "="); len(ls) == 2 {
+					global.File.Set(ls[0], ls[1])
+				}
 			}
-		}
-		config[key] = value
-	}
-	flags.Range(func(key string, val *Flag) bool {
-		if val.Value == global.Null {
-			return true
-		}
-		switch key {
-		case "setCustomOpen":
-			m := conv.SMap(config["customOpen"])
-			for k, v := range conv.New(val.Value).SMap() {
-				m[k] = v
+		case "del":
+			for _, key := range strings.Split(val.Value, ",") {
+				global.File.Del(key)
 			}
-			config["customOpen"] = conv.String(m)
-		case "delCustomOpen":
-			m := conv.SMap(config["customOpen"])
-			delete(m, val.Value)
-			config["customOpen"] = conv.String(m)
+		case "append":
+			for _, item := range strings.Split(val.Value, ",") {
+				if ls := strings.Split(item, "="); len(ls) == 2 {
+					global.File.Append(ls[0], ls[1])
+				}
+			}
+		default:
+			global.File.Set(_type, val.Value)
 		}
 		return true
 	})
-	global.SaveConfigs(config)
+
+	global.File.Save()
 
 	//打印最新配置信息
-	list := []string(nil)
-	for k, v := range config {
-		list = append(list, fmt.Sprintf("%v: %v", k, v))
-	}
-	sort.Strings(list)
-	fmt.Println()
-	fmt.Println(strings.Join(list, "\n"))
+	global.Print()
 }

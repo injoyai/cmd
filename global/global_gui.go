@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/injoyai/conv"
-	"github.com/injoyai/logs"
 	"github.com/injoyai/lorca"
 )
 
@@ -13,26 +12,27 @@ var html string
 
 func RunGUI() {
 	lorca.Run(&lorca.Config{
-		Width:   720,
-		Height:  860,
-		Html:    html,
-		Options: nil,
+		Width:  720,
+		Height: 860,
+		Html:   html,
 	}, func(app lorca.APP) error {
 
-		configs := GetConfigs()
+		ns := Natures()
 
 		//加载配置数据
-		app.Eval(fmt.Sprintf(`loadConfig(%s)`, conv.String(configs)))
+		app.Eval(fmt.Sprintf(`loadConfig(%s)`, conv.String(ns)))
 
 		//获取保存数据
 		app.Bind("saveToFile", func(config interface{}) {
-			fmt.Println(config)
-			if err := SaveConfigs(conv.GMap(config)); err != nil {
-				logs.Err(err)
-				app.Eval(fmt.Sprintf(`notice("%v");`, err))
-			} else {
-				app.Eval(`notice("保存成功");`)
+			for k, v := range conv.GMap(config) {
+				File.Set(k, v)
 			}
+			err := File.Save()
+			if err != nil {
+				app.Eval(fmt.Sprintf(`notice("%v");`, err))
+				return
+			}
+			app.Eval(`notice("保存成功");`)
 		})
 
 		return nil
