@@ -75,9 +75,9 @@ func DialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	redial.TCP(args[0], func(c *client.Client) {
-		DialDeal(c, flags, true)
-	}).Run(context.Background())
+	redial.RunTCP(args[0], func(c *client.Client) {
+		DialDeal(c, flags)
+	})
 }
 
 func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
@@ -88,7 +88,7 @@ func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 		c, err := net.Dial("udp", args[0])
 		return c, args[0], err
 	}, func(c *client.Client) {
-		DialDeal(c, flags, true)
+		DialDeal(c, flags)
 		//c.WriteString(io.Pong)
 	})
 }
@@ -99,7 +99,7 @@ func DialLog(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	redial.RunTCP(args[0], func(c *client.Client) {
 		//c.SetLogger(&_log{})
-		DialDeal(c, flags, true)
+		DialDeal(c, flags)
 	})
 }
 
@@ -118,8 +118,8 @@ func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if !strings.HasPrefix(args[0], "wss://") || !strings.HasPrefix(args[0], "ws://") {
 		args[0] = "ws://" + args[0]
 	}
-	redial.Websocket(args[0], nil, func(c *client.Client) {
-		DialDeal(c, flags, true)
+	redial.RunWebsocket(args[0], nil, func(c *client.Client) {
+		DialDeal(c, flags)
 	})
 }
 
@@ -151,8 +151,9 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 			Retained: retained,
 		},
 		func(c *client.Client) {
-			DialDeal(c, flags, true)
-		})
+			DialDeal(c, flags)
+		},
+	)
 
 }
 
@@ -190,7 +191,7 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 			logs.Err(err)
 			continue
 		}
-		DialDeal(c, flags, false)
+		DialDeal(c, flags)
 		c.Logger.Debug(false)
 		c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
 			fmt.Print(string(msg.Payload()))
@@ -213,7 +214,7 @@ func DialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	redial.Serial(&serial.Config{
+	redial.RunSerial(&serial.Config{
 		Address:  args[0],
 		BaudRate: flags.GetInt("baudRate"),
 		DataBits: flags.GetInt("dataBits"),
@@ -221,7 +222,7 @@ func DialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
 	}, func(c *client.Client) {
-		DialDeal(c, flags, true)
+		DialDeal(c, flags)
 	})
 }
 
@@ -233,7 +234,7 @@ func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 	DeployClient(args[0], flags)
 }
 
-func DialDeal(c *client.Client, flags *Flags, run bool) {
+func DialDeal(c *client.Client, flags *Flags) {
 	oss.ListenExit(func() { c.CloseAll() })
 	r := bufio.NewReader(os.Stdin)
 	c.SetOption(func(c *client.Client) {
@@ -271,9 +272,6 @@ func DialDeal(c *client.Client, flags *Flags, run bool) {
 			}
 		}()
 	})
-	if run {
-		go c.Run(context.Background())
-	}
 }
 
 func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
