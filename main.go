@@ -599,22 +599,14 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "resource", Memo: "资源地址", DefaultValue: global.Null},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.Null},
-				{Name: "proxyIgnore", Memo: "忽略使用代理正则", DefaultValue: global.Null},
-				{Name: "customOpen", Memo: `自定义打开文件,格式{"c":"C:/","baidu":"https://www.baidu.com"}`, DefaultValue: global.Null},
-				{Name: "setCustomOpen", Memo: "添加自定义打开文件", DefaultValue: global.Null},
-				{Name: "delCustomOpen", Memo: "删除自定义打开文件", DefaultValue: global.Null},
-				{Name: "downloadDir", Memo: "设置下载目录", DefaultValue: global.Null},
-				{Name: "downloadNoticeEnable", Memo: "下载是否启用通知", DefaultValue: global.Null},
-				{Name: "downloadNoticeText", Memo: "下载是否通知内容", DefaultValue: global.Null},
-				{Name: "downloadVoiceEnable", Memo: "下载是否启用语音", DefaultValue: global.Null},
-				{Name: "downloadVoiceText", Memo: "下载是否语音内容", DefaultValue: global.Null},
+				{Name: "set", Short: "s", Memo: "设置"},
+				{Name: "del", Short: "d", Memo: "删除"},
+				{Name: "append", Short: "a", Memo: "添加"},
 			},
 			Use:     "global",
 			Short:   "全局配置",
 			Long:    "使用in global gui来打开图形化界面",
-			Example: "in global --proxy http://127.0.0.1:1081",
+			Example: "in global --set proxy=http://127.0.0.1:1081",
 			Run:     handler.Global,
 		},
 
