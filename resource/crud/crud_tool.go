@@ -2,7 +2,9 @@ package crud
 
 import (
 	"errors"
-	"io/ioutil"
+	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/oss"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -46,23 +48,30 @@ func NewFile(modelName, filePath, filePrefix, typeName, temp string) error {
 	return err
 }
 
-func GetModName() (string, error) {
-	f, err := os.Open("../go.mod")
-	defer f.Close()
-	if err != nil {
-		return "", err
+func GetModName() (prefix string, modname string, err error) {
+	mod := "go.mod"
+	for range g.Range(10) {
+		if oss.Exists(prefix + mod) {
+			break
+		}
+		prefix = "../" + prefix
 	}
-	bs, err := ioutil.ReadAll(f)
+	f, err := os.Open(mod)
 	if err != nil {
-		return "", err
+		return "", "", err
+	}
+	defer f.Close()
+	bs, err := io.ReadAll(f)
+	if err != nil {
+		return "", "", err
 	}
 	sRegexp := regexp.MustCompile(`module\s+(?P<name>[\S]+)`)
 	list := sRegexp.FindAllString(string(bs), -1)
 	if len(list) == 0 {
-		return "", nil
+		return "", "", nil
 	}
 	if len(list[0]) <= 7 {
-		return "", nil
+		return "", "", nil
 	}
-	return list[0][7:], nil
+	return prefix, list[0][7:], nil
 }

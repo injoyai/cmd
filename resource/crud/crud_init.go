@@ -1,21 +1,27 @@
 package crud
 
 import (
+	"fmt"
 	"github.com/injoyai/logs"
 )
 
 func New(name string) error {
 
 	//获取GoMod名称
-	modName, err := GetModName()
+	prefix, modName, err := GetModName()
 	if err != nil {
 		return err
 	}
 
-	logs.PrintErr(NewFile(modName, "../app/api/"+name, "api_", name, ApiTempXorm))
-	logs.PrintErr(NewFile(modName, "../app/routes", "router_", name, RoutesTemp))
-	logs.PrintErr(NewFile(modName, "../app/model/"+name, "model_", name, ModelTemp))
-	logs.PrintErr(NewFile(modName, "../app/server/"+name, "server_", name, ServerTemp))
+	dir := prefix + "app/model/" + name
+	logs.PrintErr(NewFile(modName, dir, "api_", name, ApiTempXorm))
+	logs.PrintErr(NewFile(modName, dir, "router_", name, RoutesTemp))
+	logs.PrintErr(NewFile(modName, dir, "model_", name, ModelTemp))
+	logs.PrintErr(NewFile(modName, dir, "server_", name, ServerTemp))
+
+	fmt.Println("生成成功,引用以下函数进行注册:")
+	fmt.Println("import \"" + modName + "/app/model/" + name + "\"")
+	fmt.Println(name + ".Init(db, g)")
 
 	return nil
 }

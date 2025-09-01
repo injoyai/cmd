@@ -3,26 +3,24 @@ package crud
 var RoutesTemp = `package {Lower}
 
 import (
-	api_{Lower} "{mod}/app/api/{Lower}"
-	model_{Lower} "{mod}/app/model/{Lower}"
-	server_{Lower} "{mod}/app/server/{Lower}"
-	"gitee.com/injoyai/goutil/database/xorms"
+	"github.com/injoyai/goutil/database/xorms"
 	"github.com/injoyai/logs"
-	"github.com/gogf/gf/frame/g"
-	"github.com/gogf/gf/net/ghttp"
+	"github.com/injoyai/frame/fiber"
 )
 
-func Init(db *xorms.Engine) {
+var DB *xorms.Engine
 
-	server_{Lower}.Init(db)
+func Init(db *xorms.Engine,g fiber.Grouper) {
+
+	DB=db
 	
-	logs.PrintErr(db.Sync2(new(model_{Lower}.{Upper})))
+	logs.PrintErr(db.Sync2(new({Upper})))
 
-	g.Server().Group("/api", func(g *ghttp.RouterGroup) {
-		g.GET("/{Lower}/list", api_{Lower}.Get{Upper}List)
-		g.GET("/{Lower}", api_{Lower}.Get{Upper})
-		g.POST("/{Lower}", api_{Lower}.Post{Upper})
-		g.DELETE("/{Lower}", api_{Lower}.Del{Upper})
+	g.Group("/{Lower}", func(g fiber.Grouper) {
+		g.GET("/list", Get{Upper}List)
+		g.GET("/", Get{Upper})
+		g.POST("/", Post{Upper})
+		g.DELETE("/", Del{Upper})
 	})
 }
 

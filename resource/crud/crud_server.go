@@ -1,21 +1,13 @@
 package crud
 
-var ServerTemp = `package server_{Lower}
+var ServerTemp = `package {Lower}
 
 import (
 	"errors"
-	model_{Lower} "{mod}/app/model/{Lower}"
-	"gitee.com/injoyai/goutil/database/xorms"
 )
 
-var DB *xorms.Engine
-
-func Init(db *xorms.Engine){
-	DB=db
-}
-
-func Get{Upper}List(req *model_{Lower}.{Upper}ListReq) ([]*model_{Lower}.{Upper}, int64, error) {
-	data := []*model_{Lower}.{Upper}{}
+func getList(req *{Upper}ListReq) ([]*{Upper}, int64, error) {
+	data := []*{Upper}{}
 	session := DB.Limit(req.Size, req.Size*req.Index)
 	if len(req.Name) > 0 {
 		session.Where("Name like ?", "%"+req.Name+"%")
@@ -24,8 +16,8 @@ func Get{Upper}List(req *model_{Lower}.{Upper}ListReq) ([]*model_{Lower}.{Upper}
 	return data, co, err
 }
 
-func Get{Upper}(id int64) (*model_{Lower}.{Upper}, error) {
-	data := new(model_{Lower}.{Upper})
+func get(id int64) (*{Upper}, error) {
+	data := new({Upper})
 	has, err := DB.Where("ID=?", id).Get(data)
 	if err != nil {
 		return nil, err
@@ -35,7 +27,7 @@ func Get{Upper}(id int64) (*model_{Lower}.{Upper}, error) {
 	return data, nil
 }
 
-func Post{Upper}(req *model_{Lower}.{Upper}Req) error {
+func post(req *{Upper}Req) error {
 	data, cols, err := req.New()
 	if err != nil {
 		return err
@@ -48,8 +40,8 @@ func Post{Upper}(req *model_{Lower}.{Upper}Req) error {
 	return err
 }
 
-func Del{Upper}(id int64) error {
-	_, err := DB.Where("ID=?", id).Delete(new(model_{Lower}.{Upper}))
+func del(id int64) error {
+	_, err := DB.Where("ID=?", id).Delete(new({Upper}))
 	return err
 }
 
