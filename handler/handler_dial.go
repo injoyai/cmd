@@ -256,18 +256,30 @@ func DialDeal(c *client.Client, flags *Flags) {
 						return
 					default:
 						bs, _, err := r.ReadLine()
-						logs.PrintErr(err)
+						if err != nil {
+							logs.Err(err)
+							return
+						}
 						msg := string(bs)
-						if len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X') {
+						switch {
+						case len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X'):
 							msg = msg[2:]
 							if len(msg)%2 != 0 {
 								msg = "0" + msg
 							}
 							err = c.WriteHEX(msg)
-							logs.PrintErr(err)
-						} else {
+							if err != nil {
+								logs.Err(err)
+								return
+							}
+
+						default:
 							_, err := c.WriteString(msg)
-							logs.PrintErr(err)
+							if err != nil {
+								logs.Err(err)
+								return
+							}
+
 						}
 					}
 				}
