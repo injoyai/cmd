@@ -1,6 +1,6 @@
 package crud
 
-var ModelTemp = `package model_{Lower}
+var ModelTemp = `package {Lower}
 
 type {Upper} struct {
 	ID     int64  ` + "`" + `json:"id" xorm:"ID" gorm:"column:ID"` + "`" + `
