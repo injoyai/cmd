@@ -16,7 +16,7 @@ type (
 func main() {
 
 	root := &cobra.Command{
-		Use:   "in",
+		Use:   name,
 		Short: "Cli工具",
 	}
 
@@ -26,33 +26,35 @@ func main() {
 		}
 	}
 
+	addCommand(Commands()...)
+
 	addCommand(
 
 		&Command{
 			Use:     "version",
 			Short:   "查看版本",
-			Example: "in version",
+			Example: name + " version",
 			Run:     Version,
 		},
 
 		&Command{
 			Use:     "where",
 			Short:   "查看软件位置",
-			Example: "in where",
+			Example: name + " where",
 			Run:     handler.Where,
 		},
 
 		&Command{
 			Use:     "date",
 			Short:   "时间日期",
-			Example: "in date",
+			Example: name + " date",
 			Run:     handler.Date,
 		},
 
 		&Command{
 			Use:     "now",
 			Short:   "当前时间",
-			Example: "in now",
+			Example: name + " now",
 			Run:     handler.Date,
 		},
 
@@ -63,14 +65,14 @@ func main() {
 			Use:     "swag",
 			Short:   "swag",
 			Long:    "生成swagger文档",
-			Example: "in swag -g /cmd/main.go",
+			Example: name + " swag -g /cmd/main.go",
 			Run:     handler.Swag,
 		},
 
 		&Command{
 			Use:     "crud",
 			Short:   "生成增删改查",
-			Example: "in curd test",
+			Example: name + " curd test",
 			Run:     handler.Crud,
 		},
 
@@ -90,7 +92,7 @@ func main() {
 			},
 			Use:     "http",
 			Short:   "简单的HTTP连接",
-			Example: "in http https://localhost:8080/ping",
+			Example: name + " http https://localhost:8080/ping",
 			Run:     handler.HTTP,
 		},
 
@@ -101,14 +103,14 @@ func main() {
 			},
 			Use:     "speak",
 			Short:   "文字转语音",
-			Example: "in speak 哈哈哈",
+			Example: name + " speak 哈哈哈",
 			Run:     handler.PushVoice,
 		},
 
 		&Command{
 			Use:     "push",
 			Short:   "发生通知信息",
-			Example: "in push voice 哈哈哈",
+			Example: name + " push voice 哈哈哈",
 			Run:     handler.Hint("[错误] 未填写子命令"),
 			Child: []*Command{
 				{
@@ -118,20 +120,20 @@ func main() {
 					},
 					Use:     "voice",
 					Short:   "文字转语音",
-					Example: "in push voice 哈哈哈",
+					Example: name + " push voice 哈哈哈",
 					Run:     handler.PushVoice,
 				},
 				{
 					Use:     "udp",
 					Short:   "广播到udp",
-					Example: "in push udp 哈哈哈",
+					Example: name + " push udp 哈哈哈",
 					Run:     handler.PushUDP,
 				},
 				{
 					Flag:    []*Flag{{Name: "self", DefaultValue: "false", Memo: "只发送给自己"}},
 					Use:     "server",
 					Short:   "广播到server",
-					Example: "in push server {\"type\":\"notice\",\"data\":{\"type\":\"voice,\",\"data\":\"哈哈哈哈\"}}",
+					Example: name + " push server {\"type\":\"notice\",\"data\":{\"type\":\"voice,\",\"data\":\"哈哈哈哈\"}}",
 					Run:     handler.PushServer,
 				},
 			},
@@ -148,37 +150,37 @@ func main() {
 			},
 			Use:     "dial",
 			Short:   "连接",
-			Example: "in dial tcp 127.0.0.1:80 -r false",
+			Example: name + " dial tcp 127.0.0.1:80 -r false",
 			Run:     handler.Dial,
 			Child: []*Command{
 				{
 					Use:     "tcp",
 					Short:   "TCP连接",
-					Example: "in dial tcp 127.0.0.1:80 -r false",
+					Example: name + " dial tcp 127.0.0.1:80 -r false",
 					Run:     handler.DialTCP,
 				},
 				{
 					Use:     "udp",
 					Short:   "UDP连接",
-					Example: "in dial udp 127.0.0.1:80 -r false",
+					Example: name + " dial udp 127.0.0.1:80 -r false",
 					Run:     handler.DialUDP,
 				},
 				{
 					Use:     "log",
 					Short:   "日志连接",
-					Example: "in dial log 127.0.0.1:80 -r false",
+					Example: name + " dial log 127.0.0.1:80 -r false",
 					Run:     handler.DialLog,
 				},
 				{
 					Use:     "ws",
 					Short:   "Websocket连接",
-					Example: "in dial ws 127.0.0.1:80 -r false",
+					Example: name + " dial ws 127.0.0.1:80 -r false",
 					Run:     handler.DialWebsocket,
 				},
 				{
 					Use:     "websocket",
 					Short:   "Websocket连接",
-					Example: "in dial ws 127.0.0.1:80 -r false",
+					Example: name + " dial ws 127.0.0.1:80 -r false",
 					Run:     handler.DialWebsocket,
 				},
 				{
@@ -189,7 +191,7 @@ func main() {
 					},
 					Use:     "mqtt",
 					Short:   "MQTT连接",
-					Example: "in dial mqtt 127.0.0.1:80 --topic topic",
+					Example: name + " dial mqtt 127.0.0.1:80 --topic topic",
 					Run:     handler.DialMQTT,
 				},
 				{
@@ -201,7 +203,7 @@ func main() {
 					},
 					Use:     "ssh",
 					Short:   "SSH连接",
-					Example: "in dial ssh 127.0.0.1 -r false",
+					Example: name + " dial ssh 127.0.0.1 -r false",
 					Run:     handler.DialSSH,
 				},
 				{
@@ -213,7 +215,7 @@ func main() {
 					},
 					Use:     "serial",
 					Short:   "串口连接",
-					Example: "in dial serial COM3 -r false",
+					Example: name + " dial serial COM3 -r false",
 					Run:     handler.DialSerial,
 				},
 				{
@@ -226,7 +228,7 @@ func main() {
 					},
 					Use:     "deploy",
 					Short:   "Deploy连接",
-					Example: "in dial deploy 127.0.0.1 -r false",
+					Example: name + " dial deploy 127.0.0.1 -r false",
 					Run:     handler.DialDeploy,
 				},
 				{
@@ -238,7 +240,7 @@ func main() {
 					},
 					Use:     "nps",
 					Short:   "连接内网穿透服务",
-					Example: "in dial nps",
+					Example: name + " dial nps",
 					Run:     handler.DialNPS,
 				},
 				{
@@ -250,7 +252,7 @@ func main() {
 					},
 					Use:     "frp",
 					Short:   "连接内网穿透服务",
-					Example: "in dial frp",
+					Example: name + " dial frp",
 					Run:     handler.DialFrp,
 				},
 				{
@@ -262,7 +264,7 @@ func main() {
 					},
 					Use:     "proxy",
 					Short:   "连接内网穿透服务",
-					Example: "in dial proxy",
+					Example: name + " dial proxy",
 					Run:     handler.DialProxy,
 				},
 			},
@@ -280,7 +282,7 @@ func main() {
 			},
 			Use:     "server",
 			Short:   "服务",
-			Example: "in server tcp",
+			Example: name + " server tcp",
 			Run:     handler.InServer,
 			Child: []*Command{
 				{
@@ -289,55 +291,55 @@ func main() {
 					},
 					Use:     "selenium",
 					Short:   "自动化服务",
-					Example: "in server selenium",
+					Example: name + " server selenium",
 					Run:     handler.SeleniumServer,
 				},
 				{
 					Use:     "tcp",
 					Short:   "TCP服务",
-					Example: "in server tcp",
+					Example: name + " server tcp",
 					Run:     handler.TCPServer,
 				},
 				{
 					Use:     "udp",
 					Short:   "UDP服务",
-					Example: "in server udp",
+					Example: name + " server udp",
 					Run:     handler.UDPServer,
 				},
 				{
 					Use:     "mqtt",
 					Short:   "MQTT服务",
-					Example: "in server mqtt -p 1883",
+					Example: name + " server mqtt -p 1883",
 					Run:     handler.MQTTServer,
 				},
 				{
 					Use:     "edge",
 					Short:   "Edge服务",
-					Example: "in server edge",
+					Example: name + " server edge",
 					Run:     handler.EdgeServer,
 				},
 				{
 					Use:     "edge_mini",
 					Short:   "EdgeMini服务",
-					Example: "in server edge_mini",
+					Example: name + " server edge_mini",
 					Run:     handler.EdgeMiniServer,
 				},
 				{
 					Use:     "influx",
 					Short:   "Influx服务",
-					Example: "in server influx",
+					Example: name + " server influx",
 					Run:     handler.InfluxServer,
 				},
 				{
 					Use:     "ws",
 					Short:   "Websocket服务",
-					Example: "in server ws",
+					Example: name + " server ws",
 					Run:     handler.WebsocketServer,
 				},
 				{
 					Use:     "websocket",
 					Short:   "Websocket服务",
-					Example: "in server websocket",
+					Example: name + " server websocket",
 					Run:     handler.WebsocketServer,
 				},
 				{
@@ -346,55 +348,55 @@ func main() {
 					},
 					Use:     "forward",
 					Short:   "转发服务",
-					Example: "in server forward",
+					Example: name + " server forward",
 					Run:     handler.ForwardServer,
 				},
 				{
 					Use:     "proxy",
 					Short:   "Proxy服务",
-					Example: "in server proxy 80->8080 -p=7000",
+					Example: name + " server proxy 80->8080 -p=7000",
 					Run:     handler.ProxyServer,
 				},
 				{
 					Use:     "deploy",
 					Short:   "部署服务",
-					Example: "in server deploy",
+					Example: name + " server deploy",
 					Run:     handler.DeployServer,
 				},
 				{
 					Use:     "livego",
 					Short:   "流媒体服务",
-					Example: "in server livego",
+					Example: name + " server livego",
 					Run:     handler.LivegoServer,
 				},
 				{
 					Use:     "frp",
 					Short:   "Frp服务",
-					Example: "in server frp",
+					Example: name + " server frp",
 					Run:     handler.FrpServer,
 				},
 				{
 					Use:     "http",
 					Short:   "HTTP服务",
-					Example: "in server http",
+					Example: name + " server http",
 					Run:     handler.HTTPServer,
 				},
 				{
 					Use:     "file",
 					Short:   "HTTP文件服务",
-					Example: "in server file",
+					Example: name + " server file",
 					Run:     handler.FileServer,
 				},
 				{
 					Use:     "file",
 					Short:   "HTTP文件服务",
-					Example: "in server file",
+					Example: name + " server file",
 					Run:     handler.FileServer,
 				},
 				{
 					Use:     "website",
 					Short:   "静态资源服务",
-					Example: "in server website",
+					Example: name + " server website",
 					Run:     handler.FileServer,
 				},
 			},
@@ -409,69 +411,69 @@ func main() {
 			},
 			Use:     "scan",
 			Short:   "扫描",
-			Example: "in scan icmp",
+			Example: name + " scan icmp",
 			Run:     handler.ScanICMP,
 			Child: []*Command{
 				{
 					Use:     "network",
 					Short:   "network(网卡)",
-					Example: "in scan network",
+					Example: name + " scan network",
 					Run:     handler.ScanNetwork,
 				},
 				{
 					Use:     "net",
 					Short:   "net(网卡)",
-					Example: "in scan net",
+					Example: name + " scan net",
 					Run:     handler.ScanNetwork,
 				},
 				{
 					Use:     "icmp",
 					Short:   "ping(当前网段)",
-					Example: "in scan icmp",
+					Example: name + " scan icmp",
 					Run:     handler.ScanICMP,
 				},
 				{
 					Flag:    []*Flag{{Name: "type", DefaultValue: "tcp", Memo: "扫描类型"}},
 					Use:     "port",
 					Short:   "端口扫描(当前网段)",
-					Example: "in scan port",
+					Example: name + " scan port",
 					Run:     handler.ScanPort,
 				},
 				{
 					Use:     "ssh",
 					Short:   "SSH服务扫描(当前网段)",
-					Example: "in scan ssh",
+					Example: name + " scan ssh",
 					Run:     handler.ScanSSH,
 				},
 				{
 					Use:     "rtsp",
 					Short:   "RTSP服务扫描(当前网段)",
-					Example: "in scan rtsp",
+					Example: name + " scan rtsp",
 					Run:     handler.ScanRtsp,
 				},
 				{
 					Use:     "serial",
 					Short:   "串口扫描",
-					Example: "in scan serial",
+					Example: name + " scan serial",
 					Run:     handler.ScanSerial,
 				},
 				{
 					Flag:    []*Flag{{Name: "open", Short: "o", Memo: "是否打开"}},
 					Use:     "edge",
 					Short:   "网关扫描",
-					Example: "in scan edge",
+					Example: name + " scan edge",
 					Run:     handler.ScanEdge,
 				},
 				{
 					Use:     "netstat",
 					Short:   "网络占用情况",
-					Example: "in scan netstat -f 8200",
+					Example: name + " scan netstat -f 8200",
 					Run:     handler.ScanNetstat,
 				},
 				{
 					Use:     "task",
 					Short:   "扫描运行的进程",
-					Example: "in scan task -f xx.exe",
+					Example: name + " scan task -f xx.exe",
 					Run:     handler.ScanTask,
 				},
 			},
@@ -495,7 +497,7 @@ func main() {
 			Use:     "download",
 			Short:   "下载资源",
 			Long:    "使用in download gui来打开图形化界面",
-			Example: "in download hfs",
+			Example: name + " download hfs",
 			Run:     handler.Download,
 		},
 
@@ -514,7 +516,7 @@ func main() {
 					},
 					Use:     "minio",
 					Short:   "上传资源到minio",
-					Example: "in upload minio ./xx.png",
+					Example: name + " upload minio ./xx.png",
 					Run:     handler.UploadMinio,
 				},
 			},
@@ -529,7 +531,7 @@ func main() {
 			Use:     "install",
 			Short:   "install",
 			Long:    "安装应用,下载到in所在的目录",
-			Example: "in install hfs",
+			Example: name + " install hfs",
 			Run:     handler.Install,
 		},
 
@@ -537,22 +539,22 @@ func main() {
 			Use:     "uninstall",
 			Short:   "uninstall",
 			Long:    "卸载应用,删除in所在的目录的程序",
-			Example: "in uninstall hfs",
+			Example: name + " uninstall hfs",
 			Run:     handler.Uninstall,
 		},
 
-		&Command{
-			Flag: []*Flag{
-				{Name: "download", Memo: "重新下载", Short: "d"}, //runType
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
-				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
-			},
-			Use:     "open",
-			Short:   "打开",
-			Long:    "打开文件夹或者应用,未输入参数,则打开in的目录",
-			Example: "in open hosts",
-			Run:     handler.Open,
-		},
+		//&Command{
+		//	Flag: []*Flag{
+		//		{Name: "download", Memo: "重新下载", Short: "d"}, //runType
+		//		{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
+		//		{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
+		//	},
+		//	Use:     "open",
+		//	Short:   "打开",
+		//	Long:    "打开文件夹或者应用,未输入参数,则打开in的目录",
+		//	Example: name + " open hosts",
+		//	Run:     handler.Open,
+		//},
 
 		&Command{
 			Flag: []*Flag{
@@ -561,19 +563,19 @@ func main() {
 			},
 			Use:     "upgrade",
 			Short:   "自我升级",
-			Example: "in upgrade",
+			Example: name + " upgrade",
 			Run:     handler.Upgrade,
 		},
 
 		&Command{
 			Use:     "doc",
 			Short:   "教程",
-			Example: "in doc",
+			Example: name + " doc",
 			Child: []*Command{
 				{
 					Use:     "python",
 					Short:   "教程",
-					Example: "in doc python",
+					Example: name + " doc python",
 					Run:     handler.DocPython,
 				},
 			},
@@ -582,7 +584,7 @@ func main() {
 		&Command{
 			Use:     "kill",
 			Short:   "杀死进程",
-			Example: "in kill 12345(进程id)",
+			Example: name + " kill 12345(进程id)",
 			Run:     handler.Kill,
 		},
 
@@ -593,7 +595,7 @@ func main() {
 			},
 			Use:     "forward",
 			Short:   "端口转发",
-			Example: "in forward 80->:8080",
+			Example: name + " forward 80->:8080",
 			Run:     handler.ForwardServer,
 		},
 
@@ -606,14 +608,14 @@ func main() {
 			Use:     "global",
 			Short:   "全局配置",
 			Long:    "使用in global gui来打开图形化界面",
-			Example: "in global --set proxy=http://127.0.0.1:1081",
+			Example: name + " global --set proxy=http://127.0.0.1:1081",
 			Run:     handler.Global,
 		},
 
 		&Command{
 			Use:     "ip",
 			Short:   "ip",
-			Example: "in ip self/8.8.8.8",
+			Example: name + " ip self/8.8.8.8",
 			Run:     handler.IP,
 		},
 
@@ -628,7 +630,7 @@ func main() {
 			},
 			Use:     "dir",
 			Short:   "对目录下的文件进行操作",
-			Example: "in dir ./",
+			Example: name + " dir ./",
 			Run:     handler.Dir,
 		},
 
@@ -647,7 +649,7 @@ func main() {
 			},
 			Use:     "text",
 			Short:   "文本操作",
-			Example: `in text "a.n.s.f" -set a=b`,
+			Example: name + ` text "a.n.s.f" -set a=b`,
 			Run:     handler.Text,
 		},
 
@@ -657,7 +659,7 @@ func main() {
 			},
 			Use:     "chart",
 			Short:   "生成曲线图",
-			Example: `in chart ./a.csv`,
+			Example: name + ` chart ./a.csv`,
 			Run:     handler.Chart,
 		},
 
@@ -667,7 +669,7 @@ func main() {
 			},
 			Use:     "resources",
 			Short:   "资源列表",
-			Example: `in resources -f=notice`,
+			Example: name + ` resources -f=notice`,
 			Run:     handler.Resources,
 		},
 	)
