@@ -4,17 +4,14 @@ var RoutesTemp = `package {Lower}
 
 import (
 	"github.com/injoyai/goutil/database/xorms"
-	"github.com/injoyai/logs"
 	"github.com/injoyai/frame/fiber"
 )
 
-var DB *xorms.Engine
+var db *xorms.Engine
 
-func Init(db *xorms.Engine,g fiber.Grouper) {
+func Init(b *xorms.Engine,g fiber.Grouper) error{
 
-	DB=db
-	
-	logs.PrintErr(db.Sync2(new({Upper})))
+	db=b
 
 	g.Group("/{Lower}", func(g fiber.Grouper) {
 		g.GET("/list", Get{Upper}List)
@@ -22,6 +19,8 @@ func Init(db *xorms.Engine,g fiber.Grouper) {
 		g.POST("/", Post{Upper})
 		g.DELETE("/", Del{Upper})
 	})
+
+	return db.Sync2(new({Upper}))
 }
 
 `

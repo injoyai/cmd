@@ -8,7 +8,7 @@ import (
 
 func getList(req *{Upper}ListReq) ([]*{Upper}, int64, error) {
 	data := []*{Upper}{}
-	session := DB.Limit(req.Size, req.Size*req.Index)
+	session := db.Limit(req.Size, req.Size*req.Index)
 	if len(req.Name) > 0 {
 		session.Where("Name like ?", "%"+req.Name+"%")
 	}
@@ -18,7 +18,7 @@ func getList(req *{Upper}ListReq) ([]*{Upper}, int64, error) {
 
 func get(id int64) (*{Upper}, error) {
 	data := new({Upper})
-	has, err := DB.Where("ID=?", id).Get(data)
+	has, err := db.Where("ID=?", id).Get(data)
 	if err != nil {
 		return nil, err
 	} else if !has {
@@ -33,15 +33,15 @@ func post(req *{Upper}Req) error {
 		return err
 	}
 	if req.ID > 0 {
-		_, err = DB.Where("ID=?", req.ID).Cols(cols).Update(data)
+		_, err = db.Where("ID=?", req.ID).Cols(cols).Update(data)
 		return err
 	}
-	_, err = DB.Insert(data)
+	_, err = db.Insert(data)
 	return err
 }
 
 func del(id int64) error {
-	_, err := DB.Where("ID=?", id).Delete(new({Upper}))
+	_, err := db.Where("ID=?", id).Delete(new({Upper}))
 	return err
 }
 

@@ -35,7 +35,7 @@ func Get{Upper}List(c fiber.Ctx) {
 // @Router /api/{Lower} [get]
 func Get{Upper}(c fiber.Ctx) {
 	id := c.GetInt64("id")
-	data, err := get{Upper}(id)
+	data, err := get(id)
 	c.CheckErr(err)
 	c.Succ(data)
 }
@@ -50,8 +50,8 @@ func Get{Upper}(c fiber.Ctx) {
 // @Router /api/{Lower} [post]
 func Post{Upper}(c fiber.Ctx) {
 	req := new({Upper}Req)
-	c.Read(r, req)
-	err := post{Upper}(req)
+	c.Parse(req)
+	err := post(req)
 	c.Err(err)
 }
 
@@ -65,7 +65,7 @@ func Post{Upper}(c fiber.Ctx) {
 // @Router /api/{Lower} [delete]
 func Del{Upper}(c fiber.Ctx) {
 	id := c.GetInt64("id")
-	err := del{Upper}(id)
+	err := del(id)
 	c.Err(err)
 }
 

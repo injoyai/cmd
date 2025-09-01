@@ -16,7 +16,7 @@ import (
 // @filePrefix,文件前缀,api_
 // @typeName,模块名称, Test
 // @temp,模板
-func NewFile(modelName, filePath, filePrefix, typeName, temp string) error {
+func NewFile(modelName, filePath, typeName, fileSuffix, temp string) error {
 	if len(typeName) == 0 {
 		return nil
 	}
@@ -33,7 +33,7 @@ func NewFile(modelName, filePath, filePrefix, typeName, temp string) error {
 		return err
 	}
 
-	fullPath := filePath + "/" + filePrefix + Lower + ".go"
+	fullPath := filePath + "/" + Lower + fileSuffix + ".go"
 	fileInfo, e := os.Stat(fullPath)
 	if fileInfo != nil && e == nil {
 		return errors.New("file already exists: " + fullPath)

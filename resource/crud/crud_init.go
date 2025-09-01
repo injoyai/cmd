@@ -14,10 +14,10 @@ func New(name string) error {
 	}
 
 	dir := prefix + "app/model/" + name
-	logs.PrintErr(NewFile(modName, dir, "api_", name, ApiTempXorm))
-	logs.PrintErr(NewFile(modName, dir, "router_", name, RoutesTemp))
-	logs.PrintErr(NewFile(modName, dir, "model_", name, ModelTemp))
-	logs.PrintErr(NewFile(modName, dir, "server_", name, ServerTemp))
+	logs.PrintErr(NewFile(modName, dir, name, "_api", ApiTempXorm))
+	logs.PrintErr(NewFile(modName, dir, name, "_router", RoutesTemp))
+	logs.PrintErr(NewFile(modName, dir, name, "_model", ModelTemp))
+	logs.PrintErr(NewFile(modName, dir, name, "_server", ServerTemp))
 
 	fmt.Println("生成成功,引用以下函数进行注册:")
 	fmt.Println("import \"" + modName + "/app/model/" + name + "\"")
