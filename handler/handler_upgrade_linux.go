@@ -15,8 +15,4 @@ func Upgrade(_ *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
-	if err := tool.ShellRun("chmod +x " + filename); err != nil {
-		logs.Err(err)
-		return
-	}
 }
