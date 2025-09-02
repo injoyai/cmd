@@ -96,7 +96,9 @@ func init() {
 	//补充配置的地址
 	for _, v := range Resources {
 		v.init()
-		v.FullUrl = append(v.FullUrl, urls...)
+		if len(v.FullUrl) == 0 {
+			v.FullUrl = append(v.FullUrl, urls...)
+		}
 	}
 
 }

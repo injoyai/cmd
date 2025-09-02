@@ -3,12 +3,14 @@ package handler
 import (
 	"fmt"
 	"github.com/injoyai/cmd/resource"
+	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func Download(cmd *cobra.Command, args []string, flags *Flags) {
@@ -56,6 +58,9 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if !exist && runtime.GOOS == "linux" {
+		tool.ShellRun("chmod +x " + filename)
+	}
 	fmt.Println("安装完成: ", filename, conv.Select(exist, "(已存在)", ""))
 }
 

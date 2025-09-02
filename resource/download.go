@@ -64,6 +64,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 				if i < len(urls)-1 {
 					fmt.Println(err)
 				}
+				<-time.After(time.Second * 2)
 			}
 			return
 		}
@@ -273,6 +274,12 @@ func downloadStream(ctx context.Context, op *Config) error {
 
  */
 
+type Dir string
+
+func (this Dir) Join(s ...string) string {
+	return filepath.Join(append([]string{string(this)}, s...)...)
+}
+
 type Config struct {
 	Resource     string   //资源 upx , https://xxx.com/xxx
 	url          string   //下载地址
@@ -307,7 +314,8 @@ func (this *Config) Download(h ...Handler) error {
 
 	if len(h) > 0 && h[0] != nil {
 		//使用自定义的下载函数
-		return h[0](this.Url(), this.Dir, this.Filename(), this.Proxy())
+		return h[0](this)
+		//return h[0](this.Url(), this.Dir, this.Filename(), this.Proxy())
 	}
 
 	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
@@ -324,6 +332,11 @@ func (this *Config) Download(h ...Handler) error {
 
 	//重命名
 	return os.Rename(this.TempFilename(), this.Filename())
+}
+
+func (this *Config) download(filename string) error {
+	_, err := bar.Download(this.Url(), filename, this.Proxy())
+	return err
 }
 
 func (this *Config) String() string {
