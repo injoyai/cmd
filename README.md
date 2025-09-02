@@ -8,7 +8,7 @@ curl -sSL https://oss.002246.xyz/in-store/install.sh | bash
 ```
 * 通过wget安装
 ```shell
-wget -qO- https://example.com/myscript.sh | bash
+wget -qO- https://oss.002246.xyz/in-store/install.sh | bash
 ```
 * 通过go mod安装
 
