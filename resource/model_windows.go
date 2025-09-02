@@ -2,7 +2,6 @@ package resource
 
 import (
 	"github.com/injoyai/goutil/oss/compress/zip"
-	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/logs"
 	"os"
 	"path/filepath"
@@ -45,22 +44,22 @@ var Exclusive = MResource{
 		Key:     []string{"cursor-auto-free"},
 		Local:   "cursor-register.exe",
 		FullUrl: []Url{"https://github.com/chengazhen/cursor-auto-free/releases/latest/download/CursorPro-Windows.zip"},
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			zipFilename := filepath.Join(dir, "cursor-register.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "cursor-register.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
-			err := zip.Decode(zipFilename, dir)
+			err := zip.Decode(zipFilename, op.Dir)
 			if err != nil {
 				return err
 			}
 			os.Remove(zipFilename)
 
-			err = os.Rename(filepath.Join(dir, "CursorPro-Windows/CursorPro.exe"), filename)
+			err = os.Rename(filepath.Join(op.Dir, "CursorPro-Windows/CursorPro.exe"), op.Filename())
 			if err != nil {
 				return err
 			}
-			os.RemoveAll(filepath.Join(dir, "CursorPro-Windows"))
+			os.RemoveAll(filepath.Join(op.Dir, "CursorPro-Windows"))
 			return nil
 		},
 	},
@@ -80,21 +79,21 @@ var Exclusive = MResource{
 	"adb": {
 		Local:  "adb.exe",
 		Remote: "adb.zip",
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			zipFilename := filepath.Join(dir, "adb.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "adb.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
-			err := zip.Decode(zipFilename, dir)
+			err := zip.Decode(zipFilename, op.Dir)
 			if err != nil {
 				return err
 			}
-			err = os.Rename(filepath.Join(dir, "/adb/adb.exe"), filepath.Join(dir, "/adb.exe"))
+			err = os.Rename(filepath.Join(op.Dir, "/adb/adb.exe"), filepath.Join(op.Dir, "/adb.exe"))
 			if err != nil {
 				return err
 			}
-			err = os.Rename(filepath.Join(dir, "/adb/AdbWinApi.dll"), filepath.Join(dir, "/AdbWinApi.dll"))
+			err = os.Rename(filepath.Join(op.Dir, "/adb/AdbWinApi.dll"), filepath.Join(op.Dir, "/AdbWinApi.dll"))
 			if err != nil {
 				return err
 			}
@@ -106,33 +105,32 @@ var Exclusive = MResource{
 		Local:   "-",
 		Remote:  "chrome.zip",
 		FullUrl: []Url{"https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip"},
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			zipFilename := filepath.Join(dir, "chrome.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "chrome.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
-			return zip.Decode(zipFilename, dir)
+			return zip.Decode(zipFilename, op.Dir)
 		},
 	},
 
 	"influxdb": {
-		Key:   []string{"influx", "influxd"},
-		Local: "influxd.exe",
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			url = "https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"
-			zipFilename := filepath.Join(dir, "influxdb.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Key:     []string{"influx", "influxd"},
+		Local:   "influxd.exe",
+		FullUrl: []Url{"https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"},
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "influxdb.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
-			if err := zip.Decode(zipFilename, dir); err != nil {
+			defer os.Remove(zipFilename)
+			if err := zip.Decode(zipFilename, op.Dir); err != nil {
 				return err
 			}
-			logs.PrintErr(os.Remove(zipFilename))
-
 			folder := "/influxdb-1.8.10-1"
-			logs.PrintErr(os.Rename(filepath.Join(dir, folder, "/influxd.exe"), filename))
-			logs.PrintErr(os.RemoveAll(filepath.Join(dir, folder)))
+			logs.PrintErr(os.Rename(filepath.Join(op.Dir, folder, "/influxd.exe"), op.Filename()))
+			logs.PrintErr(os.RemoveAll(filepath.Join(op.Dir, folder)))
 			return nil
 		},
 	},
@@ -140,33 +138,29 @@ var Exclusive = MResource{
 	"ps5": {
 		Local:  "-",
 		Remote: "PhotoShop CS5.zip",
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			zipFilename := filepath.Join(dir, "ps5.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "ps5.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
-			if err := zip.Decode(zipFilename, filepath.Join(dir, "PhotoShop CS5/")); err != nil {
-				return err
-			}
-			logs.PrintErr(os.Remove(zipFilename))
-			return nil
+			defer os.Remove(zipFilename)
+			return zip.Decode(zipFilename, filepath.Join(op.Dir, "PhotoShop CS5/"))
 		},
 	},
 
 	"ipinfo": {
-		Local: "ipinfo.exe",
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			url = "https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip"
-			zipFilename := filepath.Join(dir, "ipinfo.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Local:   "ipinfo.exe",
+		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip"},
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "ipinfo.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
-			if err := zip.Decode(zipFilename, dir); err != nil {
+			defer os.Remove(zipFilename)
+			if err := zip.Decode(zipFilename, op.Dir); err != nil {
 				return err
 			}
-			logs.PrintErr(os.Remove(zipFilename))
-			logs.PrintErr(os.Rename(filepath.Join(dir, "/ipinfo_3.3.1_windows_amd64.exe"), filename))
-			return nil
+			return os.Rename(filepath.Join(op.Dir, "/ipinfo_3.3.1_windows_amd64.exe"), op.Filename())
 		},
 	},
 }

@@ -1,11 +1,13 @@
 package resource
 
 import (
-	"github.com/injoyai/goutil/oss/compress/zip"
-	"github.com/injoyai/goutil/str/bar/v2"
-	"github.com/injoyai/logs"
+	"archive/tar"
+	"compress/gzip"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var Exclusive = MResource{
@@ -18,19 +20,80 @@ var Exclusive = MResource{
 	"upx":       {Local: "upx", Remote: "upx_linux_amd64", RemoteArm: "upx_linux_arm", RemoteArm64: "upx_linux_arm64"},
 
 	"ipinfo": {
-		Local: "ipinfo.exe",
-		Handler: func(url, dir, filename string, proxy ...string) error {
-			url = "https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_linux_amd64.zip"
-			zipFilename := filepath.Join(dir, "ipinfo.zip")
-			if _, err := bar.Download(url, zipFilename, proxy...); err != nil {
+		Local:   "ipinfo",
+		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_{os}_{arch}.tar.gz"},
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "ipinfo.zip")
+			if err := op.download(zipFilename); err != nil {
 				return err
 			}
-			if err := zip.Decode(zipFilename, dir); err != nil {
+			defer os.Remove(zipFilename)
+			if err := untar(zipFilename, op.Dir); err != nil {
 				return err
 			}
-			logs.PrintErr(os.Remove(zipFilename))
-			logs.PrintErr(os.Rename(filepath.Join(dir, "/ipinfo_3.3.1_linux_amd64"), filename))
-			return nil
+			return os.Rename(filepath.Join(op.Dir, strings.TrimRight(filepath.Base(op.Url()), ".tar.gz")), op.Filename())
 		},
 	},
+}
+
+// untar 解压 tar.gz 文件到指定目录
+func untar(src, dest string) error {
+	// 打开源文件
+	f, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// 创建 gzip reader
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+
+	// 创建 tar reader
+	tr := tar.NewReader(gz)
+
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break // 读完了
+		}
+		if err != nil {
+			return err
+		}
+
+		target := filepath.Join(dest, header.Name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			// 创建目录
+			if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			// 创建父目录
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+			// 创建文件
+			outFile, err := os.Create(target)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, tr); err != nil {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+			// 设置权限
+			if err := os.Chmod(target, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+		default:
+			fmt.Printf("跳过不支持的类型: %c in %s\n", header.Typeflag, header.Name)
+		}
+	}
+	return nil
 }
