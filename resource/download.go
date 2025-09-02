@@ -13,6 +13,7 @@ import (
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/goutil/task"
+	"github.com/injoyai/logs"
 	"io"
 	"net/url"
 	"os"
@@ -54,16 +55,14 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		//自带资源可能有多个源,按顺序挨个尝试
 		urls := val.GetFullUrls()
 		download = func(ctx context.Context, op *Config) (err error) {
-			for i, u := range urls {
+			for _, u := range urls {
 				op.SetUrl(u)
 				//获取自定义下载函数
 				handler := val.GetHandler()
 				if err = op.Download(handler); err == nil {
 					return
 				}
-				if i < len(urls)-1 {
-					fmt.Println(err)
-				}
+				logs.Err(err)
 				<-time.After(time.Second * 2)
 			}
 			return
@@ -115,6 +114,8 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 				if err = op.Download(); err == nil {
 					return
 				}
+				logs.Err(err)
+				<-time.After(time.Second * 2)
 			}
 			return
 		}
@@ -143,23 +144,6 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	return op.Filename(), false, nil
 }
-
-//func downloadOther(ctx context.Context, op *Config) error {
-//	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
-//	//以防出现下载失败,直接覆盖了源文件
-//	if err := op.Download(op.TempFilename()); err != nil {
-//		os.Remove(op.TempFilename())
-//		return err
-//	}
-//
-//	//可能源文件不存在,忽略错误,可以直接重命名覆盖
-//	//os.Remove(op.Filename())
-//	//延迟0.05秒,有可能错误: rename proxy.exe.temp proxy.exe: The process cannot access the file because it is being used by another process.
-//	<-time.After(time.Millisecond * 50)
-//
-//	//重命名
-//	return os.Rename(op.TempFilename(), op.Filename())
-//}
 
 func downloadM3u8(ctx context.Context, op *Config) error {
 
