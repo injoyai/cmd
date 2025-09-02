@@ -543,19 +543,6 @@ func main() {
 			Run:     handler.Uninstall,
 		},
 
-		//&Command{
-		//	Flag: []*Flag{
-		//		{Name: "download", Memo: "重新下载", Short: "d"}, //runType
-		//		{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},
-		//		{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
-		//	},
-		//	Use:     "open",
-		//	Short:   "打开",
-		//	Long:    "打开文件夹或者应用,未输入参数,则打开in的目录",
-		//	Example: name + " open hosts",
-		//	Run:     handler.Open,
-		//},
-
 		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetString("proxy")},

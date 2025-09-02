@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/resource/crud"
 	"github.com/injoyai/cmd/tool"
@@ -103,7 +104,7 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) {
 		Resource:     "ipinfo",
 		Dir:          oss.ExecDir(),
 		ProxyEnable:  true,
-		ProxyAddress: flags.GetString("proxy"),
+		ProxyAddress: flags.GetString("proxy", global.GetString("proxy")),
 	})
 	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
 }
