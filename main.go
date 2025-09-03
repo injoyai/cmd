@@ -480,6 +480,14 @@ func main() {
 		},
 
 		&Command{
+			Use:     "website",
+			Short:   "生成站点",
+			Long:    "使用in website ./ 把静态资源生成站点",
+			Example: name + " website ./",
+			Run:     handler.FileServer,
+		},
+
+		&Command{
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
