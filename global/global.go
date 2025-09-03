@@ -6,6 +6,7 @@ import (
 	"github.com/injoyai/goutil/cache/v2"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/logs"
+	"os"
 )
 
 var (
@@ -20,6 +21,23 @@ func init() {
 
 func GetString(key string, def ...string) string {
 	return File.GetString(key, def...)
+}
+
+func GetProxy() string {
+	s := File.GetString("proxy")
+	if len(s) == 0 {
+		s = os.Getenv("http_proxy")
+	}
+	if len(s) == 0 {
+		s = os.Getenv("HTTP_PROXY")
+	}
+	if len(s) == 0 {
+		s = os.Getenv("https_proxy")
+	}
+	if len(s) == 0 {
+		s = os.Getenv("HTTPS_PROXY")
+	}
+	return s
 }
 
 func Struct() Template {

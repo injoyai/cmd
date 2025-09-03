@@ -23,9 +23,6 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	search := flags.GetString("search")
 	output := flags.GetString("output")
 
-	//headerMap := map[string]string{}
-	//err := json.Unmarshal([]byte(header), &headerMap)
-	//logs.Debug(err, header)
 	header := http.Header{}
 	for k, v := range headerMap {
 		header.Add(k, conv.String(v))
