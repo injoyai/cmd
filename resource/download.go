@@ -27,7 +27,10 @@ import (
 func MustDownload(ctx context.Context, op *Config) (string, bool) {
 
 	//忽略正则的资源地址
-	op.ProxyIgnore = strings.Split(global.GetString("proxyIgnore"), ",")
+	ignore := global.GetString("proxyIgnore")
+	if len(ignore) > 0 {
+		op.ProxyIgnore = strings.Split(ignore, ",")
+	}
 
 	wait := time.Second * 2
 	for {
@@ -341,7 +344,7 @@ func (this *Config) Url() string {
 func (this *Config) Proxy() string {
 	if this.ProxyEnable {
 		for _, v := range this.ProxyIgnore {
-			if regexp.MustCompile(v).MatchString(this.Url()) {
+			if len(v) > 0 && regexp.MustCompile(v).MatchString(this.Url()) {
 				return ""
 			}
 		}
