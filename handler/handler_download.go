@@ -35,7 +35,7 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		Retry:        flags.GetInt("retry"),
 		Name:         flags.GetString("name"),
 		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
-		ProxyEnable:  true,
+		ProxyEnable:  flags.GetBool("proxyEnable"),
 		ProxyAddress: flags.GetString("proxy"),
 		NoticeEnable: flags.GetBool("noticeEnable"),
 		NoticeText:   flags.GetString("noticeText"),
