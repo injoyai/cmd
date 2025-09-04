@@ -10,7 +10,6 @@ import (
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 	"strings"
 )
@@ -25,62 +24,46 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	find := []byte(flags.GetString("find"))                       //查找某个内容
 	count := flags.GetBool("count")
 	show := flags.GetBool("show")
-	ty := strings.ToLower(flags.GetString("type"))
+	_type := strings.ToLower(flags.GetString("type"))
 	output := flags.GetString("output", "./output.ts")
 
-	//和并ts文件
-	if ty == "merge_ts" || ty == "mergets" {
+	switch {
+	case _type == "merge_ts" || _type == "mergets":
 		err := _merge_ts(args[0], output)
-		if err != nil {
-			log.Println(err)
-		}
-		return
-	}
+		logs.PrintErr(err)
 
-	var (
-		doSomething bool
-		before      []func(info *oss.FileInfo)
-		after       []func()
-	)
-
-	//统计数量
-	if count {
-		doSomething = true
+	case count:
 		countFile := 0
 		countDir := 0
-		before = append(before, func(info *oss.FileInfo) {
+		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 			if info.IsDir() {
 				countDir++
 			} else {
 				countFile++
 			}
-		})
-		after = append(after, func() {
-			logs.Infof("共计文件数: %d, 共计文件夹数: %d \n", countFile, countDir)
-		})
-	}
+			return true, nil
+		}, level)
+		fmt.Println("文件夹数量:", countDir)
+		fmt.Println("文件数量:", countFile)
 
-	//查找文件内容
-	if len(find) > 0 && !doSomething {
-		doSomething = true
-		before = append(before, func(info *oss.FileInfo) {
+	case len(find) > 0:
+		//查找所有文件内容
+		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 			if !info.IsDir() {
 				bs, err := oss.ReadBytes(info.Filename())
 				if err != nil {
-					logs.Err(err)
-					return
+					return false, err
 				}
 				if bytes.Contains(bs, find) {
-					fmt.Printf("%s >>> %s \n", info.Filename(), find)
+					fmt.Println(info.Filename())
 				}
 			}
-		})
-	}
+			return true, nil
+		}, level)
 
-	//替换文件内容
-	if len(replace) == 2 && !doSomething {
-		doSomething = true
-		before = append(before, func(info *oss.FileInfo) {
+	case len(replace) == 2:
+		//替换所有文件的内容
+		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 			if !info.IsDir() {
 				bs, err := oss.ReadBytes(info.Filename())
 				if !logs.PrintErr(err) {
@@ -94,27 +77,23 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 					logs.PrintErr(err)
 				}
 			}
-		})
-	}
-
-	if doSomething {
-		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
-			for _, f := range before {
-				f(info)
-			}
 			return true, nil
 		}, level)
-		for _, f := range after {
-			f()
-		}
-	}
 
-	//打印目录和文件结构
-	if show || !doSomething {
+	case show:
+		//展示目录树
 		d, err := oss.ReadTree(args[0], level)
 		if !logs.PrintErr(err) {
 			fmt.Println(d)
 		}
+
+	default:
+		//展示目录树
+		d, err := oss.ReadTree(args[0], level)
+		if !logs.PrintErr(err) {
+			fmt.Println(d)
+		}
+
 	}
 
 }
