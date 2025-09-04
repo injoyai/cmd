@@ -22,6 +22,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 
 	level := flags.GetInt("level", 2)
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
+	find := []byte(flags.GetString("find"))                       //查找某个内容
 	count := flags.GetBool("count")
 	show := flags.GetBool("show")
 	ty := strings.ToLower(flags.GetString("type"))
@@ -59,8 +60,25 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 	}
 
+	//查找文件内容
+	if len(find) > 0 && !doSomething {
+		doSomething = true
+		before = append(before, func(info *oss.FileInfo) {
+			if !info.IsDir() {
+				bs, err := oss.ReadBytes(info.Filename())
+				if err != nil {
+					logs.Err(err)
+					return
+				}
+				if bytes.Contains(bs, find) {
+					fmt.Printf("%s >>> %s \n", info.Filename(), find)
+				}
+			}
+		})
+	}
+
 	//替换文件内容
-	if len(replace) == 2 {
+	if len(replace) == 2 && !doSomething {
 		doSomething = true
 		before = append(before, func(info *oss.FileInfo) {
 			if !info.IsDir() {

@@ -91,7 +91,7 @@ func main() {
 				{Name: "get", Short: "g", Memo: "筛选body数据,例 -g=code"},
 			},
 			Use:     "http",
-			Short:   "简单的HTTP连接",
+			Short:   "发起HTTP请求",
 			Example: name + " http https://localhost:8080/ping",
 			Run:     handler.HTTP,
 		},
@@ -281,7 +281,7 @@ func main() {
 				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
 			},
 			Use:     "server",
-			Short:   "服务",
+			Short:   "服务,TCP,UDP,MQTT,HTTP等",
 			Example: name + " server tcp",
 			Run:     handler.InServer,
 			Child: []*Command{
@@ -563,12 +563,12 @@ func main() {
 
 		&Command{
 			Use:     "doc",
-			Short:   "教程",
+			Short:   "文档",
 			Example: name + " doc",
 			Child: []*Command{
 				{
 					Use:     "python",
-					Short:   "教程",
+					Short:   "文档",
 					Example: name + " doc python",
 					Run:     handler.DocPython,
 				},
@@ -617,6 +617,7 @@ func main() {
 			Flag: []*Flag{
 				{Name: "level", Short: "l", Memo: "递归层级", DefaultValue: "2"},
 				{Name: "replace", Short: "r", Memo: "替换 a=b"},
+				{Name: "find", Short: "f", Memo: "查找某个内容"},
 				{Name: "count", Short: "c", Memo: "统计数量"},
 				{Name: "show", Short: "s", Memo: "显示文件信息"},
 				{Name: "type", Short: "t", Memo: "执行类型,merge_ts(合并ts文件),"},
