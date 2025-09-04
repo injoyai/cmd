@@ -540,6 +540,14 @@ func main() {
 			Long:    "安装应用,下载到in所在的目录",
 			Example: name + " install hfs",
 			Run:     handler.Install,
+			Child: []*Command{
+				{
+					Use:     "go",
+					Short:   "安装go编译器",
+					Example: name + " install go 1.20",
+					Run:     handler.InstallGo,
+				},
+			},
 		},
 
 		&Command{
@@ -616,7 +624,7 @@ func main() {
 		&Command{
 			Flag: []*Flag{
 				{Name: "level", Short: "l", Memo: "递归层级", DefaultValue: "2"},
-				{Name: "replace", Short: "r", Memo: "替换 a=b"},
+				{Name: "replace", Short: "r", Memo: "替换文件内容 a=b"},
 				{Name: "find", Short: "f", Memo: "查找某个内容"},
 				{Name: "count", Short: "c", Memo: "统计数量"},
 				{Name: "show", Short: "s", Memo: "显示文件信息"},

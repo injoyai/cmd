@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 func Download(cmd *cobra.Command, args []string, flags *Flags) {
@@ -45,11 +46,26 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println("下载完成: ", filename, conv.Select(exist, "(已存在)", ""))
 }
 
+func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
+	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "install_go",
+		Dir:          "./",
+		Name:         flags.GetString("name"),
+		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
+	tool.ShellRun("chmod +x " + filename)
+	tool.ShellRun(filename + " " + strings.Join(args, " "))
+	os.Remove(filename)
+}
+
 func Install(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("请输入需要安装的应用")
 		return
 	}
+
 	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
