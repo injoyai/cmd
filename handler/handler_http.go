@@ -6,12 +6,17 @@ import (
 	"github.com/injoyai/goutil/net/http"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("缺少请求地址")
 		return
+	}
+
+	if !strings.HasPrefix(args[0], "https://") || !strings.HasPrefix(args[0], "http://") {
+		args[0] = "http://" + args[0]
 	}
 
 	proxy := flags.GetString("proxy")
