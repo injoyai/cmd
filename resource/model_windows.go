@@ -39,6 +39,7 @@ var Exclusive = MResource{
 	"ModbusPoll":     {Local: "ModbusPoll.exe", Key: []string{"modbuspoll"}},
 	"hls-player":     {Local: "hls-player.exe", Key: []string{"hls_player", "hlsplayer"}},
 	"quark-signin":   {Local: "quark-signin.exe", Key: []string{"quark_sign", "quark-sign", "quarksign", "quarksignin"}},
+	"复利计算器":          {Local: "复利计算器.exe", Key: []string{"复利", "复利工具", "复利小工具", "复利计算", "计算复利"}},
 
 	"cursor-register": {
 		Key:     []string{"cursor-auto-free"},
