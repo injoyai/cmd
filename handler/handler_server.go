@@ -23,6 +23,7 @@ import (
 	"github.com/injoyai/proxy/forward"
 	"github.com/spf13/cobra"
 	"github.com/tebeka/selenium"
+	"golang.org/x/net/webdav"
 	"io"
 	"net"
 	"net/http"
@@ -388,5 +389,21 @@ func FileServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 8080)
 	logs.Infof("[:%d] 开启文件服务成功...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(args[0])))
+	logs.Err(err)
+}
+
+//====================WebDAVServer====================//
+
+func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		args = []string{"./"}
+	}
+	port := flags.GetInt("port", 8080)
+	logs.Infof("[:%d] 开启WebDAV服务成功...\n", port)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", 8080), &webdav.Handler{
+		Prefix:     "/",
+		FileSystem: webdav.Dir(args[0]), // 本地目录映射
+		LockSystem: webdav.NewMemLS(),
+	})
 	logs.Err(err)
 }
