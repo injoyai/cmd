@@ -382,10 +382,10 @@ func main() {
 					Run:     handler.HTTPServer,
 				},
 				{
-					Use:     "file",
-					Short:   "HTTP文件服务",
-					Example: name + " server file",
-					Run:     handler.FileServer,
+					Use:     "webdav",
+					Short:   "WebDAV服务",
+					Example: name + " server webdav",
+					Run:     handler.WebDAVServer,
 				},
 				{
 					Use:     "file",
