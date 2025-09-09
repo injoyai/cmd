@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/conv/codec"
 	"github.com/injoyai/goutil/oss"
@@ -29,7 +30,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 
 	switch {
 	case _type == "merge_ts" || _type == "mergets":
-		err := _merge_ts(args[0], output)
+		err := resource.MergeTS(args[0], output)
 		logs.PrintErr(err)
 
 	case count:
