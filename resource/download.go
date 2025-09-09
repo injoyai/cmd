@@ -224,7 +224,7 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 		}
 
 		//合并视频
-		op.Merge(3)
+		op.MergeTS()
 
 		break
 
@@ -243,7 +243,7 @@ func downloadStream(ctx context.Context, op *Config) error {
 	})
 
 	//合并视频,ctrl+c也能合并
-	oss.ListenExit(func() { op.Merge(3) })
+	oss.ListenExit(func() { op.MergeTS() })
 
 	oss.RemoveAll(op.TempDir())
 	oss.New(op.TempDir())
@@ -253,6 +253,40 @@ func downloadStream(ctx context.Context, op *Config) error {
 	}
 
 	return nil
+}
+
+func MergeTS(dir, output string) error {
+
+	//判断ffmpeg是否下载
+	MustDownload(g.Ctx(), &Config{
+		Resource:    "ffmpeg",
+		Dir:         oss.ExecDir(),
+		ProxyEnable: true,
+	})
+
+	lsFilename := filepath.Join(dir, "ts_list.txt")
+	lsFilename = strings.ReplaceAll(lsFilename, "\\", "/")
+	fmt.Println("生成TS列表文件:", lsFilename)
+	file, err := os.Create(lsFilename)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(lsFilename)
+	defer file.Close()
+
+	err = oss.RangeFileInfo(dir, func(info *oss.FileInfo) (bool, error) {
+		if strings.HasSuffix(info.Name(), ".ts") {
+			_, err = file.WriteString("file '" + info.Name() + "'\r\n")
+		}
+		return true, err
+	})
+	if err != nil {
+		return err
+	}
+
+	cmd := fmt.Sprintf("ffmpeg -f concat -i %s -c copy %s", lsFilename, output)
+	fmt.Println("执行ffmpeg命令:", cmd)
+	return shell.Run(cmd)
 }
 
 /*
@@ -390,29 +424,11 @@ func (this *Config) TempDir() string {
 	return filepath.Join(this.Dir, this.GetName())
 }
 
-func (this *Config) Merge(retry int) error {
-	cacheDir := this.TempDir()
-	return g.Retry(func() error {
-		//合并视频,删除分片等信息
-		mergeFile, err := os.Create(this.Filename())
-		if err != nil {
-			return err
-		}
-		defer mergeFile.Close()
-		defer oss.RemoveAll(cacheDir)
-		return oss.RangeFileInfo(cacheDir, func(info *oss.FileInfo) (bool, error) {
-			if !info.IsDir() && strings.HasSuffix(info.Name(), this.suffix) {
-				f, err := os.Open(filepath.Join(cacheDir, info.Name()))
-				if err != nil {
-					return false, err
-				}
-				defer f.Close()
-				_, err = io.Copy(mergeFile, f)
-				return err == nil, err
-			}
-			return true, nil
-		})
-	}, retry)
+func (this *Config) MergeTS() error {
+	if err := MergeTS(this.TempDir(), this.Filename()); err != nil {
+		return err
+	}
+	return os.RemoveAll(this.TempDir())
 }
 
 func (this *Config) PlayNotice() {
