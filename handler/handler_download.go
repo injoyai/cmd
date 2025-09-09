@@ -55,6 +55,7 @@ func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	filename = "./" + filename
 	tool.ShellRun("chmod +x " + filename)
 	tool.ShellRun(filename + " " + strings.Join(args, " "))
 	os.Remove(filename)
