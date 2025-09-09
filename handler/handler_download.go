@@ -47,15 +47,16 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
+	dir := "./"
 	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "install_go",
-		Dir:          "./",
+		Dir:          dir,
 		Name:         flags.GetString("name"),
 		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
-	filename = "./" + filename
+	filename = dir + filename
 	tool.ShellRun("chmod +x " + filename)
 	tool.ShellRun(filename + " " + strings.Join(args, " "))
 	os.Remove(filename)
