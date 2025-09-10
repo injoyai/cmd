@@ -201,7 +201,8 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 		sum += current
 		b.Add(1).Flush()
 	})
-	for i, v := range list {
+	for i := range list {
+		url := list[i]
 		filename := fmt.Sprintf("%05d"+op.suffix, i)
 		if doneName[filename] {
 			//过滤已经下载过的分片
@@ -209,7 +210,7 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 			continue
 		}
 		//继续下载没有下载过的分片
-		t.Set(i, func(ctx context.Context) (any, error) { return http.Get(v) })
+		t.Set(i, func(ctx context.Context) (any, error) { return http.Get(url) })
 	}
 
 	//新建任务
