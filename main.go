@@ -509,6 +509,27 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "download", Memo: "重新下载", Short: "d"},
+				{Name: "name", Memo: "自定义保存名称", Short: "n"},
+				{Name: "retry", Memo: "失败重试次数", DefaultValue: "10"},
+				{Name: "coroutine", Memo: "协程数量", Short: "c", DefaultValue: "20"},
+				{Name: "dir", Memo: "下载目录", DefaultValue: global.GetString("downloadDir", "./")},
+				{Name: "proxyEnable", Memo: "是否使用HTTP代理", DefaultValue: "true"},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
+				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: global.GetString("downloadNoticeEnable", "true")},
+				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("downloadNoticeText", "主人. 您的资源已下载结束")},
+				{Name: "voiceEnable", Memo: "是否启用语音", DefaultValue: global.GetString("downloadVoiceEnable", "true")},
+				{Name: "voiceText", Memo: "语音内容", DefaultValue: global.GetString("downloadVoiceText", "主人. 您的资源已下载结束")},
+			},
+			Use:     "dl",
+			Short:   "下载资源",
+			Long:    "使用in dl gui来打开图形化界面",
+			Example: name + " dl hfs",
+			Run:     handler.Download,
+		},
+
+		&Command{
 			Use:   "upload",
 			Short: "上传资源",
 			Run:   handler.Hint("请输入上传类型: 例in upload minio"),
