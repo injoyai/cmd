@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.5.1: 优化合并ts文件,使用ffmpeg合并,增加download别名dl",
+		"v1.5.1: 优化合并ts文件,使用ffmpeg合并,优化download,增加download别名dl",
 		"v1.5.0: 增加i install go xxx,用于linux自动安装go环境,增加in server webdav,增加资源复利计算器",
 		"v1.4.9: 增加in website xx,同in server file xx,增加in dir --find,用于查找目录下包含xx的文件",
 		"v1.4.8: 重构global包,简洁代码,优化对linux的兼容,优化curd,优化handler",

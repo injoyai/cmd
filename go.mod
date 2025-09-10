@@ -7,9 +7,10 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/go-ole/go-ole v1.2.6
 	github.com/gorilla/websocket v1.5.3
+	github.com/grafov/m3u8 v0.12.1
 	github.com/injoyai/base v1.2.13
 	github.com/injoyai/conv v1.2.5
-	github.com/injoyai/goutil v1.2.16
+	github.com/injoyai/goutil v1.2.17
 	github.com/injoyai/ios v1.2.2
 	github.com/injoyai/logs v1.0.12
 	github.com/injoyai/lorca v0.0.0-20230816093842-66a8b4247238
@@ -18,6 +19,7 @@ require (
 	github.com/tebeka/selenium v0.9.9
 	go.bug.st/serial v1.5.0
 	golang.org/x/crypto v0.28.0
+	golang.org/x/net v0.30.0
 )
 
 require (
@@ -68,7 +70,6 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
