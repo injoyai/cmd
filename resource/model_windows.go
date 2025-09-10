@@ -32,7 +32,7 @@ var Exclusive = MResource{
 	"listen":         {Local: "listen.exe"},
 	"timer":          {Local: "timer.exe"},
 	"edge":           {Local: "edge.exe"},
-	"edge_mini":      {Local: "edge_mini.exe"},
+	"edge_mini":      {Local: "edge_mini.exe", Remote: "edge_mini_windows_amd64.exe", RemoteArm: "edge_mini_windows_arm.exe", RemoteArm64: "edge_mini_windows_arm64.exe"},
 	"notice_desktop": {Local: "notice_desktop.exe", Key: []string{"notice_cli", "notice-cli", "notice_client"}},
 	"upgrade":        {Local: "in_upgrade.exe", Key: []string{"in_upgrade"}},
 	"server":         {Local: "in_server.exe", Key: []string{"in_server"}},
