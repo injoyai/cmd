@@ -571,6 +571,8 @@ github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoA
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/grafov/m3u8 v0.12.1 h1:DuP1uA1kvRRmGNAZ0m+ObLv1dvrfNO0TPx0c/enNk0s=
+github.com/grafov/m3u8 v0.12.1/go.mod h1:nqzOkfBiZJENr52zTVd/Dcl03yzphIMbJqkXGu+u080=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-middleware v1.2.0 h1:0IKlLyQ3Hs9nDaiK5cSHAGmcQEIC8l2Ts1u6x5Dfrqg=
 github.com/grpc-ecosystem/go-grpc-middleware v1.2.0/go.mod h1:mJzapYve32yjrKlk9GbyCZHuPgZsrbyIbyKhSzOpg6s=
@@ -606,8 +608,8 @@ github.com/injoyai/base v1.2.13/go.mod h1:NfCQjml3z2pCvQ3J3YcOXtecqXD0xVPKjo4YTs
 github.com/injoyai/conv v1.0.5/go.mod h1:rqBoiZt/YSKjGYEH4F6z+56djYLFkgKt/kWK5/1X640=
 github.com/injoyai/conv v1.2.5 h1:G4OCyF0NTZul5W1u9IgXDOhW4/zmIigdPKXFHQGmv1M=
 github.com/injoyai/conv v1.2.5/go.mod h1:s05l3fQJQ4mT4VX+KIdbvCWQB0YzZHprmUfUu2uxd1k=
-github.com/injoyai/goutil v1.2.16 h1:N9FbQTOwaUtvItLTKYNZBGSTo/688v9lkjG9d7jpPfw=
-github.com/injoyai/goutil v1.2.16/go.mod h1:gDnebxWK34EOAu6De4SyrfSS0ZSpRENgVlHFsSql0+I=
+github.com/injoyai/goutil v1.2.17 h1:QH0D7U0m9m7G2G+vmE/D8SBHJgZtEyina8a28cnV3Po=
+github.com/injoyai/goutil v1.2.17/go.mod h1:eMeAdYrmUIADo72kaAvyRbnTeMLJa8/keqRjqY77PPU=
 github.com/injoyai/ios v1.2.2 h1:fAPWBL6t22DiE2ZEpBgf5bzyVQTcm2ZhLMkM+JFPhZA=
 github.com/injoyai/ios v1.2.2/go.mod h1:DJVJGQFQvqF80CeJVabFOm6AKilqc/m8MFvz39Uy5ow=
 github.com/injoyai/logs v1.0.12 h1:f7syIGZMTg9ZzhJhdd3tzaPdxkMhdKsncGaxljqIiYE=

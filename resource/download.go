@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/cmd/resource/m3u8"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/notice"
@@ -15,6 +14,7 @@ import (
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/logs"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -150,87 +150,77 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 func downloadM3u8(ctx context.Context, op *Config) error {
 
-	resp, err := m3u8.NewResponse(op.Resource)
+	//解析下载地址
+	list, err := tool.DecodeM3u8(op.Resource)
 	if err != nil {
 		return err
 	}
 
-	lists, err := resp.List()
-	if err != nil {
-		return err
-	}
+	sum := int64(0)
+	current := int64(0)
+	b := bar.New(int64(len(list)))
+	b.SetFormatter(bar.NewWithM3u8(&current, &sum))
 
-	if len(lists) == 0 {
-		return nil
-	}
+	//分片目录
+	cacheDir := op.TempDir()
+	os.MkdirAll(cacheDir, os.ModePerm)
 
-	for _, list := range lists {
+	//获取已经下载的分片
+	doneName := map[string]bool{}
+	oss.RangeFileInfo(cacheDir, func(info *oss.FileInfo) (bool, error) {
+		if !info.IsDir() && strings.HasSuffix(info.Name(), op.suffix) {
+			doneName[info.Name()] = true
+		}
+		return true, nil
+	})
 
-		sum := int64(0)
-		current := int64(0)
-		b := bar.New(int64(len(list)))
-		b.SetFormatter(bar.NewWithM3u8(&current, &sum))
-
-		//分片目录
-		cacheDir := op.TempDir()
-
-		//获取已经下载的分片
-		doneName := map[string]bool{}
-		oss.RangeFileInfo(cacheDir, func(info *oss.FileInfo) (bool, error) {
-			if !info.IsDir() && strings.HasSuffix(info.Name(), op.suffix) {
-				doneName[info.Name()] = true
-			}
-			return true, nil
-		})
-
-		//新建下载任务
-		t := task.NewDownload()
-		t.SetCoroutine(op.Coroutine)
-		t.SetRetry(op.Retry)
-		t.SetDoneItem(func(ctx context.Context, resp *task.DownloadItemResp) (int64, error) {
-			if resp.Err == nil {
-				//保存分片到文件夹,5位长度,最大99999分片,大于99999视频会乱序
-				filename := fmt.Sprintf("%05d"+op.suffix, resp.Index)
-				filename = filepath.Join(cacheDir, filename)
-				g.Retry(func() error {
-					bs, err := io.ReadAll(resp.Reader)
-					if err != nil {
-						return err
-					}
-					current = int64(len(bs))
-					return oss.New(filename, bs)
-				}, 3)
-			}
-			//current = resp.GetSize()
-			sum += current
+	//新建下载任务
+	t := task.NewRange()
+	t.SetCoroutine(op.Coroutine)
+	t.SetRetry(op.Retry)
+	t.SetDoneItem(func(ctx context.Context, resp *task.ItemResp) {
+		if resp.Err == nil {
+			//保存分片到文件夹,5位长度,最大99999分片,大于99999视频会乱序
+			filename := fmt.Sprintf("%05d"+op.suffix, resp.Index)
+			filename = filepath.Join(cacheDir, filename)
+			resp.Err = g.Retry(func() error {
+				r := resp.Data.(*http.Response)
+				defer r.Body.Close()
+				f, err := os.Create(filename)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				current, err = io.Copy(f, r.Body)
+				return err
+			}, 3)
+		}
+		if resp.Err != nil {
+			logs.Errf("\r\033[K%s\n", resp.Err)
+		}
+		sum += current
+		b.Add(1).Flush()
+	})
+	for i, v := range list {
+		filename := fmt.Sprintf("%05d"+op.suffix, i)
+		if doneName[filename] {
+			//过滤已经下载过的分片
 			b.Add(1).Flush()
-			return current, resp.Err
-		})
-		for i, v := range list {
-			filename := fmt.Sprintf("%05d"+op.suffix, i)
-			if doneName[filename] {
-				//过滤已经下载过的分片
-				b.Add(1).Flush()
-				continue
-			}
-			//继续下载没有下载过的分片
-			t.Set(i, v)
+			continue
 		}
-
-		//新建任务
-		doneResp := t.Download(ctx)
-		if doneResp.Err != nil {
-			return doneResp.Err
-		}
-
-		//合并视频
-		op.MergeTS()
-
-		break
-
+		//继续下载没有下载过的分片
+		t.Set(i, func(ctx context.Context) (any, error) { return http.Get(v) })
 	}
 
-	return nil
+	//新建任务
+	doneResp := t.Run(ctx)
+	if doneResp.Err != nil {
+		return doneResp.Err
+	}
+
+	//合并视频
+	return op.MergeTS()
+
 }
 
 // downloadStream 下载流媒体
@@ -271,7 +261,7 @@ func MergeTS(dir, output string) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(lsFilename)
+	//defer os.Remove(lsFilename)
 	defer file.Close()
 
 	err = oss.RangeFileInfo(dir, func(info *oss.FileInfo) (bool, error) {
@@ -284,7 +274,7 @@ func MergeTS(dir, output string) error {
 		return err
 	}
 
-	cmd := fmt.Sprintf("ffmpeg -f concat -i %s -c copy %s", lsFilename, output)
+	cmd := fmt.Sprintf("ffmpeg -y -f concat -i %s -c copy %s", lsFilename, output)
 	fmt.Println("执行ffmpeg命令:", cmd)
 	return shell.Run(cmd)
 }
