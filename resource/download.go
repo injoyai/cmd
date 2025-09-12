@@ -175,16 +175,16 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 	})
 
 	//新建下载任务
-	t := task.NewRange()
+	t := task.NewRange[*http.Response]()
 	t.SetCoroutine(op.Coroutine)
 	t.SetRetry(op.Retry)
-	t.SetDoneItem(func(ctx context.Context, resp *task.ItemResp) {
+	t.OnFinishedItem(func(resp *task.ItemResp[*http.Response]) {
 		if resp.Err == nil {
 			//保存分片到文件夹,5位长度,最大99999分片,大于99999视频会乱序
 			filename := fmt.Sprintf("%05d"+op.suffix, resp.Index)
 			filename = filepath.Join(cacheDir, filename)
 			resp.Err = func() error {
-				r := resp.Data.(*http.Response)
+				r := resp.Data
 				defer r.Body.Close()
 				f, err := os.Create(filename + ".downloading")
 				if err != nil {
@@ -215,13 +215,13 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 			continue
 		}
 		//继续下载没有下载过的分片
-		t.Set(i, func(ctx context.Context) (any, error) { return http.Get(url) })
+		t.Set(i, func(ctx context.Context) (*http.Response, error) { return http.Get(url) })
 	}
 
 	//新建任务
-	doneResp := t.Run(ctx)
-	if doneResp.Err != nil {
-		return doneResp.Err
+	err = t.Run(ctx)
+	if err != nil {
+		return err
 	}
 
 	//合并视频

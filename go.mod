@@ -10,7 +10,7 @@ require (
 	github.com/grafov/m3u8 v0.12.1
 	github.com/injoyai/base v1.2.13
 	github.com/injoyai/conv v1.2.5
-	github.com/injoyai/goutil v1.2.17
+	github.com/injoyai/goutil v1.2.18
 	github.com/injoyai/ios v1.2.2
 	github.com/injoyai/logs v1.0.12
 	github.com/injoyai/lorca v0.0.0-20230816093842-66a8b4247238

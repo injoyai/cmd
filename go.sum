@@ -608,8 +608,8 @@ github.com/injoyai/base v1.2.13/go.mod h1:NfCQjml3z2pCvQ3J3YcOXtecqXD0xVPKjo4YTs
 github.com/injoyai/conv v1.0.5/go.mod h1:rqBoiZt/YSKjGYEH4F6z+56djYLFkgKt/kWK5/1X640=
 github.com/injoyai/conv v1.2.5 h1:G4OCyF0NTZul5W1u9IgXDOhW4/zmIigdPKXFHQGmv1M=
 github.com/injoyai/conv v1.2.5/go.mod h1:s05l3fQJQ4mT4VX+KIdbvCWQB0YzZHprmUfUu2uxd1k=
-github.com/injoyai/goutil v1.2.17 h1:QH0D7U0m9m7G2G+vmE/D8SBHJgZtEyina8a28cnV3Po=
-github.com/injoyai/goutil v1.2.17/go.mod h1:eMeAdYrmUIADo72kaAvyRbnTeMLJa8/keqRjqY77PPU=
+github.com/injoyai/goutil v1.2.18 h1:4nLrfQE45zvAcD7rb1gdESKDCH/gd+BHUrIJPHJnfiU=
+github.com/injoyai/goutil v1.2.18/go.mod h1:eMeAdYrmUIADo72kaAvyRbnTeMLJa8/keqRjqY77PPU=
 github.com/injoyai/ios v1.2.2 h1:fAPWBL6t22DiE2ZEpBgf5bzyVQTcm2ZhLMkM+JFPhZA=
 github.com/injoyai/ios v1.2.2/go.mod h1:DJVJGQFQvqF80CeJVabFOm6AKilqc/m8MFvz39Uy5ow=
 github.com/injoyai/logs v1.0.12 h1:f7syIGZMTg9ZzhJhdd3tzaPdxkMhdKsncGaxljqIiYE=
