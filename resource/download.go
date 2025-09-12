@@ -183,17 +183,22 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 			//保存分片到文件夹,5位长度,最大99999分片,大于99999视频会乱序
 			filename := fmt.Sprintf("%05d"+op.suffix, resp.Index)
 			filename = filepath.Join(cacheDir, filename)
-			resp.Err = g.Retry(func() error {
+			resp.Err = func() error {
 				r := resp.Data.(*http.Response)
 				defer r.Body.Close()
-				f, err := os.Create(filename)
+				f, err := os.Create(filename + ".downloading")
 				if err != nil {
 					return err
 				}
-				defer f.Close()
 				current, err = io.Copy(f, r.Body)
-				return err
-			}, 3)
+				if err != nil {
+					f.Close()
+					return err
+				}
+				f.Close()
+				<-time.After(time.Millisecond * 10)
+				return os.Rename(filename+".downloading", filename)
+			}()
 		}
 		if resp.Err != nil {
 			logs.Errf("\r\033[K%s\n", resp.Err)
@@ -327,7 +332,6 @@ func (this *Config) Download(h ...Handler) error {
 	if len(h) > 0 && h[0] != nil {
 		//使用自定义的下载函数
 		return h[0](this)
-		//return h[0](this.Url(), this.Dir, this.Filename(), this.Proxy())
 	}
 
 	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
