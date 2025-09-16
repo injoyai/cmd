@@ -21,5 +21,18 @@ func Commands() []*handler.Command {
 			Example: name + " open hosts",
 			Run:     handler.Open,
 		},
+		{
+			Use:   "win",
+			Short: "win工具",
+			Child: []*handler.Command{
+				{
+					Use:     "active",
+					Short:   "激活windows",
+					Long:    "下载MAS,用于激活Windows",
+					Example: name + " win active",
+					Run:     handler.MAS,
+				},
+			},
+		},
 	}
 }

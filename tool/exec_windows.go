@@ -26,6 +26,15 @@ func shellRun(filename string) error {
 	return cmd.Run()
 }
 
+func powerShellRun(filename string) error {
+	cmd := exec.Command("powershell.exe")
+	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: fmt.Sprintf("-Command \"%s\"", filename)}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	return cmd.Run()
+}
+
 func PublishNotice(message *notice.Message) error {
 	return notice.NewWindows().Publish(message)
 }
