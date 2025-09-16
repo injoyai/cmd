@@ -8,11 +8,11 @@ ARCH=$(uname -m)
 if [[ "$OS" == "Linux" ]]; then
     BIN_DIR="/usr/local/bin"
     if [[ "$ARCH" == "x86_64" ]]; then
-        URL="https://oss.002246.xyz/in-store/in_linux_amd64"
+        URL="https://oss.002246.xyz/in-store/i_linux_amd64"
     elif [[ "$ARCH" == "aarch64" ]]; then
-        URL="https://oss.002246.xyz/in-store/in_linux_arm64"
+        URL="https://oss.002246.xyz/in-store/i_linux_arm64"
     elif [[ "$ARCH" == "armv7l" ]]; then
-        URL="https://oss.002246.xyz/in-store/in_linux_arm"
+        URL="https://oss.002246.xyz/in-store/i_linux_arm"
     else
         echo "Unsupported architecture: $ARCH"
         exit 1
@@ -21,7 +21,7 @@ elif [[ "$OS" == "MINGW"* || "$OS" == "MSYS"* || "$OS" == "CYGWIN"* ]]; then
     BIN_DIR="C:\bin"
     mkdir -p "$BIN_DIR"
     if [[ "$ARCH" == "x86_64" ]]; then
-        URL="https://oss.002246.xyz/in-store/in.exe"
+        URL="https://oss.002246.xyz/in-store/i.exe"
     else
         echo "Unsupported architecture: $ARCH"
         exit 1
@@ -35,7 +35,7 @@ fi
 if [[ "$OS" == "Linux" ]]; then
     DEST="$BIN_DIR/i"
 else
-    DEST="$BIN_DIR\in.exe"
+    DEST="$BIN_DIR\i.exe"
 fi
 
 # 创建目录并下载

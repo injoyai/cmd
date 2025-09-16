@@ -15,9 +15,9 @@ sudo wget -qO- https://oss.002246.xyz/in-store/install.sh | bash
 ### 如何使用
 * 连接到TCP服务器
 ```shell
-in dial :8080
+i dial :8080
 ```
 * 作为TCP服务器
 ```shell
-in server tcp -p=8080
+i server tcp -p=8080
 ```

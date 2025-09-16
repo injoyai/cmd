@@ -30,13 +30,13 @@ build_and_upload() {
 
     echo "开始上传..."
     # 如果必须走 Windows cmd.exe 上传，用下面的；否则建议直接 ./in
-    cmd.exe /c "in upload minio $bin_dir/$name"
+    cmd.exe /c "i upload minio $bin_dir/$name"
 
     echo "===================="
 }
 
 # 不同平台编译
-build_and_upload linux amd64 "" in_linux_amd64
+build_and_upload linux amd64 "" i_linux_amd64
 
 
 echo "全部完成 ✅, 8秒后自动退出..."

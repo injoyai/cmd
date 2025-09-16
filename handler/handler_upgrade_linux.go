@@ -11,7 +11,7 @@ import (
 func Upgrade(_ *cobra.Command, args []string, flags *Flags) {
 	filename := oss.ExecName()
 	name := filepath.Base(filename)
-	if err := tool.ShellRun(filename + " install in -d=true -n=" + name); err != nil {
+	if err := tool.ShellRun(filename + " install i -d=true -n=" + name); err != nil {
 		logs.Err(err)
 		return
 	}

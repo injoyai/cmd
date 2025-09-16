@@ -16,7 +16,7 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	execName := filepath.Base(execFilename)
 	upgradeFilename := filepath.Join(dir, strings.Split(execName, ".")[0]+"_upgrade.exe")
 
-	//判断in_upgrade是否存在
+	//判断i_upgrade是否存在
 	exist := oss.Exists(upgradeFilename)
 	if !exist {
 		err := tool.CopyFile(execFilename, upgradeFilename)
@@ -37,7 +37,7 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 
-		//不存在或者大小不一致则复制一份自己过去叫in_upgrade
+		//不存在或者大小不一致则复制一份自己过去叫i_upgrade
 		if fi.Size() != fi2.Size() {
 			err = tool.CopyFile(execFilename, upgradeFilename)
 			if err != nil {
@@ -47,6 +47,6 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 	}
 
-	//然后执行in_upgrade install in
-	logs.PrintErr(tool.ShellStart(upgradeFilename + " install in -d=true -n=" + execName))
+	//然后执行i_upgrade install i
+	logs.PrintErr(tool.ShellStart(upgradeFilename + " install i -d=true -n=" + execName))
 }

@@ -341,7 +341,7 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	name := "in_server.exe"
+	name := "i_server.exe"
 
 	if len(args) == 0 {
 		args = []string{""}

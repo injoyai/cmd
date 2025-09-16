@@ -60,7 +60,7 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) {
 
 func Crud(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
-		log.Printf("[错误] %s", "请输入模块名称 例: in curd test")
+		log.Printf("[错误] %s", "请输入模块名称 例: i curd test")
 	}
 	logs.PrintErr(crud.New(args[0]))
 }
