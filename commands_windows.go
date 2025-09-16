@@ -5,8 +5,6 @@ import (
 	"github.com/injoyai/cmd/handler"
 )
 
-const name = "in"
-
 func Commands() []*handler.Command {
 	return []*handler.Command{
 		{
@@ -18,7 +16,7 @@ func Commands() []*handler.Command {
 			Use:     "open",
 			Short:   "打开",
 			Long:    "打开文件夹或者应用,未输入参数,则打开执行文件的目录",
-			Example: name + " open hosts",
+			Example: "i open hosts",
 			Run:     handler.Open,
 		},
 		{
@@ -29,7 +27,7 @@ func Commands() []*handler.Command {
 					Use:     "active",
 					Short:   "激活windows",
 					Long:    "下载MAS,用于激活Windows",
-					Example: name + " win active",
+					Example: "i win active",
 					Run:     handler.MAS,
 				},
 			},
