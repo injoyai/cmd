@@ -46,6 +46,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
 	case "regedit", "注册表":
 		logs.PrintErr(tool.ShellStart("regedit"))
+	case "mas":
+		MAS(cmd, args[1:], flags)
 	case "edge":
 		EdgeServer(cmd, args[1:], flags)
 	case "edge_mini":
@@ -109,4 +111,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		//直接尝试打开
 		logs.PrintErr(tool.ShellStart(args[0]))
 	}
+}
+
+func MAS(cmd *cobra.Command, args []string, flags *Flags) {
+	logs.PrintErr(tool.PowerShellRun("irm https://get.activated.win | iex"))
 }

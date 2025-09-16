@@ -21,6 +21,10 @@ func shellRun(cmd string) error {
 	return c.Run()
 }
 
+func powerShellRun(cmd string) error {
+	return errors.New("暂不支持")
+}
+
 func PublishNotice(message *notice.Message) error {
 	return errors.New("暂不支持")
 }

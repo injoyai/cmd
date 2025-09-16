@@ -14,6 +14,11 @@ func ShellRun(filename string) error {
 	return shellRun(filename)
 }
 
+func PowerShellRun(filename string) error {
+	fmt.Printf("执行: %s\n", filename)
+	return powerShellRun(filename)
+}
+
 func Exec(filename string, Type string) error {
 	switch Type {
 	case "start":
