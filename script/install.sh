@@ -71,6 +71,4 @@ if (\$pathList -notcontains \$goPath) {
 "
 fi
 
-echo "Done! File saved to $DEST , 8秒后自动退出..."
-
-sleep 8
+echo "Done! File saved to $DEST"
