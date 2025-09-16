@@ -21,7 +21,7 @@ elif [[ "$OS" == "MINGW"* || "$OS" == "MSYS"* || "$OS" == "CYGWIN"* ]]; then
     BIN_DIR="C:\bin"
     mkdir -p "$BIN_DIR"
     if [[ "$ARCH" == "x86_64" ]]; then
-        URL="https://oss.002246.xyz/in-store/i.exe"
+        URL="https://oss.002246.xyz/in-store/i_window_amd64.exe"
     else
         echo "Unsupported architecture: $ARCH"
         exit 1
