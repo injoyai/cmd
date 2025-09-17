@@ -26,7 +26,8 @@ func shellRun(filename string) error {
 	return cmd.Run()
 }
 
-func powerShellRun(filename string) error {
+func PowerShellRun(filename string) error {
+	fmt.Printf("执行: %s\n", filename)
 	cmd := exec.Command("powershell.exe")
 	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: fmt.Sprintf("-Command \"%s\"", filename)}
 	cmd.Stdout = os.Stdout
