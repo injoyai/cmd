@@ -8,7 +8,7 @@ import (
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/ios/client/frame"
+	"github.com/injoyai/goutil/types"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"log"
@@ -73,56 +73,97 @@ func DocPython(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(`配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
 }
 
+func Speak(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		logs.Err("未填写发送内容")
+		return
+	}
+	err := notice.NewVoice(&notice.VoiceConfig{
+		Rate:   flags.GetInt("rate", 0),
+		Volume: flags.GetInt("volume", 100),
+	}).Speak(args[0])
+	logs.PrintErr(err)
+}
+
 func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		logs.Err("未填写发送内容")
 		return
 	}
-
-	if flags.GetBool("self") {
-		c, err := net.DialTimeout("udp", ":10067", time.Millisecond*100)
-		if err == nil {
-			c.Write(frame.New(0, []byte(args[0])).Bytes())
-			c.Close()
-		}
-		return
-	}
-
-	RangeNetwork("", func(inter *Interfaces) {
-		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
-			if !self {
-				c, err := net.DialTimeout("udp", ipv4.String()+":10067", time.Millisecond*100)
-				if err == nil {
-					c.Write(frame.New(0, []byte(args[0])).Bytes())
-					c.Close()
-				}
-			}
-			return true
-		})
-	})
-}
-
-func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
-	msg := fmt.Sprint(conv.Interfaces(args)...)
-	notice.DefaultVoice.Speak(msg)
-}
-
-func PushUDP(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 {
-		logs.Err("未填写发送内容")
-		return
-	}
-
-	addr := flags.GetString("addr", ":10067")
-	c, err := net.DialTimeout("udp", addr, time.Millisecond*100)
+	err := broadcast(flags.GetString("address"), []byte(args[0]))
 	if err != nil {
 		logs.Err(err)
 		return
 	}
-	if _, err := c.Write([]byte(args[0])); err != nil {
+}
+
+func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
+	msg := types.Message{
+		Type: "notice.voice",
+		UID:  time.Now().String(),
+		Data: args[0],
+	}
+	err := broadcast(flags.GetString("address"), conv.Bytes(msg))
+	if err != nil {
 		logs.Err(err)
 		return
 	}
+}
+
+func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
+	msg := types.Message{
+		Type: "notice.notice",
+		UID:  time.Now().String(),
+		Data: args[0],
+	}
+	err := broadcast(flags.GetString("address"), conv.Bytes(msg))
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+}
+
+func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
+	msg := types.Message{
+		Type: "notice.popup",
+		UID:  time.Now().String(),
+		Data: args[0],
+	}
+	err := broadcast(flags.GetString("address"), conv.Bytes(msg))
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+}
+
+func broadcast(address string, bs []byte) error {
+	switch address {
+	case "", "self":
+		address = "localhost:10087"
+	case "all":
+		address = "255.255.255.255:10087"
+	default:
+		address += ":10087"
+	}
+
+	addr, err := net.ResolveUDPAddr("udp", address)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	// 开启广播权限（有些系统必须设置）
+	if err := conn.SetWriteBuffer(1024); err != nil {
+		return err
+	}
+
+	_, err = conn.Write(bs)
+	return err
 }
 
 func Resources(cmd *cobra.Command, args []string, flags *Flags) {

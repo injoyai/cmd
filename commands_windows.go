@@ -22,6 +22,7 @@ func Commands() []*handler.Command {
 		{
 			Use:   "win",
 			Short: "win工具",
+			Run:   handler.Hint("请输入操作类型: 例i win active"),
 			Child: []*handler.Command{
 				{
 					Use:     "active",

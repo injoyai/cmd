@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.5.2: 修改工具名称in为i,",
+		"v1.5.2: 修改工具名称in为i,重构i push可以和i_server配合使用",
 		"v1.5.1: 优化合并ts文件,使用ffmpeg合并,优化download,增加download别名dl,增加i mas,用于激活windows等",
 		"v1.5.0: 增加i install go xxx,用于linux自动安装go环境,增加i server webdav,增加资源复利计算器",
 		"v1.4.9: 增加i website xx,同i server file xx,增加i dir --find,用于查找目录下包含xx的文件",
