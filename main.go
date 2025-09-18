@@ -98,43 +98,47 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "rate", Short: "r", DefaultValue: "", Memo: "语速"},
+				{Name: "rate", Short: "r", DefaultValue: "0", Memo: "语速"},
 				{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
 			},
 			Use:     "speak",
 			Short:   "文字转语音",
 			Example: "i speak 哈哈哈",
-			Run:     handler.PushVoice,
+			Run:     handler.Speak,
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "address", Short: "a", DefaultValue: "localhost", Memo: "推送地址"},
+			},
 			Use:     "push",
 			Short:   "发生通知信息",
 			Example: "i push voice 哈哈哈",
-			Run:     handler.Hint("[错误] 未填写子命令"),
+			Run:     handler.PushServer,
 			Child: []*Command{
 				{
-					Flag: []*Flag{
-						{Name: "rate", Short: "r", DefaultValue: "", Memo: "语速"},
-						{Name: "volume", Short: "v", DefaultValue: "100", Memo: "音量"},
-					},
 					Use:     "voice",
-					Short:   "文字转语音",
+					Short:   "推送语音",
 					Example: "i push voice 哈哈哈",
 					Run:     handler.PushVoice,
 				},
 				{
-					Use:     "udp",
-					Short:   "广播到udp",
-					Example: "i push udp 哈哈哈",
-					Run:     handler.PushUDP,
+					Use:     "notice",
+					Short:   "推送通知",
+					Example: "i push notice 哈哈哈",
+					Run:     handler.PushNotice,
 				},
 				{
-					Flag:    []*Flag{{Name: "self", DefaultValue: "false", Memo: "只发送给自己"}},
-					Use:     "server",
-					Short:   "广播到server",
-					Example: "i push server {\"type\":\"notice\",\"data\":{\"type\":\"voice,\",\"data\":\"哈哈哈哈\"}}",
-					Run:     handler.PushServer,
+					Use:     "popup",
+					Short:   "推送弹窗",
+					Example: "i push popup 哈哈哈",
+					Run:     handler.PushPopup,
+				},
+				{
+					Use:     "pop",
+					Short:   "推送弹窗",
+					Example: "i push pop 哈哈哈",
+					Run:     handler.PushPopup,
 				},
 			},
 		},
@@ -149,7 +153,7 @@ func main() {
 				{Name: "printType", Memo: "打印类型", DefaultValue: "utf8"},
 			},
 			Use:     "dial",
-			Short:   "连接",
+			Short:   "连接TCP,MQTT,WebSocket等",
 			Example: "i dial tcp 127.0.0.1:80 -r false",
 			Run:     handler.Dial,
 			Child: []*Command{
@@ -410,7 +414,7 @@ func main() {
 				{Name: "network", Short: "n", DefaultValue: "", Memo: "网卡名称"},
 			},
 			Use:     "scan",
-			Short:   "扫描",
+			Short:   "扫描SSH,端口,串口等",
 			Example: "i scan icmp",
 			Run:     handler.ScanICMP,
 			Child: []*Command{
@@ -523,8 +527,8 @@ func main() {
 				{Name: "voiceText", Memo: "语音内容", DefaultValue: global.GetString("downloadVoiceText", "主人. 您的资源已下载结束")},
 			},
 			Use:     "dl",
-			Short:   "下载资源",
-			Long:    "使用i dl gui来打开图形化界面",
+			Short:   "下载资源(同download)",
+			Long:    "使用i dl http://xxx.com来下载资源",
 			Example: "i dl hfs",
 			Run:     handler.Download,
 		},
