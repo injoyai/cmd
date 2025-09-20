@@ -95,6 +95,7 @@ func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+	fmt.Println("推送成功")
 }
 
 func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
@@ -108,6 +109,7 @@ func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+	fmt.Println("推送成功")
 }
 
 func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
@@ -121,6 +123,7 @@ func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+	fmt.Println("推送成功")
 }
 
 func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
@@ -134,6 +137,7 @@ func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+	fmt.Println("推送成功")
 }
 
 func broadcast(address string, bs []byte) error {
