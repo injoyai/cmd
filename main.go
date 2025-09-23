@@ -484,10 +484,13 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "port", Short: "p", Memo: "监听的端口", DefaultValue: "8000"},
+			},
 			Use:     "website",
 			Short:   "生成站点",
 			Long:    "使用i website ./ 把静态资源生成站点",
-			Example: "i website ./",
+			Example: "i website ./ -p=8000",
 			Run:     handler.FileServer,
 		},
 
