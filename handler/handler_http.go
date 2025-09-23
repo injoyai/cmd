@@ -15,7 +15,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	if !strings.HasPrefix(args[0], "https://") || !strings.HasPrefix(args[0], "http://") {
+	if !strings.HasPrefix(args[0], "https://") && !strings.HasPrefix(args[0], "http://") {
 		args[0] = "http://" + args[0]
 	}
 
