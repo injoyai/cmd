@@ -145,7 +145,7 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "type", Memo: "连接类型", DefaultValue: handler.DialTypeTCP},
+				{Name: "type", Memo: "连接类型(默认tcp)"},
 				{Name: "redial", Short: "r", Memo: "自动重连", DefaultValue: "true"},
 				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefaultValue: "500"},

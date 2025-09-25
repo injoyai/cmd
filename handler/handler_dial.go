@@ -43,7 +43,32 @@ const (
 )
 
 func Dial(cmd *cobra.Command, args []string, flags *Flags) {
-	switch flags.GetString("type") {
+	if len(args) == 0 {
+		fmt.Println("[错误] 未填写连接地址")
+	}
+
+	defaultType := DialTypeTCP
+	switch {
+	case strings.HasPrefix(args[0], "COM") || strings.HasPrefix(args[0], "tty"):
+		defaultType = DialTypeSerial
+	case strings.HasPrefix(args[0], "wss://"):
+		defaultType = DialTypeWS
+		args[0] = strings.TrimPrefix(args[0], "wss://")
+	case strings.HasPrefix(args[0], "ws://"):
+		defaultType = DialTypeWS
+		args[0] = strings.TrimPrefix(args[0], "ws://")
+	case strings.HasPrefix(args[0], "mqtt://"):
+		defaultType = DialTypeMQTT
+		args[0] = strings.TrimPrefix(args[0], "mqtt://")
+	case strings.HasPrefix(args[0], "ssh://"):
+		defaultType = DialTypeSSH
+		args[0] = strings.TrimPrefix(args[0], "ssh://")
+	case strings.HasPrefix(args[0], "tcp://"):
+		defaultType = DialTypeTCP
+		args[0] = strings.TrimPrefix(args[0], "tcp://")
+	}
+
+	switch flags.GetString("type", defaultType) {
 	case DialTypeTCP:
 		DialTCP(cmd, args, flags)
 	case DialTypeUDP:
@@ -115,10 +140,10 @@ func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 		args[0] = str.CropFirst(args[0], "http://")
 		args[0] = "ws://" + args[0]
 	}
-	if !strings.HasPrefix(args[0], "wss://") || !strings.HasPrefix(args[0], "ws://") {
+	if !strings.HasPrefix(args[0], "wss://") && !strings.HasPrefix(args[0], "ws://") {
 		args[0] = "ws://" + args[0]
 	}
-	redial.RunWebsocket(args[0], nil, func(c *client.Client) {
+	redial.RunWebsocket(args[0], func(c *client.Client) {
 		DialDeal(c, flags)
 	})
 }
