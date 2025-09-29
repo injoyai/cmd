@@ -99,6 +99,10 @@ func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("未填写发送内容")
+		return
+	}
 	msg := types.Message{
 		Type: "notice.voice",
 		UID:  time.Now().String(),
@@ -113,6 +117,10 @@ func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("未填写发送内容")
+		return
+	}
 	msg := types.Message{
 		Type: "notice.notice",
 		UID:  time.Now().String(),
@@ -127,6 +135,10 @@ func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("未填写发送内容")
+		return
+	}
 	msg := types.Message{
 		Type: "notice.popup",
 		UID:  time.Now().String(),
@@ -144,7 +156,7 @@ func broadcast(address string, bs []byte) error {
 	switch address {
 	case "", "self":
 		address = "localhost:10087"
-	case "all":
+	case "all", "ll", "1":
 		address = "255.255.255.255:10087"
 	default:
 		address += ":10087"
