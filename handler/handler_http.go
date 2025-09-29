@@ -51,7 +51,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	msg := fmt.Sprintf("Status: %s, Body:\n%s", resp.Status, resp.GetBodyString())
+	msg := fmt.Sprintf("Status: %s, Body: %s", resp.Status, resp.GetBodyString())
 	if len(search) > 0 {
 		msg = conv.NewMap(resp.GetBodyString()).GetString(search)
 	}
@@ -64,5 +64,5 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	fmt.Print(msg)
+	fmt.Println(msg)
 }
