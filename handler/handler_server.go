@@ -407,3 +407,17 @@ func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 	logs.Err(err)
 }
+
+//====================NatsServer====================//
+
+func NatsServer(cmd *cobra.Command, args []string, flags *Flags) {
+	userDir := oss.UserInjoyDir()
+	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		Resource:     "nats",
+		Dir:          userDir,
+		Cover:        flags.GetBool("download"),
+		ProxyEnable:  true,
+		ProxyAddress: flags.GetString("proxy"),
+	})
+	logs.PrintErr(tool.ShellRun(filename))
+}

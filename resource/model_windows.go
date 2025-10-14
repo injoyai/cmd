@@ -163,4 +163,20 @@ var Exclusive = MResource{
 			return os.Rename(filepath.Join(op.Dir, "/ipinfo_3.3.1_windows_amd64.exe"), op.Filename())
 		},
 	},
+
+	"nats": {
+		Local:   "nats.exe",
+		FullUrl: []Url{"https://github.com/nats-io/nats-server/releases/download/v2.12.1-RC.5/nats-server-v2.12.1-RC.5-windows-amd64.zip"},
+		Handler: func(op *Config) error {
+			zipFilename := filepath.Join(op.Dir, "nats.zip")
+			if err := op.download(zipFilename); err != nil {
+				return err
+			}
+			defer os.Remove(zipFilename)
+			if err := zip.Decode(zipFilename, op.Dir); err != nil {
+				return err
+			}
+			return os.Rename(filepath.Join(op.Dir, "nats-server-v2.12.1-RC.5-windows-amd64", "/nats-server.exe"), op.Filename())
+		},
+	},
 }
