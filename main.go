@@ -403,6 +403,12 @@ func main() {
 					Example: "i server website",
 					Run:     handler.FileServer,
 				},
+				{
+					Use:     "nats",
+					Short:   "nats消息队列服务",
+					Example: "i server nats",
+					Run:     handler.NatsServer,
+				},
 			},
 		},
 
