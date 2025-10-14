@@ -176,8 +176,8 @@ var Exclusive = MResource{
 			if err := zip.Decode(zipFilename, op.Dir); err != nil {
 				return err
 			}
-			defer os.Remove(filepath.Join(op.Dir, "nats-server-v2.12.1-RC.5-windows-amd64"))
-			return os.Rename(filepath.Join(op.Dir, "nats-server-v2.12.1-RC.5-windows-amd64", "/nats-server.exe"), op.Filename())
+			defer os.RemoveAll(filepath.Join(op.Dir, "nats-server-v2.12.1-RC.5-windows-amd64"))
+			return os.Rename(filepath.Join(op.Dir, "nats-server-v2.12.1-RC.5-windows-amd64", "nats-server.exe"), op.Filename())
 		},
 	},
 }
