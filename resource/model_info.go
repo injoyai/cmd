@@ -61,7 +61,7 @@ func (this MResource) Get(key string) (Resource, bool) {
 }
 
 var Resources = MResource{
-	"build.sh":           {Local: "build.sh"},
+	"build.sh":           {Local: "build.sh", Key: []string{"build"}},
 	"build_win.sh":       {Local: "build_win.sh", Key: []string{"build_win"}},
 	"install_go.sh":      {Local: "install_go.sh", Key: []string{"install_go"}},
 	"service.service":    {Local: "service.service", Key: []string{"service"}},
