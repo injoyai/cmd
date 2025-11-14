@@ -70,6 +70,20 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "os", Memo: "系统类型: linux/windows", DefaultValue: "linux,windows"},
+				{Name: "arch", Memo: "架构类型: amd64/arm64/arm", DefaultValue: "amd64,arm64,arm"},
+				{Name: "output", Short: "o", Memo: "输出文件"},
+				{Name: "upx", Short: "u", Memo: "使用upx压缩", DefaultValue: "true"},
+			},
+			Use:     "build",
+			Short:   "编译go代码",
+			Long:    "编译go代码",
+			Example: "i build -os=linux -arch=amd64",
+			Run:     handler.GoBuild,
+		},
+
+		&Command{
 			Use:     "crud",
 			Short:   "生成增删改查",
 			Example: "i curd test",
