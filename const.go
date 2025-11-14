@@ -9,7 +9,7 @@ import (
 
 var (
 	details = []string{
-		"v1.5.3: 增加资源build.sh别名build",
+		"v1.5.3: 增加资源build.sh别名build,增加i build功能,快捷的全平台编译",
 		"v1.5.2: 修改工具名称in为i,重构i push可以和i_server配合使用,优化website,优化,增加nats服务",
 		"v1.5.1: 优化合并ts文件,使用ffmpeg合并,优化download,增加download别名dl,增加i mas,用于激活windows等",
 		"v1.5.0: 增加i install go xxx,用于linux自动安装go环境,增加i server webdav,增加资源复利计算器",
