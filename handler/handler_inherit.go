@@ -46,7 +46,10 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
-	output := flags.GetString("output")
+
+	wd, _ := os.Getwd()
+
+	output := flags.GetString("output", filepath.Base(wd))
 	upx := flags.GetBool("upx")
 	if upx {
 		resource.MustDownload(g.Ctx(), &resource.Config{
@@ -77,19 +80,17 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 
 			// 输出
 			out := output + "_" + osName + "_" + arch
-			if output != "" {
-				if osName == "windows" {
-					out += ".exe"
-				}
-				c.Args = append(c.Args, "-o", out)
+			if osName == "windows" {
+				out += ".exe"
 			}
+			c.Args = append(c.Args, "-o", out)
 
 			c.Args = append(c.Args, args...)
 
 			fmt.Println("开始编译:", osName, arch)
 			logs.PrintErr(c.Run())
 
-			if output != "" && upx {
+			if upx {
 				//fmt.Println("开始upx压缩:", out)
 				cmdUpx := exec.Command("upx", "-9", "-k", out)
 				cmdUpx.Stdout = os.Stdout
