@@ -2,6 +2,12 @@ package handler
 
 import (
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/resource/crud"
 	"github.com/injoyai/cmd/tool"
@@ -11,11 +17,6 @@ import (
 	"github.com/injoyai/goutil/types"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"log"
-	"net"
-	"os"
-	"strings"
-	"time"
 )
 
 func Hint(msg string) func(cmd *cobra.Command, args []string, flags *Flags) {
@@ -193,4 +194,42 @@ func Resources(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 	}
 	fmt.Println("数量:", co)
+}
+
+func Wake(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println("请输入需要唤醒电脑的MAC地址")
+		return
+	}
+
+	hw, err := net.ParseMAC(args[0])
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+
+	buf := make([]byte, 102)
+
+	// 前6字节 FF
+	for i := 0; i < 6; i++ {
+		buf[i] = 0xFF
+	}
+
+	// 16次 MAC
+	for i := 0; i < 16; i++ {
+		copy(buf[6+i*6:], hw)
+	}
+
+	conn, err := net.Dial("udp", "255.255.255.255:9")
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	defer conn.Close()
+
+	_, err = conn.Write(buf)
+	if err != nil {
+		logs.Err(err)
+		return
+	}
 }
