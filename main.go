@@ -724,6 +724,13 @@ func main() {
 			Example: `i resources -f=notice`,
 			Run:     handler.Resources,
 		},
+
+		&Command{
+			Use:     "wake",
+			Short:   "唤醒局域网电脑",
+			Example: `i wake ee:ff:dd:cc:aa:bb`,
+			Run:     handler.Wake,
+		},
 	)
 
 	root.Execute()
