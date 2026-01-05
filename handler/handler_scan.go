@@ -1,25 +1,24 @@
 package handler
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/injoyai/base/types"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/net/ip"
-	"github.com/injoyai/goutil/str"
-	"github.com/injoyai/ios"
-	"github.com/injoyai/ios/client"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"go.bug.st/serial"
-	"log"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 func ScanNetstat(cmd *cobra.Command, args []string, flags *Flags) {
@@ -221,10 +220,12 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
-	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 100))
+	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 200))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
 	find := flags.GetString("find")
+
+	http.DefaultClient.Timeout = timeout
 
 	result := types.List[g.Map]{}
 	wg := sync.WaitGroup{}
@@ -233,41 +234,35 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 			wg.Add(1)
 			go func(ipv4 net.IP) {
 				defer wg.Done()
-				addr := fmt.Sprintf("%s:10002", ipv4.String())
-				cli, err := net.DialTimeout("tcp", addr, timeout)
+				addr := fmt.Sprintf("http://%s:10001/api/info", ipv4.String())
+				resp, err := http.Get(addr)
 				if err == nil {
-					c := client.New(nil)
-					c.SetReadWriteCloser(addr, cli)
-					c.Logger.Debug(false)
-					c.OnReconnect = client.NewReconnectInterval(time.Second)
-					//c.SetCloseWithNil()
-					c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
-						defer c.Close()
-						s := str.CropFirst(string(msg.Payload()), "{")
-						s = str.CropLast(s, "}")
-						m := conv.NewMap(s)
-						switch m.GetString("type") {
-						case "REGISTER":
-							info := fmt.Sprintf(
-								"  - %v: \t%v\t%s(%s)",
-								strings.Split(addr, ":")[0],
-								m.GetString("data.sn"),
-								m.GetString("data.model"),
-								m.GetString("data.version"))
-							if len(find) > 0 && !strings.Contains(s, find) {
-								return
-							}
-							if !sortResult {
-								fmt.Println(info)
-								return
-							}
-							result = append(result, g.Map{
-								"index": conv.Uint32([]byte(ipv4)),
-								"msg":   info,
-							})
+					defer resp.Body.Close()
+					bs, err := io.ReadAll(resp.Body)
+					if err == nil {
+						if len(find) > 0 && !strings.Contains(string(bs), find) {
+							return
 						}
+						m := conv.NewMap(bs)
+						if m.GetString("data.model") == "" {
+							return
+						}
+						info := fmt.Sprintf(
+							"  - %v: \t%v\t%s(%s)",
+							ipv4.String(),
+							m.GetString("data.sn"),
+							m.GetString("data.model"),
+							m.GetString("data.version"))
+						if !sortResult {
+							fmt.Println(info)
+							return
+						}
+						result = append(result, g.Map{
+							"index": conv.Uint32([]byte(ipv4)),
+							"msg":   info,
+						})
 					}
-					c.Run(context.Background())
+
 				}
 			}(ipv4)
 			return true
