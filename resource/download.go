@@ -4,15 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/cmd/tool"
-	"github.com/injoyai/goutil/g"
-	"github.com/injoyai/goutil/notice"
-	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/goutil/str/bar"
-	"github.com/injoyai/goutil/task"
-	"github.com/injoyai/logs"
 	"io"
 	"net/http"
 	"net/url"
@@ -22,6 +13,16 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/tool"
+	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/notice"
+	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/goutil/oss/shell"
+	"github.com/injoyai/goutil/str/bar"
+	"github.com/injoyai/goutil/task"
+	"github.com/injoyai/logs"
 )
 
 func MustDownload(ctx context.Context, op *Config) (string, bool) {
