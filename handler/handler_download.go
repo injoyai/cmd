@@ -2,16 +2,17 @@ package handler
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 func Download(cmd *cobra.Command, args []string, flags *Flags) {
