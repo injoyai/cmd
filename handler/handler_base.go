@@ -232,4 +232,6 @@ func Wake(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+
+	fmt.Println("已发送唤醒命令")
 }
