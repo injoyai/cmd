@@ -190,8 +190,9 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 				if strings.HasSuffix(err.Error(), " busy") {
 					err = errors.New("占用")
 				}
+			} else if p != nil {
+				p.Close()
 			}
-			p.Close()
 			s := fmt.Sprintf("%s:  %s", v, conv.New(err).String("空闲"))
 			if len(find) > 0 && !strings.Contains(s, find) {
 				return
