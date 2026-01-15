@@ -633,6 +633,20 @@ func main() {
 		},
 
 		&Command{
+			Use:     "test",
+			Short:   "唤醒局域网电脑",
+			Example: `i wake ee:ff:dd:cc:aa:bb`,
+			Child: []*Command{
+				{
+					Use:     "speed",
+					Short:   "网速",
+					Example: "i test speed",
+					Run:     handler.TestSpeed,
+				},
+			},
+		},
+
+		&Command{
 			Use:     "kill",
 			Short:   "杀死进程",
 			Example: "i kill 12345(进程id)",
