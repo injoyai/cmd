@@ -75,5 +75,5 @@ func TestSpeed(cmd *cobra.Command, args []string, flags *Flags) {
 
 	spend := time.Now().Sub(start).Seconds()
 	mbps := float64(b.Current()) / spend / 1e6
-	fmt.Printf("下载 速度: %.2f MB/s\n", mbps)
+	fmt.Printf("[下载] 平均速度: %.2f MB/s\n", mbps)
 }
