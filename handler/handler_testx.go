@@ -55,7 +55,7 @@ func TestSpeed(cmd *cobra.Command, args []string, flags *Flags) {
 				default:
 					n, err := resp.Body.Read(buf)
 					if err != nil {
-						if err != io.EOF {
+						if err == io.EOF {
 							return
 						}
 						b.Logf("[错误] %s\n", err)
