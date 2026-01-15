@@ -2,13 +2,14 @@ package tool
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"syscall"
+
 	"github.com/go-ole/go-ole"
 	"github.com/go-ole/go-ole/oleutil"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss/win"
-	"os"
-	"os/exec"
-	"syscall"
 )
 
 func shellStart(filename string) error {
