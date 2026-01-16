@@ -633,13 +633,29 @@ func main() {
 		},
 
 		&Command{
+			Flag: []*Flag{
+				{Name: "goroutines", Short: "g", Memo: "协程数量", DefaultValue: "8"},
+				{Name: "seconds", Short: "s", Memo: "测试时长(秒)", DefaultValue: "10"},
+			},
 			Use:     "test",
-			Short:   "唤醒局域网电脑",
-			Example: `i wake ee:ff:dd:cc:aa:bb`,
+			Short:   "",
+			Example: `i test download`,
 			Child: []*Command{
 				{
+					Use:     "download",
+					Short:   "测试下载网速",
+					Example: "i test download",
+					Run:     handler.TestDownload,
+				},
+				{
+					Use:     "upload",
+					Short:   "测试上传网速",
+					Example: "i test upload",
+					Run:     handler.TestUpload,
+				},
+				{
 					Use:     "speed",
-					Short:   "网速",
+					Short:   "测试网速",
 					Example: "i test speed",
 					Run:     handler.TestSpeed,
 				},
