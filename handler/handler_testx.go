@@ -27,7 +27,7 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 	goroutines := flags.GetInt("goroutines", 8)
 	seconds := flags.GetDuration("seconds", 10)
 
-	fmt.Printf("下载地址: %s\n协程数量: %d\n测试时长: %d秒\n", url, goroutines, seconds)
+	fmt.Printf("[地址] %s\n[协程] %d\n[时长] %d秒\n", url, goroutines, seconds)
 
 	f := bar.WithSpeedUnitAvg()
 	b := bar.NewCoroutine(
@@ -92,7 +92,7 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 	goroutines := flags.GetInt("goroutines", 8)
 	seconds := flags.GetDuration("seconds", 10)
 
-	fmt.Printf("上传地址: %s\n协程数量: %d\n测试时长: %d秒\n", url, goroutines, seconds)
+	fmt.Printf("[地址] %s\n[协程] %d\n[时长] %d秒\n", url, goroutines, seconds)
 
 	f := bar.WithSpeedUnitAvg()
 	b := bar.NewCoroutine(
