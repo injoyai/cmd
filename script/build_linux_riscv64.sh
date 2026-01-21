@@ -5,8 +5,6 @@ date=$(date +%Y-%m-%d)
 dir=".."
 cd $dir
 
-name="i"
-
 bin_dir="./bin"
 mkdir -p $bin_dir
 
@@ -38,12 +36,8 @@ build_and_upload() {
 }
 
 # 不同平台编译
-build_and_upload windows amd64 "" $name'_windows_amd64.exe'
-build_and_upload windows arm64 "" $name'_windows_arm64.exe'
-build_and_upload linux amd64 "" $name'_linux_amd64'
-build_and_upload linux arm64 "" $name'_linux_arm64'
-build_and_upload linux arm 7 $name'_linux_arm'
-build_and_upload linux riscv64 "" $name'_linux_riscv64'
+build_and_upload linux riscv64 "" i_linux_riscv64
+
 
 echo "全部完成 ✅, 8秒后自动退出..."
 sleep 8
