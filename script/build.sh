@@ -43,7 +43,6 @@ build_and_upload windows arm64 "" $name'_windows_arm64.exe'
 build_and_upload linux amd64 "" $name'_linux_amd64'
 build_and_upload linux arm64 "" $name'_linux_arm64'
 build_and_upload linux arm 7 $name'_linux_arm'
-build_and_upload linux riscv64 "" $name'_linux_riscv64'
 
 echo "全部完成 ✅, 8秒后自动退出..."
 sleep 8
