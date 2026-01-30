@@ -636,6 +636,7 @@ func main() {
 			Flag: []*Flag{
 				{Name: "goroutines", Short: "g", Memo: "协程数量", DefaultValue: "8"},
 				{Name: "seconds", Short: "s", Memo: "测试时长(秒)", DefaultValue: "10"},
+				{Name: "proxy", Short: "p", Memo: "使用代理", DefaultValue: ""},
 			},
 			Use:     "test",
 			Short:   "",

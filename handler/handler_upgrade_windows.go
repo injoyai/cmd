@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
