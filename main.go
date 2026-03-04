@@ -585,8 +585,8 @@ func main() {
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
 			},
 			Use:     "install",
-			Short:   "install",
-			Long:    "安装应用,下载到in所在的目录",
+			Short:   "安装应用",
+			Long:    "安装应用,下载到i所在的目录",
 			Example: "i install hfs",
 			Run:     handler.Install,
 			Child: []*Command{
@@ -601,8 +601,8 @@ func main() {
 
 		&Command{
 			Use:     "uninstall",
-			Short:   "uninstall",
-			Long:    "卸载应用,删除in所在的目录的程序",
+			Short:   "卸载应用",
+			Long:    "卸载应用,删除i所在的目录的程序",
 			Example: "i uninstall hfs",
 			Run:     handler.Uninstall,
 		},
@@ -622,14 +622,7 @@ func main() {
 			Use:     "doc",
 			Short:   "文档",
 			Example: "i doc",
-			Child: []*Command{
-				{
-					Use:     "python",
-					Short:   "文档",
-					Example: "i doc python",
-					Run:     handler.DocPython,
-				},
-			},
+			Run:     handler.Doc,
 		},
 
 		&Command{
@@ -639,7 +632,7 @@ func main() {
 				{Name: "proxy", Short: "p", Memo: "使用代理", DefaultValue: ""},
 			},
 			Use:     "test",
-			Short:   "",
+			Short:   "测试(网速)",
 			Example: `i test download`,
 			Child: []*Command{
 				{

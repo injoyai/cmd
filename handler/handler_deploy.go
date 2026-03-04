@@ -5,6 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
@@ -19,10 +24,6 @@ import (
 	"github.com/injoyai/ios/server/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 const (

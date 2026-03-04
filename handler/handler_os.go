@@ -5,14 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/conv/codec"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"os"
-	"strings"
 )
 
 func Dir(cmd *cobra.Command, args []string, flags *Flags) {

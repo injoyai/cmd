@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"github.com/injoyai/cmd/global"
-	"github.com/spf13/cobra"
 	"runtime"
 	"strings"
+
+	"github.com/injoyai/cmd/global"
+	"github.com/spf13/cobra"
 )
 
 func IsWindows() bool {

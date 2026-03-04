@@ -2,11 +2,12 @@ package handler
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func Kill(cmd *cobra.Command, args []string, flags *Flags) {

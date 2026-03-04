@@ -2,11 +2,12 @@ package handler
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/injoyai/goutil/other/upload"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 func UploadMinio(cmd *cobra.Command, args []string, flags *Flags) {
