@@ -2,6 +2,11 @@ package handler
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
@@ -10,10 +15,6 @@ import (
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 )
 
 func Swag(cmd *cobra.Command, args []string, flags *Flags) {

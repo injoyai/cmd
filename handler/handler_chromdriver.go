@@ -3,15 +3,16 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/str"
 	"github.com/injoyai/goutil/str/bar"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func installChromedriver(dir string, reDownload bool, proxy ...string) (string, error) {

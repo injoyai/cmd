@@ -70,7 +70,7 @@ func Date(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(time.Now().String())
 }
 
-func DocPython(cmd *cobra.Command, args []string, flags *Flags) {
+func Doc(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(`配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
 }
 

@@ -3,6 +3,13 @@ package handler
 import (
 	"context"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"path/filepath"
+	"runtime"
+	"strings"
+
 	"github.com/DrmagicE/gmqtt"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	"github.com/DrmagicE/gmqtt/pkg/packets"
@@ -24,12 +31,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tebeka/selenium"
 	"golang.org/x/net/webdav"
-	"io"
-	"net"
-	"net/http"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 //====================SeleniumServer====================//

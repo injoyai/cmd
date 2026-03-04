@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"net/url"
 	"time"
-
-	"net/http"
 
 	"github.com/injoyai/bar"
 	"github.com/injoyai/conv"
