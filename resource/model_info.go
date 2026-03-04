@@ -1,9 +1,10 @@
 package resource
 
 import (
-	"github.com/injoyai/cmd/global"
 	"runtime"
 	"strings"
+
+	"github.com/injoyai/cmd/global"
 )
 
 type Info struct {

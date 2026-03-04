@@ -2,9 +2,10 @@ package tool
 
 import (
 	"errors"
-	"github.com/grafov/m3u8"
 	"net/http"
 	"strings"
+
+	"github.com/grafov/m3u8"
 )
 
 func DecodeM3u8(url string) ([]string, error) {

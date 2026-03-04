@@ -1,10 +1,11 @@
 package resource
 
 import (
-	"github.com/injoyai/goutil/oss/compress/zip"
-	"github.com/injoyai/logs"
 	"os"
 	"path/filepath"
+
+	"github.com/injoyai/goutil/oss/compress/zip"
+	"github.com/injoyai/logs"
 )
 
 var Exclusive = MResource{
