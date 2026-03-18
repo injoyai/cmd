@@ -755,6 +755,25 @@ func main() {
 			Example: `i wake ee:ff:dd:cc:aa:bb`,
 			Run:     handler.Wake,
 		},
+
+		&Command{
+			Flag: []*Flag{},
+			Use:  "setup",
+			Child: []*handler.Command{
+				{
+					Flag: []*Flag{
+						{Name: "download", Short: "d", Memo: "重新下载"},
+						{Name: "host", Short: "d", Memo: "主机"},
+						{Name: "user", Short: "u", Memo: "用户", DefaultValue: "root"},
+						{Name: "port", Short: "p", Memo: "端口", DefaultValue: "22"},
+					},
+					Use:     "ssh-key",
+					Short:   "设置秘钥到ssh,实现免密登录",
+					Example: "i setup ssh-key",
+					Run:     handler.SetupSSHKey,
+				},
+			},
+		},
 	)
 
 	root.Execute()

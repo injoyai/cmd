@@ -5,6 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/injoyai/cmd/resource"
+	"github.com/injoyai/cmd/tool"
+	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/other/upload"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
