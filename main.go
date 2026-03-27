@@ -102,7 +102,6 @@ func main() {
 				{Name: "proxy", Short: "p", Memo: "代理地址"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(s)", DefaultValue: "10"},
 				{Name: "output", Short: "o", Memo: "输出到文件,例 -o=./a.txt"},
-				{Name: "search", Short: "s", Memo: "筛选body数据,例 --search=code"},
 				{Name: "get", Short: "g", Memo: "筛选body数据,例 -g=code"},
 			},
 			Use:     "http",
