@@ -23,7 +23,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 
 	proxy := flags.GetString("proxy")
 	timeout := flags.GetSecond("timeout", 10)
-	method := flags.GetString("method", http.MethodGet)
+	method := strings.ToUpper(flags.GetString("method", http.MethodGet))
 	headerMap := flags.GetGMap("header")
 	body := flags.GetString("body")
 	retry := flags.GetUint("retry")
