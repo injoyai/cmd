@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"net/http/httputil"
 	"strings"
 
 	"github.com/injoyai/conv"
@@ -26,7 +27,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	headerMap := flags.GetGMap("header")
 	body := flags.GetString("body")
 	retry := flags.GetUint("retry")
-	search := flags.GetString("search")
+	get := flags.GetString("get")
 	output := flags.GetString("output")
 
 	header := http.Header{}
@@ -52,9 +53,15 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s\n%s", resp.Status, resp.GetBodyString())
-	if len(search) > 0 {
-		msg = conv.NewMap(resp.GetBodyString()).GetString(search)
+	bs, err := httputil.DumpResponse(resp.Response, true)
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+	msg := string(bs)
+
+	if len(get) > 0 {
+		msg = conv.NewMap(resp.GetBodyBytes()).GetString(get)
 	}
 
 	if len(output) > 0 {
