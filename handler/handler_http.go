@@ -61,7 +61,11 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	msg := string(bs)
 
 	if len(get) > 0 {
-		msg = conv.NewMap(resp.GetBodyBytes()).GetString(get)
+		x := conv.NewMap(resp.GetBodyBytes()).Get(get)
+		if x.IsNil() {
+			x = conv.NewMap(resp.Header()).Get(get)
+		}
+		msg = x.Strings()[0]
 	}
 
 	if len(output) > 0 {
