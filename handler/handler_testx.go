@@ -34,7 +34,7 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 
 	f := bar.WithSpeedUnitAvg()
 	b := bar.NewCoroutine(
-		math.MaxInt64,
+		math.MaxInt,
 		goroutines,
 		bar.WithPrefix("[下载]"),
 		bar.WithFormat(
@@ -115,7 +115,7 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 
 	f := bar.WithSpeedUnitAvg()
 	b := bar.NewCoroutine(
-		math.MaxInt64,
+		math.MaxInt,
 		goroutines,
 		bar.WithPrefix("[上传]"),
 		bar.WithFormat(
