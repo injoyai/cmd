@@ -54,7 +54,7 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 	lorca.Run(&lorca.Config{
 		Width:  width,
 		Height: height,
-		Html:   html,
+		Index:  html,
 	}, func(app lorca.APP) error {
 
 		labels := []string(nil)

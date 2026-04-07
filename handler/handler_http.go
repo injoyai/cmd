@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	gohttp "net/http"
 	"net/http/httputil"
 	"strings"
 
@@ -25,14 +24,14 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 
 	proxy := flags.GetString("proxy")
 	timeout := flags.GetSecond("timeout", 10)
-	method := strings.ToUpper(flags.GetString("method", gohttp.MethodGet))
+	method := strings.ToUpper(flags.GetString("method", http.MethodGet))
 	headerMap := flags.GetGMap("header")
 	body := flags.GetString("body")
 	retry := flags.GetInt("retry")
 	get := flags.GetString("get")
 	output := flags.GetString("output")
 
-	header := gohttp.Header{}
+	header := http.Header{}
 	for k, v := range headerMap {
 		header.Add(k, conv.String(v))
 	}

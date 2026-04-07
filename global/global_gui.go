@@ -15,7 +15,7 @@ func RunGUI() {
 	lorca.Run(&lorca.Config{
 		Width:  720,
 		Height: 860,
-		Html:   html,
+		Index:  html,
 	}, func(app lorca.APP) error {
 
 		ns := Natures()
