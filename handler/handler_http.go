@@ -2,11 +2,13 @@ package handler
 
 import (
 	"fmt"
+	gohttp "net/http"
 	"net/http/httputil"
 	"strings"
 
 	"github.com/injoyai/conv"
-	"github.com/injoyai/goutil/net/http"
+	"github.com/injoyai/goutil/net/http/v2"
+	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
@@ -23,33 +25,33 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 
 	proxy := flags.GetString("proxy")
 	timeout := flags.GetSecond("timeout", 10)
-	method := strings.ToUpper(flags.GetString("method", http.MethodGet))
+	method := strings.ToUpper(flags.GetString("method", gohttp.MethodGet))
 	headerMap := flags.GetGMap("header")
 	body := flags.GetString("body")
-	retry := flags.GetUint("retry")
+	retry := flags.GetInt("retry")
 	get := flags.GetString("get")
 	output := flags.GetString("output")
 
-	header := http.Header{}
+	header := gohttp.Header{}
 	for k, v := range headerMap {
 		header.Add(k, conv.String(v))
 	}
 
-	if err := http.SetProxy(proxy); err != nil {
+	if err := http.DefaultClient.SetProxy(proxy); err != nil {
 		logs.Err(err)
 		return
 	}
-	http.DefaultClient.Timeout = timeout
+	http.DefaultClient.SetTimeout(timeout)
 
-	resp := http.Url(args[0]).
+	resp, err := http.Url(args[0]).
 		Retry(retry).
 		SetBody(body).
 		SetHeaders(header).
 		SetMethod(method).
 		Do()
 
-	if resp.Error != nil {
-		logs.Err(resp.Error)
+	if err != nil {
+		logs.Err(err)
 		return
 	}
 
@@ -60,18 +62,24 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	msg := string(bs)
 
+	bodyBs, err := resp.ReadBody()
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+
 	if len(get) > 0 {
-		x := conv.NewMap(resp.GetBodyBytes())
+		x := conv.NewMap(bodyBs)
 		if !x.IsNil(get) {
 			msg = x.GetString(get)
 		} else {
-			ss := conv.NewMap(resp.Header()).GetStrings(get)
+			ss := conv.NewMap(resp.Header).GetStrings(get)
 			msg = strings.Join(ss, ",")
 		}
 	}
 
 	if len(output) > 0 {
-		if _, err := resp.WriteToFile(output); err != nil {
+		if err = oss.New(output, bodyBs); err != nil {
 			logs.Err(err)
 			return
 		}
