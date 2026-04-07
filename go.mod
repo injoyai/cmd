@@ -8,13 +8,13 @@ require (
 	github.com/go-ole/go-ole v1.2.6
 	github.com/gorilla/websocket v1.5.3
 	github.com/grafov/m3u8 v0.12.1
-	github.com/injoyai/bar v0.0.9
+	github.com/injoyai/bar v0.0.11
 	github.com/injoyai/base v1.2.20
 	github.com/injoyai/conv v1.2.5
-	github.com/injoyai/goutil v1.2.27
+	github.com/injoyai/goutil v1.2.30
 	github.com/injoyai/ios v1.2.5
 	github.com/injoyai/logs v1.0.12
-	github.com/injoyai/lorca v0.0.0-20230816093842-66a8b4247238
+	github.com/injoyai/lorca v0.0.0-20241219020631-030018723d82
 	github.com/injoyai/proxy v1.0.18
 	github.com/spf13/cobra v1.7.0
 	github.com/tebeka/selenium v0.9.9
@@ -62,7 +62,7 @@ require (
 	github.com/prometheus/common v0.10.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
-	github.com/redis/go-redis/v9 v9.5.1 // indirect
+	github.com/redis/go-redis/v9 v9.7.3 // indirect
 	github.com/robertkrimen/otto v0.2.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
