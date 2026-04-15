@@ -762,7 +762,7 @@ func main() {
 				{
 					Flag: []*Flag{
 						{Name: "download", Short: "d", Memo: "重新下载"},
-						{Name: "host", Short: "h", Memo: "主机"},
+						{Name: "host", Short: "H", Memo: "主机"},
 						{Name: "user", Short: "u", Memo: "用户", DefaultValue: "root"},
 						{Name: "port", Short: "p", Memo: "端口", DefaultValue: "22"},
 					},
