@@ -13,7 +13,7 @@ import (
 	"github.com/DrmagicE/gmqtt"
 	_ "github.com/DrmagicE/gmqtt/persistence"
 	"github.com/DrmagicE/gmqtt/pkg/packets"
-	"github.com/DrmagicE/gmqtt/server"
+	mqttServer "github.com/DrmagicE/gmqtt/server"
 	_ "github.com/DrmagicE/gmqtt/topicalias/fifo"
 	"github.com/gorilla/websocket"
 	"github.com/injoyai/cmd/resource"
@@ -23,8 +23,8 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	server2 "github.com/injoyai/ios/server"
-	"github.com/injoyai/ios/server/listen"
+	"github.com/injoyai/ios/v2/server"
+	"github.com/injoyai/ios/v2/server/listen"
 	"github.com/injoyai/logs"
 	"github.com/injoyai/proxy/core"
 	"github.com/injoyai/proxy/forward"
@@ -62,9 +62,9 @@ func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	err := listen.RunTCP(
 		flags.GetInt("port", 10086),
-		func(s *server2.Server) {
-			s.Timeout.SetTimeout(flags.GetSecond("timeout", -1))
-			s.Logger.Debug(flags.GetBool("debug"))
+		func(s *server.Server) {
+			//s.Timeout.SetTimeout(flags.GetSecond("timeout", -1))
+			s.Logger.Enable(flags.GetBool("debug"))
 			s.Logger.WithUTF8()
 		})
 	logs.PrintErr(err)
@@ -74,9 +74,9 @@ func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
-	err := listen.RunTCP(port, func(s *server2.Server) {
-		s.Timeout.SetTimeout(flags.GetSecond("timeout", -1))
-		s.Logger.Debug(flags.GetBool("debug"))
+	err := listen.RunUDP(port, func(s *server.Server) {
+		//s.SetTimeout(flags.GetSecond("timeout", -1))
+		s.Logger.Enable(flags.GetBool("debug"))
 		s.Logger.WithUTF8()
 	})
 	logs.PrintErr(err)
@@ -98,9 +98,9 @@ func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 		if err != nil {
 			return err
 		}
-		srv := server.New(server.WithTCPListener(ln))
-		if err := srv.Init(server.WithHook(server.Hooks{
-			OnConnected: func(ctx context.Context, client server.Client) {
+		srv := mqttServer.New(mqttServer.WithTCPListener(ln))
+		if err := srv.Init(mqttServer.WithHook(mqttServer.Hooks{
+			OnConnected: func(ctx context.Context, client mqttServer.Client) {
 				if debug {
 					version := "未知"
 					switch client.Version() {
@@ -114,16 +114,16 @@ func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 					logs.Infof("[%s] [连接] Address: %s, Version: %s\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), version)
 				}
 			},
-			OnClosed: func(ctx context.Context, client server.Client, err error) {
+			OnClosed: func(ctx context.Context, client mqttServer.Client, err error) {
 				logs.Infof("[%s] [断开] Address: %s, Message: %v\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), err)
 			},
-			OnMsgArrived: func(ctx context.Context, client server.Client, req *server.MsgArrivedRequest) error {
+			OnMsgArrived: func(ctx context.Context, client mqttServer.Client, req *mqttServer.MsgArrivedRequest) error {
 				if debug {
 					logs.Infof("[%s] [消息] Topic: %s, Message: %s\n", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
 				}
 				return nil
 			},
-			OnSubscribe: func(ctx context.Context, client server.Client, req *server.SubscribeRequest) error {
+			OnSubscribe: func(ctx context.Context, client mqttServer.Client, req *mqttServer.SubscribeRequest) error {
 				for _, v := range req.Subscribe.Topics {
 					logs.Infof("[%s] [订阅] Topic: %s\n", client.ClientOptions().ClientID, v.Name)
 					srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
