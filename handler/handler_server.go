@@ -63,7 +63,7 @@ func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	err := listen.RunTCP(
 		flags.GetInt("port", 10086),
 		func(s *server.Server) {
-			//s.Timeout.SetTimeout(flags.GetSecond("timeout", -1))
+			s.SetTimeout(flags.GetSecond("timeout", -1))
 			s.Logger.Enable(flags.GetBool("debug"))
 			s.Logger.WithUTF8()
 		})
@@ -75,7 +75,7 @@ func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
 	err := listen.RunUDP(port, func(s *server.Server) {
-		//s.SetTimeout(flags.GetSecond("timeout", -1))
+		s.SetTimeout(flags.GetSecond("timeout", -1))
 		s.Logger.Enable(flags.GetBool("debug"))
 		s.Logger.WithUTF8()
 	})

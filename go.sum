@@ -612,8 +612,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/injoyai/bar v0.0.11 h1:HOD5xxEcEErzk9gC2+aUhuBV4N/A8D+Xl3Q31xK6+OQ=
 github.com/injoyai/bar v0.0.11/go.mod h1:fhn3OC7/h9z7wYFiByd3AJ2UTnCR/9fa2MXIMYdxlII=
-github.com/injoyai/base v1.2.20 h1:S0y66Cl/VptBsX8SgpQk7o3rMK17rvqP7hI/LQCa9Sc=
-github.com/injoyai/base v1.2.20/go.mod h1:NfCQjml3z2pCvQ3J3YcOXtecqXD0xVPKjo4YTsMLhr8=
+github.com/injoyai/base v1.2.22 h1:W52oA+ocRzYeermWLOksHXLEquCud4pKuF2yAu5GmNc=
+github.com/injoyai/base v1.2.22/go.mod h1:NfCQjml3z2pCvQ3J3YcOXtecqXD0xVPKjo4YTsMLhr8=
 github.com/injoyai/conv v1.1.11/go.mod h1:PYoJcbqaz4eyQUovzErRFCuDSPGB4L07AvdmFsTrTew=
 github.com/injoyai/conv v1.2.5 h1:G4OCyF0NTZul5W1u9IgXDOhW4/zmIigdPKXFHQGmv1M=
 github.com/injoyai/conv v1.2.5/go.mod h1:s05l3fQJQ4mT4VX+KIdbvCWQB0YzZHprmUfUu2uxd1k=
@@ -621,8 +621,8 @@ github.com/injoyai/goutil v1.2.30 h1:cEj578iBZ4eU2OW91FLSuyakTMNJrB1dnSpD+bz/q+M
 github.com/injoyai/goutil v1.2.30/go.mod h1:VxeVuHfcnD2Diq3PxvVNSc/DiU1ZZJaKarzm3NVQ1g0=
 github.com/injoyai/ios v1.2.5 h1:QtPdBGALkwXcUlDy+gLZjEg8jnkFH+utNimJBwhoFXM=
 github.com/injoyai/ios v1.2.5/go.mod h1:DJVJGQFQvqF80CeJVabFOm6AKilqc/m8MFvz39Uy5ow=
-github.com/injoyai/ios/v2 v2.0.13 h1:gKg27vO8JKmkxLIjLWOB1wc3OapK6IHjARpg7hHT+4Y=
-github.com/injoyai/ios/v2 v2.0.13/go.mod h1:9muEsE5SiOUg4RfvXGbdqmG0br7W/vQQX3uxJB0i4Bs=
+github.com/injoyai/ios/v2 v2.0.14 h1:rzAYR3KMeDut3/HMBSTV0WC+RTpiE94mCYtmbLw7Jo0=
+github.com/injoyai/ios/v2 v2.0.14/go.mod h1:lZzkPBXF5JZv9PmGcZQZyXMsxVldhLu6t29pJGRTIjY=
 github.com/injoyai/logs v1.0.12 h1:f7syIGZMTg9ZzhJhdd3tzaPdxkMhdKsncGaxljqIiYE=
 github.com/injoyai/logs v1.0.12/go.mod h1:+dKEL6GvaFqqVRatqUBiCicJbZnAgtj7hVs824Src4s=
 github.com/injoyai/lorca v0.0.0-20241219020631-030018723d82 h1:fuyn7C3rTWUciXtIFxsmZ6UzlEzldWPzwaqYgazTK+8=
