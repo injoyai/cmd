@@ -9,11 +9,11 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/grafov/m3u8 v0.12.1
 	github.com/injoyai/bar v0.0.11
-	github.com/injoyai/base v1.2.20
+	github.com/injoyai/base v1.2.22
 	github.com/injoyai/conv v1.2.5
 	github.com/injoyai/goutil v1.2.30
 	github.com/injoyai/ios v1.2.5
-	github.com/injoyai/ios/v2 v2.0.13
+	github.com/injoyai/ios/v2 v2.0.14
 	github.com/injoyai/logs v1.0.12
 	github.com/injoyai/lorca v0.0.0-20241219020631-030018723d82
 	github.com/injoyai/proxy v1.0.18
