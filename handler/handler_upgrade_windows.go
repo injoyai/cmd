@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	execFilename := oss.ExecName()
 	execName := filepath.Base(execFilename)
 	upgradeFilename := filepath.Join(dir, strings.Split(execName, ".")[0]+"_upgrade.exe")
+	proxy := flags.GetString("proxy")
 
 	//判断i_upgrade是否存在
 	exist := oss.Exists(upgradeFilename)
@@ -49,5 +51,6 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 	//然后执行i_upgrade install i
-	logs.PrintErr(tool.ShellStart(upgradeFilename + " install i -d=true -n=" + execName))
+	_cmd := fmt.Sprintf("%s install i -d=true -n=%s --proxy=%s", upgradeFilename, execName, proxy)
+	logs.PrintErr(tool.ShellStart(_cmd))
 }

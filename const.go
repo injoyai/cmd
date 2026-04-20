@@ -10,6 +10,7 @@ import (
 
 var (
 	details = []string{
+		"v1.5.6: 优化i upgrade",
 		"v1.5.5: 增加脚本setup_ssh_key.ps1,优化http,升级依赖,修复udp server",
 		"v1.5.4: 增加i wake用于唤醒局域网电脑,增加i test download/upload用于测试网速,优化",
 		"v1.5.3: 增加资源build.sh别名build,增加i build功能,快捷的全平台编译,优化scan edge",
