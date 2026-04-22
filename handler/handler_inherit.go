@@ -46,6 +46,14 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) {
 	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
 }
 
+func Len(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		fmt.Println(0)
+		return
+	}
+	fmt.Println(len(args[0]))
+}
+
 func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 
 	wd, _ := os.Getwd()
