@@ -694,6 +694,13 @@ func main() {
 		},
 
 		&Command{
+			Use:     "len",
+			Short:   "len",
+			Example: "i len 123456",
+			Run:     handler.Len,
+		},
+
+		&Command{
 			Flag: []*Flag{
 				{Name: "level", Short: "l", Memo: "递归层级", DefaultValue: "2"},
 				{Name: "replace", Short: "r", Memo: "替换文件内容 a=b"},
