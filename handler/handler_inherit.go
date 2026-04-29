@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -52,6 +53,26 @@ func Len(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 	fmt.Println(len(args[0]))
+}
+
+func Base64(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		args = []string{""}
+	}
+
+	fmt.Println("-------------------------------------------------------")
+	fmt.Println("Decode:")
+	bs, err := base64.StdEncoding.DecodeString(args[0])
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println(string(bs))
+	}
+
+	fmt.Println("-------------------------------------------------------")
+	fmt.Println("Encode:")
+	s := base64.StdEncoding.EncodeToString([]byte(args[0]))
+	fmt.Println(s)
 }
 
 func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
