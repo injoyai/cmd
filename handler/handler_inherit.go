@@ -69,7 +69,7 @@ func Base64(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println(string(bs))
 	}
 
-	fmt.Println("-------------------------------------------------------")
+	fmt.Println("\n-------------------------------------------------------")
 	fmt.Println("Encode:")
 	s := base64.StdEncoding.EncodeToString([]byte(args[0]))
 	fmt.Println(s)
