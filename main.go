@@ -701,6 +701,13 @@ func main() {
 		},
 
 		&Command{
+			Use:     "base64",
+			Short:   "base64",
+			Example: "i base64 123456",
+			Run:     handler.Base64,
+		},
+
+		&Command{
 			Flag: []*Flag{
 				{Name: "level", Short: "l", Memo: "递归层级", DefaultValue: "2"},
 				{Name: "replace", Short: "r", Memo: "替换文件内容 a=b"},
