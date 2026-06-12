@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --paper: #ebe3d2;
+      --ink: #1a1814;
+      --muted: #7a7264;
+      --accent: #e8501f;
+      --grid: rgba(26, 24, 20, 0.05);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      font-family: 'Fraunces', serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      background-image:
+              linear-gradient(var(--grid) 1px, transparent 1px),
+              linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      padding: 18px 22px;
+    }
+    /* Header */
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+    }
+    .brand-mark {
+      width: 18px;
+      height: 18px;
+      background: var(--ink);
+      color: var(--bg);
+      display: grid;
+      place-items: center;
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .dot {
+      display: inline-block;
+      width: 5px; height: 5px;
+      background: #2bb673;
+      border-radius: 50%;
+      margin-right: 5px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+
+    /* Main */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 8px 4px;
+    }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .eyebrow::before {
+      content: '';
+      width: 22px;
+      height: 1px;
+      background: var(--ink);
+    }
+    h1 {
+      font-size: 56px;
+      line-height: 0.95;
+      font-weight: 400;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .lede {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      margin-bottom: 22px;
+      max-width: 460px;
+    }
+
+    /* Form */
+    form { display: contents; }
+    .input-wrap {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid var(--ink);
+      background: #fff;
+      box-shadow: 5px 5px 0 var(--ink);
+      transition: all 0.15s ease;
+    }
+    .input-wrap:focus-within {
+      box-shadow: 5px 5px 0 var(--accent);
+      transform: translate(-1px, -1px);
+    }
+    .input-prefix {
+      padding: 0 12px;
+      border-right: 1px solid var(--ink);
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--paper);
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 14px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      min-width: 0;
+    }
+    .input-wrap input::placeholder { color: #b9b1a3; }
+    .btn-go {
+      border: none;
+      border-left: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--bg);
+      padding: 0 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .btn-go:hover { background: var(--accent); }
+    .btn-go .arrow { transition: transform 0.2s; }
+    .btn-go:hover .arrow { transform: translateX(3px); }
+
+    /* Recents */
+    .quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 14px;
+    }
+    .chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border: 1px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .chip:hover {
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    .feedback {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 14px;
+      min-height: 14px;
+      letter-spacing: 0.04em;
+    }
+    .feedback.error { color: var(--accent); }
+    .feedback.ok { color: #2bb673; }
+
+    /* Footer */
+    .bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--ink);
+      padding-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .legend { display: flex; gap: 16px; }
+    .legend span::before {
+      content: '◆';
+      color: var(--accent);
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark">P</div>
+    <span>PORTAL · LORCA</span>
+  </div>
+  <div><span class="dot"></span>READY <span id="time" style="margin-left:10px;color:var(--ink)">--:--:--</span></div>
+</header>
+
+<main>
+  <div class="eyebrow">Navigator · v1.0</div>
+  <h1>Where shall<br>we <em>go?</em></h1>
+  <p class="lede">// 输入地址，回车即可跳转</p>
+
+  <form id="form" autocomplete="off" novalidate>
+    <div class="input-wrap">
+      <span class="input-prefix">URL ▸</span>
+      <input
+              type="text"
+              id="url"
+              name="url"
+              placeholder="example.com"
+              spellcheck="false"
+              required
+      >
+      <button type="submit" class="btn-go">
+        <span>GO</span>
+        <span class="arrow">→</span>
+      </button>
+    </div>
+
+    <div class="quick">
+      <button type="button" class="chip" data-url="www.baidu.com">Baidu</button>
+      <button type="button" class="chip" data-url="www.bing.com">Bing</button>
+      <button type="button" class="chip" data-url="github.com">GitHub</button>
+      <button type="button" class="chip" data-url="www.bilibili.com">Bilibili</button>
+    </div>
+
+    <div class="feedback" id="feedback">// awaiting input...</div>
+  </form>
+</main>
+
+<footer class="bottom">
+  <span>© PORTAL — LORCA UI</span>
+  <div class="legend">
+    <span>HTTP</span>
+    <span>UTF-8</span>
+  </div>
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const form = $('form');
+  const input = $('url');
+  const feedback = $('feedback');
+
+  // Clock
+  const tick = () => {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    $('time').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  };
+  tick();
+  setInterval(tick, 1000);
+
+  // Chips
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      input.value = c.dataset.url;
+      input.focus();
+      setFeedback(`// preset: ${c.textContent}`, 'ok');
+    });
+  });
+
+  function setFeedback(text, type) {
+    feedback.textContent = text;
+    feedback.className = 'feedback' + (type ? ' ' + type : '');
+  }
+
+  function normalize(url) {
+    url = url.trim();
+    if (!url) return '';
+    if (!/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(url) && !/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(url)) {
+      url = 'http://' + url;
+    }
+    return url;
+  }
+
+  function isValid(url) {
+    try {
+      const u = new URL(url);
+      return !!u.host;
+    } catch { return false; }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = normalize(input.value);
+    if (!url) { setFeedback('// ERROR · address is required', 'error'); input.focus(); return; }
+    if (!isValid(url)) { setFeedback('// ERROR · invalid URL format', 'error'); input.focus(); return; }
+
+    setFeedback(`// dispatching → ${url}`, 'ok');
+    input.value = url;
+
+    // 探测所有可能的绑定位置
+    const candidates = [
+      window.Navigate,
+      window.navigate,
+      window.external && window.external.Navigate,
+      window.external && window.external.invoke,
+    ];
+    const fn = candidates.find(f => typeof f === 'function');
+
+    if (!fn) {
+      // 显示调试信息
+      const keys = Object.keys(window).filter(k => /navi|extern|bind/i.test(k)).join(', ') || 'none';
+      setFeedback(`// WARN · no bound fn. window keys: ${keys}`, 'error');
+      console.log('window keys:', Object.keys(window));
+      console.log('window.external:', window.external);
+      return;
+    }
+
+    try {
+      const ret = fn(url);
+      // Lorca 返回的是 Promise
+      if (ret && typeof ret.then === 'function') await ret;
+      setFeedback(`// OK · sent → ${url}`, 'ok');
+    } catch (err) {
+      setFeedback(`// ERROR · ${err.message || err}`, 'error');
+      console.error(err);
+    }
+  });
+
+  input.focus();
+</script>
+</body>
+</html>
