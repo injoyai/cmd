@@ -787,6 +787,13 @@ func main() {
 				},
 			},
 		},
+
+		&Command{
+			Use:     "gui",
+			Short:   "把网站用gui的方式打开",
+			Example: `i gui www.baidu.com`,
+			Run:     handler.GUI,
+		},
 	)
 
 	root.Execute()
