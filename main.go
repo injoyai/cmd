@@ -202,6 +202,12 @@ func main() {
 					Run:     handler.DialWebsocket,
 				},
 				{
+					Use:     "redis",
+					Short:   "Redis连接",
+					Example: "i dial redis 127.0.0.1:6379",
+					Run:     handler.DialRedis,
+				},
+				{
 					Flag: []*Flag{
 						{Name: "publish", Memo: "发布"},
 						{Name: "subscribe", Memo: "订阅"},

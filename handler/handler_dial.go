@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gomodule/redigo/redis"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
@@ -244,6 +245,7 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 func DialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 	redial.RunSerial(&serial.Config{
 		Address:  args[0],
@@ -255,6 +257,40 @@ func DialSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	}, func(c *client.Client) {
 		DialDeal(c, flags)
 	})
+}
+
+func DialRedis(cmd *cobra.Command, args []string, flags *Flags) {
+	if len(args) == 0 {
+		args = append(args, "127.0.0.1:6379")
+	}
+
+	c, err := redis.Dial("tcp", args[0])
+	if err != nil {
+		fmt.Println("[错误]", err)
+		return
+	}
+	defer c.Close()
+
+	r := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("redis>")
+		bs, _, err := r.ReadLine()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		ls := strings.Split(string(bs), " ")
+		if len(ls) == 0 {
+			continue
+		}
+		out, err := c.Do(ls[0], conv.Interfaces(ls[1:])...)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		fmt.Println(conv.String(out))
+	}
+
 }
 
 func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
