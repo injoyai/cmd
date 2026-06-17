@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -115,7 +116,6 @@ func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 		return c, args[0], err
 	}, func(c *client.Client) {
 		DialDeal(c, flags)
-		//c.WriteString(io.Pong)
 	})
 }
 
@@ -124,7 +124,6 @@ func DialLog(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[错误] 未填写连接地址")
 	}
 	redial.RunTCP(args[0], func(c *client.Client) {
-		//c.SetLogger(&_log{})
 		DialDeal(c, flags)
 	})
 }
@@ -133,20 +132,26 @@ func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 	}
-	if strings.HasPrefix(args[0], "https://") {
-		args[0] = str.CropFirst(args[0], "https://")
-		args[0] = "wss://" + args[0]
-	}
-	if strings.HasPrefix(args[0], "http://") {
-		args[0] = str.CropFirst(args[0], "http://")
+
+	switch {
+	case len(args) == 0:
+		fmt.Println("[错误] 未填写连接地址")
+		return
+
+	case regexp.MustCompile(`^(?:https?://)`).MatchString(args[0]):
+		args[0] = "ws" + str.CropFirst(args[0], "http")
+
+	case regexp.MustCompile(`^(:\d+)`).MatchString(args[0]):
+		args[0] = "ws://localhost" + args[0]
+
+	case regexp.MustCompile(`^(?:wss?://)`).MatchString(args[0]):
+
+	default:
 		args[0] = "ws://" + args[0]
+
 	}
-	if !strings.HasPrefix(args[0], "wss://") && !strings.HasPrefix(args[0], "ws://") {
-		args[0] = "ws://" + args[0]
-	}
-	redial.RunWebsocket(args[0], func(c *client.Client) {
-		DialDeal(c, flags)
-	})
+
+	redial.RunWebsocket(args[0], func(c *client.Client) { DialDeal(c, flags) })
 }
 
 func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
