@@ -283,6 +283,9 @@ func DialRedis(cmd *cobra.Command, args []string, flags *Flags) {
 		if len(ls) == 0 {
 			continue
 		}
+		if ls[0] == "exit" {
+			return
+		}
 		out, err := c.Do(ls[0], conv.Interfaces(ls[1:])...)
 		if err != nil {
 			fmt.Println(err)
