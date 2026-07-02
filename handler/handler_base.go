@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/injoyai/cmd/resource"
-	"github.com/injoyai/cmd/resource/crud"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/notice"
@@ -56,14 +55,6 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("未找到")
 	}
 
-}
-
-func Crud(cmd *cobra.Command, args []string, flags *Flags) {
-	if len(args) == 0 {
-		logs.Err("请输入模块名称 例: i curd test")
-		return
-	}
-	logs.PrintErr(crud.New(args[0]))
 }
 
 func Date(cmd *cobra.Command, args []string, flags *Flags) {
