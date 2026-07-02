@@ -1,8 +1,8 @@
-# injoyai/cmd
+# 说明
 
 <div align="center">
 
-**一个把网络调试、资源下载、文本处理和开发辅助收拢到同一个入口的命令行工具箱**
+**一个自用命令行工具箱**
 
 <p>
   <img src="https://img.shields.io/badge/Go-1.25%2B-111111?style=for-the-badge&logo=go&logoColor=white" alt="Go Version" />
