@@ -127,7 +127,7 @@ func DeployClient(addr string, flags *Flags) {
 
 func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 
-	port := flags.GetInt("port", 10088)
+	port := flags.GetInt("port", DefaultUDPPort)
 	s, err := listen.TCP(port, func(s *server.Server) {
 		s.Logger.Debug()
 		s.Logger.SetLevel(common.LevelInfo)

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -61,7 +60,8 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) {
 
 func Crud(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
-		log.Printf("[错误] %s", "请输入模块名称 例: i curd test")
+		logs.Err("请输入模块名称 例: i curd test")
+		return
 	}
 	logs.PrintErr(crud.New(args[0]))
 }
@@ -154,16 +154,9 @@ func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func broadcast(address string, bs []byte) error {
-	switch address {
-	case "", "self":
-		address = "localhost:10087"
-	case "all", "ll", "1":
-		address = "255.255.255.255:10087"
-	default:
-		address += ":10087"
-	}
+	address = normalizePushAddress(address)
 
-	addr, err := net.ResolveUDPAddr("udp", address)
+	addr, err := resolveBroadcastUDPAddr(address)
 	if err != nil {
 		return err
 	}
