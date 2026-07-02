@@ -85,13 +85,6 @@ func main() {
 		},
 
 		&Command{
-			Use:     "crud",
-			Short:   "生成增删改查",
-			Example: "i curd test",
-			Run:     handler.Crud,
-		},
-
-		&Command{
 			Flag: []*Flag{
 				{Name: "method", Short: "m", Memo: "请求方式", DefaultValue: http.MethodGet},
 				{Name: "header", Short: "H", Memo: "请求头"},
