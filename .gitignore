@@ -1,5 +1,5 @@
-/output/
-.idea
-/bin
-/in.exe
-/cmd.exe
+bin/
+output/
+.idea/
+*.exe
+*.go~

@@ -45,7 +45,7 @@ func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 	}
-	port := flags.GetInt("port", 20165)
+	port := flags.GetInt("port", DefaultSeleniumPort)
 	selenium.SetDebug(flags.GetBool("debug"))
 	ser, err := selenium.NewChromeDriverService(flags.GetString("chromedriver", filename), port)
 	if err != nil {
@@ -314,7 +314,7 @@ func FrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 //====================HTTPServer====================//
 
 func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
-	port := flags.GetInt("port", 8080)
+	port := flags.GetInt("port", DefaultHTTPPort)
 	logs.Infof("[:%d] 开启HTTP服务成功...\n", port)
 	logs.PrintErr(
 		http.ListenAndServe(

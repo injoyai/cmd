@@ -75,6 +75,16 @@ func Base64(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println(s)
 }
 
+func buildGoCommandArgs(output, osName, arch string, args []string) []string {
+	out := output + "_" + osName + "_" + arch
+	if osName == "windows" {
+		out += ".exe"
+	}
+	buildArgs := []string{"build", "-v", `-ldflags=-s -w`, "-o", out}
+	buildArgs = append(buildArgs, args...)
+	return buildArgs
+}
+
 func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 
 	wd, _ := os.Getwd()
@@ -93,7 +103,8 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 
 	for _, osName := range osList {
 		for _, arch := range archList {
-			c := exec.Command("go", "build", "-v", `-ldflags=-s -w`)
+			buildArgs := buildGoCommandArgs(output, osName, arch, args)
+			c := exec.Command("go", buildArgs...)
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
 
@@ -108,14 +119,10 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 			c.Env = env
 
-			// 输出
 			out := output + "_" + osName + "_" + arch
 			if osName == "windows" {
 				out += ".exe"
 			}
-			c.Args = append(c.Args, "-o", out)
-
-			c.Args = append(c.Args, args...)
 
 			fmt.Println("开始编译:", osName, arch)
 			logs.PrintErr(c.Run())
