@@ -41,6 +41,7 @@ var Exclusive = MResource{
 	"quark-signin":   {Local: "quark-signin.exe", Key: []string{"quark_sign", "quark-sign", "quarksign", "quarksignin"}},
 	"fuli":           {Local: "复利计算器.exe", Key: []string{"复利", "复利工具", "复利小工具", "复利计算", "计算复利", "复利计算器"}},
 	"setup-ssh-key":  {Local: "setup_ssh_key.ps1", Key: []string{"setup_ssh_key", "setup-ssh-key.ps1"}},
+	"view":           {Local: "view.exe", Key: []string{"view.exe"}},
 
 	"cursor-register": {
 		Key:     []string{"cursor-auto-free"},
