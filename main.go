@@ -606,6 +606,25 @@ func main() {
 		},
 
 		&Command{
+			Use:   "init",
+			Short: "初始化项目",
+			Run:   handler.Hint("请输入项目类型: 例i init go"),
+			Child: []*Command{
+				{
+					Flag: []*Flag{
+						{Name: "force", Short: "f", Memo: "覆盖已存在的文件"},
+						{Name: "go-version", Short: "v", Memo: "Go 版本", DefaultValue: "1.25.0"},
+					},
+					Use:     "go",
+					Short:   "初始化 Golang 项目",
+					Long:    "在当前目录或指定目录生成 Golang 项目脚手架",
+					Example: "i init go [path]",
+					Run:     handler.InitGo,
+				},
+			},
+		},
+
+		&Command{
 			Flag: []*Flag{
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
 				{Name: "download", Memo: "重新下载升级程序", Short: "d"},
