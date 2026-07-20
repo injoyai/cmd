@@ -174,3 +174,65 @@ func TestWriteFile(t *testing.T) {
 		}
 	})
 }
+
+func TestResolveTargetDir(t *testing.T) {
+	t.Run("no args uses current dir", func(t *testing.T) {
+		wd, _ := os.Getwd()
+		got, err := resolveTargetDir(nil)
+		if err != nil {
+			t.Fatalf("resolveTargetDir failed: %v", err)
+		}
+		if got != wd {
+			t.Errorf("resolveTargetDir() = %q, want %q", got, wd)
+		}
+	})
+
+	t.Run("empty args uses current dir", func(t *testing.T) {
+		wd, _ := os.Getwd()
+		got, err := resolveTargetDir([]string{})
+		if err != nil {
+			t.Fatalf("resolveTargetDir failed: %v", err)
+		}
+		if got != wd {
+			t.Errorf("resolveTargetDir() = %q, want %q", got, wd)
+		}
+	})
+
+	t.Run("relative path converts to absolute", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// 切换到 tmpDir 的父目录,使用相对路径访问 tmpDir
+		parent := filepath.Dir(tmpDir)
+		oldWd, _ := os.Getwd()
+		defer os.Chdir(oldWd)
+		os.Chdir(parent)
+
+		relPath := filepath.Base(tmpDir)
+		got, err := resolveTargetDir([]string{relPath})
+		if err != nil {
+			t.Fatalf("resolveTargetDir failed: %v", err)
+		}
+		if got != tmpDir {
+			t.Errorf("resolveTargetDir(%q) = %q, want %q", relPath, got, tmpDir)
+		}
+	})
+
+	t.Run("nonexistent path creates directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		target := filepath.Join(tmpDir, "newdir", "subdir")
+
+		got, err := resolveTargetDir([]string{target})
+		if err != nil {
+			t.Fatalf("resolveTargetDir failed: %v", err)
+		}
+		if got != target {
+			t.Errorf("resolveTargetDir() = %q, want %q", got, target)
+		}
+		info, err := os.Stat(target)
+		if err != nil {
+			t.Fatalf("directory not created: %v", err)
+		}
+		if !info.IsDir() {
+			t.Error("target is not a directory")
+		}
+	})
+}
