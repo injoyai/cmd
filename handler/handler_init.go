@@ -38,10 +38,20 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 	// Task 8 中实现
 }
 
-// resolveTargetDir 解析目标目录,无参数时使用当前目录,目录不存在则创建
+// resolveTargetDir 解析目标目录
+// 无参数时使用当前工作目录;有参数时使用指定路径,目录不存在则创建
 func resolveTargetDir(args []string) (string, error) {
-	// Task 6 中实现
-	return "", nil
+	if len(args) == 0 || args[0] == "" {
+		return os.Getwd()
+	}
+	dir, err := filepath.Abs(args[0])
+	if err != nil {
+		return "", fmt.Errorf("resolve absolute path: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("create target dir: %w", err)
+	}
+	return dir, nil
 }
 
 // deriveModuleName 从目录路径推导模块名,空或根路径时返回 "main"
