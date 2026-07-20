@@ -17,27 +17,22 @@ import (
 //go:embed templates
 var initTemplates embed.FS
 
-//go:embed standards/AGENTS.md standards/Dockerfile standards/GOLANG.md standards/build.sh standards/.gitignore
+//go:embed standards/AGENTS.md standards/Dockerfile standards/GOLANG.md standards/build.sh standards/.gitignore standards/main.go
 var initStandards embed.FS
 
 // initData 模板渲染数据
 type initData struct {
 	ModuleName string
-	GoVersion  string
 }
 
 // initTemplateFiles 需要渲染的模板文件 (模板名 -> 目标路径)
-// simple 模式使用 simple 标记的文件,full 模式使用全部
+// simple 与 full 共用同一组模板
 var initTemplateFilesSimple = map[string]string{
 	"config.yaml.tmp": "config/config.yaml",
-	"go.mod.tmp":      "go.mod",
-	"main.go.tmp":     "main.go",
 }
 
 var initTemplateFilesFull = map[string]string{
 	"config.yaml.tmp": "config/config.yaml",
-	"go.mod.tmp":      "go.mod",
-	"main.go.tmp":     "main.go",
 	"README.md.tmp":   "README.md",
 }
 
@@ -45,6 +40,7 @@ var initTemplateFilesFull = map[string]string{
 var initStaticFilesSimple = map[string]string{
 	".gitignore": ".gitignore",
 	"build.sh":   "scripts/build.sh",
+	"main.go":    "main.go",
 }
 
 var initStaticFilesFull = map[string]string{
@@ -53,6 +49,7 @@ var initStaticFilesFull = map[string]string{
 	"AGENTS.md":  "AGENTS.md",
 	"GOLANG.md":  "docs/GOLANG.md",
 	"build.sh":   "scripts/build.sh",
+	"main.go":    "cmd/main.go",
 }
 
 // InitGo Golang 项目初始化命令
@@ -66,7 +63,6 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 
 	// 2. 解析模块名与标志
 	moduleName := deriveModuleName(targetDir)
-	goVersion := flags.GetString("go-version", "1.25.0")
 	force := flags.GetBool("force")
 	full := flags.GetBool("full")
 
@@ -77,7 +73,6 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 
 	fmt.Printf("目标目录: %s\n", targetDir)
 	fmt.Printf("模块名: %s\n", moduleName)
-	fmt.Printf("Go 版本: %s\n", goVersion)
 	fmt.Printf("模式: %s\n", mode)
 	fmt.Printf("覆盖已存在文件: %v\n", force)
 	fmt.Println("------------------------")
@@ -125,7 +120,6 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 	// 6. 渲染并写入模板文件
 	data := &initData{
 		ModuleName: moduleName,
-		GoVersion:  goVersion,
 	}
 	for _, name := range sortedKeys(templateFiles) {
 		target := templateFiles[name]
@@ -146,7 +140,16 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 
 	fmt.Println("------------------------")
 
-	// 7. 运行 go mod tidy (生成 go.sum)
+	// 7. 生成 go.mod (若不存在)
+	fmt.Println("[执行] go mod init " + moduleName)
+	if err := runGoModInit(targetDir, moduleName, force); err != nil {
+		fmt.Printf("⚠️  go mod init 失败: %v\n", err)
+		fmt.Println("   (go.mod 可能已存在,可用 -f=true 强制重建)")
+	} else {
+		fmt.Println("[完成] go mod init")
+	}
+
+	// 8. 运行 go mod tidy (生成 go.sum)
 	fmt.Println("[执行] go mod tidy")
 	if err := runGoModTidy(targetDir); err != nil {
 		fmt.Printf("⚠️  go mod tidy 执行失败: %v\n", err)
@@ -155,12 +158,12 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[完成] go mod tidy")
 	}
 
-	// 8. 打印总结
+	// 9. 打印总结
 	fmt.Println("------------------------")
 	fmt.Printf("✅ 项目初始化完成 (%s模式)\n", mode)
 	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
 		counts.create, counts.skip, counts.overwrite)
-	fmt.Printf("   模块名: %s, Go 版本: %s\n", moduleName, goVersion)
+	fmt.Printf("   模块名: %s\n", moduleName)
 }
 
 // printAction 打印写入动作并累计计数
@@ -251,6 +254,30 @@ func writeFile(path string, content []byte, force bool) (string, error) {
 		return "", fmt.Errorf("write file: %w", err)
 	}
 	return "创建", nil
+}
+
+// runGoModInit 在指定目录运行 go mod init 生成 go.mod
+// 若 go 不在 PATH 中或目录已存在 go.mod 且未强制,返回错误
+func runGoModInit(dir, moduleName string, force bool) error {
+	goPath, err := exec.LookPath("go")
+	if err != nil {
+		return fmt.Errorf("go not found in PATH: %w", err)
+	}
+	// 检查 go.mod 是否已存在
+	goModPath := filepath.Join(dir, "go.mod")
+	if _, err := os.Stat(goModPath); err == nil {
+		if !force {
+			return fmt.Errorf("go.mod 已存在,使用 -f=true 强制重建")
+		}
+		if err := os.Remove(goModPath); err != nil {
+			return fmt.Errorf("remove existing go.mod: %w", err)
+		}
+	}
+	cmd := exec.Command(goPath, "mod", "init", moduleName)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // runGoModTidy 在指定目录运行 go mod tidy

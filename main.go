@@ -613,13 +613,12 @@ func main() {
 				{
 					Flag: []*Flag{
 						{Name: "force", Short: "f", Memo: "覆盖已存在的文件", DefaultValue: "false"},
-						{Name: "go-version", Short: "v", Memo: "Go 版本", DefaultValue: "1.25.0"},
 						{Name: "full", Memo: "完整模式 (默认简易模式)", DefaultValue: "false"},
 					},
 					Use:     "go",
 					Short:   "初始化 Golang 项目",
-					Long:    "在当前目录或指定目录生成 Golang 项目脚手架,默认简易模式,--full 生成完整项目",
-					Example: "i init go [path] -f=true -v=1.20 --full=true",
+					Long:    "在当前目录或指定目录生成 Golang 项目脚手架,默认简易模式,--full 生成完整项目;go.mod 通过 go mod init 生成,使用系统 Go 版本",
+					Example: "i init go [path] -f=true --full=true",
 					Run:     handler.InitGo,
 				},
 			},

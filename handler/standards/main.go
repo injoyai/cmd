@@ -7,5 +7,5 @@ import "fmt"
 var BuildDate = "unknown"
 
 func main() {
-	fmt.Printf("{{.ModuleName}} starting, build: %s\n", BuildDate)
+	fmt.Printf("starting, build: %s\n", BuildDate)
 }

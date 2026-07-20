@@ -35,28 +35,7 @@ func TestDeriveModuleName(t *testing.T) {
 }
 
 func TestRenderTemplate(t *testing.T) {
-	data := &initData{ModuleName: "testproj", GoVersion: "1.25.0"}
-
-	t.Run("go.mod template", func(t *testing.T) {
-		content, err := renderTemplate("go.mod.tmp", data)
-		if err != nil {
-			t.Fatalf("renderTemplate failed: %v", err)
-		}
-		want := "module testproj\n\ngo 1.25.0"
-		if string(content) != want {
-			t.Errorf("go.mod render mismatch:\ngot:\n%q\nwant:\n%q", content, want)
-		}
-	})
-
-	t.Run("main.go template", func(t *testing.T) {
-		content, err := renderTemplate("main.go.tmp", data)
-		if err != nil {
-			t.Fatalf("renderTemplate failed: %v", err)
-		}
-		if !bytes.Contains(content, []byte(`fmt.Printf("testproj starting, build: %s\n", BuildDate)`)) {
-			t.Errorf("main.go template did not render ModuleName:\n%s", content)
-		}
-	})
+	data := &initData{ModuleName: "testproj"}
 
 	t.Run("config.yaml template", func(t *testing.T) {
 		content, err := renderTemplate("config.yaml.tmp", data)
@@ -275,6 +254,67 @@ func TestRunGoModTidy(t *testing.T) {
 		err := runGoModTidy(tmpDir)
 		if err != nil {
 			t.Errorf("runGoModTidy failed: %v", err)
+		}
+	})
+}
+
+func TestRunGoModInit(t *testing.T) {
+	// 若 go 不在 PATH 中则跳过
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go not in PATH, skipping")
+	}
+
+	t.Run("fresh dir creates go.mod", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		err := runGoModInit(tmpDir, "testproj", false)
+		if err != nil {
+			t.Fatalf("runGoModInit failed: %v", err)
+		}
+		content, err := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
+		if err != nil {
+			t.Fatalf("read go.mod: %v", err)
+		}
+		if !bytes.Contains(content, []byte("module testproj")) {
+			t.Errorf("go.mod missing module path:\n%s", content)
+		}
+	})
+
+	t.Run("existing go.mod without force returns error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		if err := os.WriteFile(
+			filepath.Join(tmpDir, "go.mod"),
+			[]byte("module existing\n\ngo 1.25.0\n"),
+			0644,
+		); err != nil {
+			t.Fatal(err)
+		}
+		err := runGoModInit(tmpDir, "newproj", false)
+		if err == nil {
+			t.Error("expected error for existing go.mod, got nil")
+		}
+		// 原有 go.mod 应保持不变
+		content, _ := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
+		if !bytes.Contains(content, []byte("module existing")) {
+			t.Errorf("existing go.mod should not be modified:\n%s", content)
+		}
+	})
+
+	t.Run("force overwrites existing go.mod", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		if err := os.WriteFile(
+			filepath.Join(tmpDir, "go.mod"),
+			[]byte("module old\n\ngo 1.25.0\n"),
+			0644,
+		); err != nil {
+			t.Fatal(err)
+		}
+		err := runGoModInit(tmpDir, "newproj", true)
+		if err != nil {
+			t.Fatalf("runGoModInit with force failed: %v", err)
+		}
+		content, _ := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
+		if !bytes.Contains(content, []byte("module newproj")) {
+			t.Errorf("go.mod should be overwritten with new module:\n%s", content)
 		}
 	})
 }
