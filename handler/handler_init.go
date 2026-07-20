@@ -27,7 +27,14 @@ type initData struct {
 }
 
 // initTemplateFiles 需要渲染的模板文件 (模板名 -> 目标路径)
-var initTemplateFiles = map[string]string{
+// simple 模式使用 simple 标记的文件,full 模式使用全部
+var initTemplateFilesSimple = map[string]string{
+	"config.yaml.tmp": "config/config.yaml",
+	"go.mod.tmp":      "go.mod",
+	"main.go.tmp":     "main.go",
+}
+
+var initTemplateFilesFull = map[string]string{
 	"config.yaml.tmp": "config/config.yaml",
 	"go.mod.tmp":      "go.mod",
 	"main.go.tmp":     "main.go",
@@ -35,12 +42,17 @@ var initTemplateFiles = map[string]string{
 }
 
 // initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
-var initStaticFiles = map[string]string{
-	".gitignore":  ".gitignore",
-	"Dockerfile":  "docker/Dockerfile",
-	"AGENTS.md":   "AGENTS.md",
-	"GOLANG.md":   "docs/GOLANG.md",
-	"build.sh":    "scripts/build.sh",
+var initStaticFilesSimple = map[string]string{
+	".gitignore": ".gitignore",
+	"build.sh":   "scripts/build.sh",
+}
+
+var initStaticFilesFull = map[string]string{
+	".gitignore": ".gitignore",
+	"Dockerfile": "docker/Dockerfile",
+	"AGENTS.md":  "AGENTS.md",
+	"GOLANG.md":  "docs/GOLANG.md",
+	"build.sh":   "scripts/build.sh",
 }
 
 // InitGo Golang 项目初始化命令
@@ -52,32 +64,49 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	// 2. 解析模块名
+	// 2. 解析模块名与标志
 	moduleName := deriveModuleName(targetDir)
 	goVersion := flags.GetString("go-version", "1.25.0")
 	force := flags.GetBool("force")
+	full := flags.GetBool("full")
+
+	mode := "简易"
+	if full {
+		mode = "完整"
+	}
 
 	fmt.Printf("目标目录: %s\n", targetDir)
 	fmt.Printf("模块名: %s\n", moduleName)
 	fmt.Printf("Go 版本: %s\n", goVersion)
+	fmt.Printf("模式: %s\n", mode)
 	fmt.Printf("覆盖已存在文件: %v\n", force)
 	fmt.Println("------------------------")
 
-	// 3. 创建空目录 (bin/, internal/)
-	dirs := []string{"bin", "internal"}
-	for _, d := range dirs {
-		dirPath := filepath.Join(targetDir, d)
-		if err := os.MkdirAll(dirPath, 0755); err != nil {
-			logs.Err(fmt.Errorf("create dir %s: %w", d, err))
-			return
+	// 3. 完整模式创建空目录 (bin/, internal/)
+	if full {
+		dirs := []string{"bin", "internal"}
+		for _, d := range dirs {
+			dirPath := filepath.Join(targetDir, d)
+			if err := os.MkdirAll(dirPath, 0755); err != nil {
+				logs.Err(fmt.Errorf("create dir %s: %w", d, err))
+				return
+			}
+			fmt.Printf("[创建目录] %s/\n", d)
 		}
-		fmt.Printf("[创建目录] %s/\n", d)
 	}
 
-	// 4. 写入成品文件 (原样,不渲染)
+	// 4. 选择当前模式的文件集合
+	staticFiles := initStaticFilesSimple
+	templateFiles := initTemplateFilesSimple
+	if full {
+		staticFiles = initStaticFilesFull
+		templateFiles = initTemplateFilesFull
+	}
+
+	// 5. 写入成品文件 (原样,不渲染)
 	counts := struct{ create, skip, overwrite int }{}
-	for _, src := range sortedKeys(initStaticFiles) {
-		target := initStaticFiles[src]
+	for _, src := range sortedKeys(staticFiles) {
+		target := staticFiles[src]
 		targetPath := filepath.Join(targetDir, target)
 		content, err := initStandards.ReadFile("standards/" + src)
 		if err != nil {
@@ -93,13 +122,13 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		printAction(action, relPath, &counts)
 	}
 
-	// 5. 渲染并写入模板文件
+	// 6. 渲染并写入模板文件
 	data := &initData{
 		ModuleName: moduleName,
 		GoVersion:  goVersion,
 	}
-	for _, name := range sortedKeys(initTemplateFiles) {
-		target := initTemplateFiles[name]
+	for _, name := range sortedKeys(templateFiles) {
+		target := templateFiles[name]
 		targetPath := filepath.Join(targetDir, target)
 		content, err := renderTemplate(name, data)
 		if err != nil {
@@ -117,7 +146,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 
 	fmt.Println("------------------------")
 
-	// 6. 运行 go mod tidy
+	// 7. 运行 go mod tidy (生成 go.sum)
 	fmt.Println("[执行] go mod tidy")
 	if err := runGoModTidy(targetDir); err != nil {
 		fmt.Printf("⚠️  go mod tidy 执行失败: %v\n", err)
@@ -126,9 +155,9 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[完成] go mod tidy")
 	}
 
-	// 7. 打印总结
+	// 8. 打印总结
 	fmt.Println("------------------------")
-	fmt.Printf("✅ 项目初始化完成\n")
+	fmt.Printf("✅ 项目初始化完成 (%s模式)\n", mode)
 	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
 		counts.create, counts.skip, counts.overwrite)
 	fmt.Printf("   模块名: %s, Go 版本: %s\n", moduleName, goVersion)
