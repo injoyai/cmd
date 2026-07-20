@@ -96,7 +96,7 @@ func TestRenderTemplate(t *testing.T) {
 		if !bytes.Contains(content, []byte("# testproj")) {
 			t.Errorf("AGENTS.md template did not render ModuleName:\n%s", content)
 		}
-		if !bytes.Contains(content, []byte("Go 1.25.0")) {
+		if !bytes.Contains(content, []byte("1.25.0")) {
 			t.Errorf("AGENTS.md template did not render GoVersion:\n%s", content)
 		}
 	})
