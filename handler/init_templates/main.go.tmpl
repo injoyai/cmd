@@ -1,0 +1,27 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+// BuildDate 编译时间,由 build.sh 注入
+// -ldflags="-s -w -X main.BuildDate=$(date +%Y-%m-%d)"
+var BuildDate = "unknown"
+
+func main() {
+	configPath := flag.String("c", "config/config.yaml", "配置文件路径")
+	flag.Parse()
+
+	fmt.Printf("启动 {{.ModuleName}}, 配置: %s, 编译时间: %s\n", *configPath, BuildDate)
+
+	// 等待退出信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	fmt.Println("服务退出")
+}

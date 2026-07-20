@@ -1,0 +1,46 @@
+# {{.ModuleName}}
+
+## 简介
+
+{{.ModuleName}} 项目。
+
+## 环境要求
+
+- Go {{.GoVersion}}+
+
+## 目录结构
+
+```
+.
+├── bin/              # 编译输出目录
+├── config/           # 配置文件
+│   └── config.yaml
+├── internal/         # 内部包
+├── scripts/          # 脚本
+│   └── build.sh
+├── .gitignore
+├── Dockerfile
+├── go.mod
+├── main.go
+└── README.md
+```
+
+## 快速开始
+
+```bash
+# 编译
+go build -o bin/{{.ModuleName}} .
+
+# 运行
+./bin/{{.ModuleName}} -c config/config.yaml
+
+# 交叉编译
+bash scripts/build.sh
+```
+
+## Docker
+
+```bash
+docker build -t {{.ModuleName}} .
+docker run --rm -v $(pwd)/config:/config {{.ModuleName}}
+```
