@@ -42,7 +42,7 @@ func TestRenderTemplate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
-		want := "module testproj\n\ngo 1.25.0\n\nrequire github.com/injoyai/conv v1.2.5\n"
+		want := "module testproj\n\ngo 1.25.0"
 		if string(content) != want {
 			t.Errorf("go.mod render mismatch:\ngot:\n%q\nwant:\n%q", content, want)
 		}
@@ -53,11 +53,8 @@ func TestRenderTemplate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
-		if !bytes.Contains(content, []byte(`cfg.GetString("app.name", "testproj")`)) {
+		if !bytes.Contains(content, []byte(`fmt.Printf("testproj starting, build: %s\n", BuildDate)`)) {
 			t.Errorf("main.go template did not render ModuleName:\n%s", content)
-		}
-		if !bytes.Contains(content, []byte(`cfg.GetInt("server.port", 8080)`)) {
-			t.Errorf("main.go template missing cfg.GetInt:\n%s", content)
 		}
 	})
 
@@ -90,17 +87,19 @@ func TestRenderTemplate(t *testing.T) {
 }
 
 func TestStaticFiles(t *testing.T) {
-	// 验证所有成品文件都能从 embed FS 读取
-	for _, src := range sortedKeys(initStaticFiles) {
-		t.Run(src, func(t *testing.T) {
-			content, err := initStandards.ReadFile("standards/" + src)
-			if err != nil {
-				t.Fatalf("ReadFile failed: %v", err)
-			}
-			if len(content) == 0 {
-				t.Errorf("standard file %s is empty", src)
-			}
-		})
+	// 验证所有成品文件都能从 embed FS 读取 (简易 + 完整 两套)
+	for _, files := range []map[string]string{initStaticFilesSimple, initStaticFilesFull} {
+		for _, src := range sortedKeys(files) {
+			t.Run(src, func(t *testing.T) {
+				content, err := initStandards.ReadFile("standards/" + src)
+				if err != nil {
+					t.Fatalf("ReadFile failed: %v", err)
+				}
+				if len(content) == 0 {
+					t.Errorf("standard file %s is empty", src)
+				}
+			})
+		}
 	}
 }
 
