@@ -1,55 +1,37 @@
 package handler
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"text/template"
 
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-//go:embed templates
-var initTemplates embed.FS
-
-//go:embed standards/AGENTS.md standards/Dockerfile standards/GOLANG.md standards/build.sh standards/.gitignore standards/main.go
+//go:embed standards/AGENTS.md standards/Dockerfile standards/GOLANG.md standards/build.sh standards/.gitignore standards/main.go standards/config.yaml standards/README.md
 var initStandards embed.FS
-
-// initData 模板渲染数据
-type initData struct {
-	ModuleName string
-}
-
-// initTemplateFiles 需要渲染的模板文件 (模板名 -> 目标路径)
-// simple 与 full 共用同一组模板
-var initTemplateFilesSimple = map[string]string{
-	"config.yaml.tmp": "config/config.yaml",
-}
-
-var initTemplateFilesFull = map[string]string{
-	"config.yaml.tmp": "config/config.yaml",
-	"README.md.tmp":   "README.md",
-}
 
 // initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
 var initStaticFilesSimple = map[string]string{
-	".gitignore": ".gitignore",
-	"build.sh":   "scripts/build.sh",
-	"main.go":    "main.go",
+	".gitignore":  ".gitignore",
+	"build.sh":    "scripts/build.sh",
+	"main.go":     "main.go",
+	"config.yaml": "config/config.yaml",
 }
 
 var initStaticFilesFull = map[string]string{
-	".gitignore": ".gitignore",
-	"Dockerfile": "docker/Dockerfile",
-	"AGENTS.md":  "AGENTS.md",
-	"GOLANG.md":  "docs/GOLANG.md",
-	"build.sh":   "scripts/build.sh",
-	"main.go":    "cmd/main.go",
+	".gitignore":  ".gitignore",
+	"Dockerfile":  "docker/Dockerfile",
+	"AGENTS.md":   "AGENTS.md",
+	"GOLANG.md":   "docs/GOLANG.md",
+	"build.sh":    "scripts/build.sh",
+	"main.go":     "cmd/main.go",
+	"config.yaml": "config/config.yaml",
+	"README.md":   "README.md",
 }
 
 // InitGo Golang 项目初始化命令
@@ -92,10 +74,8 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 
 	// 4. 选择当前模式的文件集合
 	staticFiles := initStaticFilesSimple
-	templateFiles := initTemplateFilesSimple
 	if full {
 		staticFiles = initStaticFilesFull
-		templateFiles = initTemplateFilesFull
 	}
 
 	// 5. 写入成品文件 (原样,不渲染)
@@ -117,30 +97,9 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		printAction(action, relPath, &counts)
 	}
 
-	// 6. 渲染并写入模板文件
-	data := &initData{
-		ModuleName: moduleName,
-	}
-	for _, name := range sortedKeys(templateFiles) {
-		target := templateFiles[name]
-		targetPath := filepath.Join(targetDir, target)
-		content, err := renderTemplate(name, data)
-		if err != nil {
-			logs.Err(fmt.Errorf("render %s: %w", name, err))
-			continue
-		}
-		action, err := writeFile(targetPath, content, force)
-		if err != nil {
-			logs.Err(fmt.Errorf("write %s: %w", targetPath, err))
-			continue
-		}
-		relPath, _ := filepath.Rel(targetDir, targetPath)
-		printAction(action, relPath, &counts)
-	}
-
 	fmt.Println("------------------------")
 
-	// 7. 生成 go.mod (若不存在)
+	// 6. 生成 go.mod (若不存在)
 	fmt.Println("[执行] go mod init " + moduleName)
 	if err := runGoModInit(targetDir, moduleName, force); err != nil {
 		fmt.Printf("⚠️  go mod init 失败: %v\n", err)
@@ -149,7 +108,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[完成] go mod init")
 	}
 
-	// 8. 运行 go mod tidy (生成 go.sum)
+	// 7. 运行 go mod tidy (生成 go.sum)
 	fmt.Println("[执行] go mod tidy")
 	if err := runGoModTidy(targetDir); err != nil {
 		fmt.Printf("⚠️  go mod tidy 执行失败: %v\n", err)
@@ -158,7 +117,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[完成] go mod tidy")
 	}
 
-	// 9. 打印总结
+	// 8. 打印总结
 	fmt.Println("------------------------")
 	fmt.Printf("✅ 项目初始化完成 (%s模式)\n", mode)
 	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
@@ -214,19 +173,6 @@ func deriveModuleName(dir string) string {
 		return "main"
 	}
 	return base
-}
-
-// renderTemplate 渲染指定模板文件,返回渲染后的字节内容
-func renderTemplate(name string, data *initData) ([]byte, error) {
-	tmpl, err := template.ParseFS(initTemplates, "templates/"+name)
-	if err != nil {
-		return nil, fmt.Errorf("parse template %s: %w", name, err)
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return nil, fmt.Errorf("execute template %s: %w", name, err)
-	}
-	return buf.Bytes(), nil
 }
 
 // writeFile 写入文件,根据 force 决定是否覆盖已存在文件

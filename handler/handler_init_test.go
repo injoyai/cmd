@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -32,37 +32,6 @@ func TestDeriveModuleName(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestRenderTemplate(t *testing.T) {
-	data := &initData{ModuleName: "testproj"}
-
-	t.Run("config.yaml template", func(t *testing.T) {
-		content, err := renderTemplate("config.yaml.tmp", data)
-		if err != nil {
-			t.Fatalf("renderTemplate failed: %v", err)
-		}
-		if !bytes.Contains(content, []byte("testproj")) {
-			t.Errorf("config.yaml template did not render ModuleName:\n%s", content)
-		}
-	})
-
-	t.Run("README.md template", func(t *testing.T) {
-		content, err := renderTemplate("README.md.tmp", data)
-		if err != nil {
-			t.Fatalf("renderTemplate failed: %v", err)
-		}
-		if !bytes.Contains(content, []byte("# testproj")) {
-			t.Errorf("README.md template did not render ModuleName:\n%s", content)
-		}
-	})
-
-	t.Run("nonexistent template", func(t *testing.T) {
-		_, err := renderTemplate("nonexistent.tmp", data)
-		if err == nil {
-			t.Error("expected error for nonexistent template, got nil")
-		}
-	})
 }
 
 func TestStaticFiles(t *testing.T) {
@@ -274,7 +243,7 @@ func TestRunGoModInit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read go.mod: %v", err)
 		}
-		if !bytes.Contains(content, []byte("module testproj")) {
+		if !strings.Contains(string(content), "module testproj") {
 			t.Errorf("go.mod missing module path:\n%s", content)
 		}
 	})
@@ -294,7 +263,7 @@ func TestRunGoModInit(t *testing.T) {
 		}
 		// 原有 go.mod 应保持不变
 		content, _ := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
-		if !bytes.Contains(content, []byte("module existing")) {
+		if !strings.Contains(string(content), "module existing") {
 			t.Errorf("existing go.mod should not be modified:\n%s", content)
 		}
 	})
@@ -313,7 +282,7 @@ func TestRunGoModInit(t *testing.T) {
 			t.Fatalf("runGoModInit with force failed: %v", err)
 		}
 		content, _ := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
-		if !bytes.Contains(content, []byte("module newproj")) {
+		if !strings.Contains(string(content), "module newproj") {
 			t.Errorf("go.mod should be overwritten with new module:\n%s", content)
 		}
 	})

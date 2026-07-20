@@ -1,8 +1,8 @@
-# {{.ModuleName}}
+# myapp
 
 ## 简介
 
-{{.ModuleName}} 项目。
+myapp 项目。
 
 ## 环境要求
 
@@ -34,10 +34,10 @@
 
 ```bash
 # 编译
-go build -o bin/{{.ModuleName}} ./cmd
+go build -o bin/myapp ./cmd
 
 # 运行
-./bin/{{.ModuleName}} -c config/config.yaml
+./bin/myapp -c config/config.yaml
 
 # 交叉编译
 bash scripts/build.sh
@@ -46,6 +46,6 @@ bash scripts/build.sh
 ## Docker
 
 ```bash
-docker build -f docker/Dockerfile -t {{.ModuleName}} .
-docker run --rm -v $(pwd)/config:/config {{.ModuleName}}
+docker build -f docker/Dockerfile -t myapp .
+docker run --rm -v $(pwd)/config:/config myapp
 ```
