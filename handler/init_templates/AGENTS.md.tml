@@ -1,0 +1,59 @@
+# {{.ModuleName}}
+
+## 项目简介
+
+{{.ModuleName}} 是一个基于 Golang 的服务项目。
+
+## 技术栈
+
+- Go {{.GoVersion}}
+- 配置管理: [github.com/injoyai/conv/cfg](https://github.com/injoyai/conv) (默认加载 `./config/config.yaml` 和环境变量)
+
+## 目录结构
+
+```
+.
+├── bin/                # 编译输出目录
+├── config/
+│   └── config.yaml     # 配置文件
+├── internal/           # 内部包
+├── scripts/
+│   └── build.sh        # 交叉编译脚本
+├── .gitignore
+├── AGENTS.md           # AI 助手项目说明 (本文件)
+├── Dockerfile
+├── go.mod
+├── main.go
+└── README.md
+```
+
+## 常用命令
+
+```bash
+# 运行
+go run main.go
+
+# 编译
+go build -o bin/{{.ModuleName}} main.go
+
+# 交叉编译 (多平台)
+bash scripts/build.sh
+
+# Docker 构建
+docker build -t {{.ModuleName}} .
+
+# 依赖管理
+go mod tidy
+```
+
+## 配置说明
+
+配置文件位于 `config/config.yaml`,使用 `github.com/injoyai/conv/cfg` 加载。
+
+- `cfg.Default` 默认读取 `./config/config.yaml` 和环境变量
+- 通过 `cfg.GetString("app.name")`、`cfg.GetInt("server.port")` 等方式读取
+- 自定义数据源: `cfg.Init(cfg.WithFile("path"), cfg.WithEnv())`
+
+## AGENTS.md
+
+本文件供 AI 助手读取,快速了解项目结构、技术栈与约定。修改项目时请保持本文件同步更新。
