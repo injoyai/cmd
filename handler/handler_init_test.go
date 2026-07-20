@@ -38,7 +38,7 @@ func TestRenderTemplate(t *testing.T) {
 	data := &initData{ModuleName: "testproj", GoVersion: "1.25.0"}
 
 	t.Run("go.mod template", func(t *testing.T) {
-		content, err := renderTemplate("go.mod.tml", data)
+		content, err := renderTemplate("go.mod.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
@@ -49,7 +49,7 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	t.Run("main.go template", func(t *testing.T) {
-		content, err := renderTemplate("main.go.tml", data)
+		content, err := renderTemplate("main.go.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
@@ -62,7 +62,7 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	t.Run("Dockerfile template", func(t *testing.T) {
-		content, err := renderTemplate("Dockerfile.tml", data)
+		content, err := renderTemplate("Dockerfile.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
@@ -72,7 +72,7 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	t.Run("gitignore template no variables", func(t *testing.T) {
-		content, err := renderTemplate("gitignore.tml", data)
+		content, err := renderTemplate("gitignore.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
@@ -82,14 +82,14 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	t.Run("nonexistent template", func(t *testing.T) {
-		_, err := renderTemplate("nonexistent.tml", data)
+		_, err := renderTemplate("nonexistent.tmp", data)
 		if err == nil {
 			t.Error("expected error for nonexistent template, got nil")
 		}
 	})
 
 	t.Run("AGENTS.md template", func(t *testing.T) {
-		content, err := renderTemplate("AGENTS.md.tml", data)
+		content, err := renderTemplate("AGENTS.md.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
