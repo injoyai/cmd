@@ -69,8 +69,28 @@ func renderTemplate(name string, data *initData) ([]byte, error) {
 // writeFile 写入文件,根据 force 决定是否覆盖已存在文件
 // 返回动作: "创建" / "覆盖" / "跳过"
 func writeFile(path string, content []byte, force bool) (string, error) {
-	// Task 5 中实现
-	return "", nil
+	if _, err := os.Stat(path); err == nil {
+		// 文件已存在
+		if !force {
+			return "跳过", nil
+		}
+		// 强制覆盖
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			return "", fmt.Errorf("create parent dir: %w", err)
+		}
+		if err := os.WriteFile(path, content, 0644); err != nil {
+			return "", fmt.Errorf("write file: %w", err)
+		}
+		return "覆盖", nil
+	}
+	// 文件不存在,创建
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", fmt.Errorf("create parent dir: %w", err)
+	}
+	if err := os.WriteFile(path, content, 0644); err != nil {
+		return "", fmt.Errorf("write file: %w", err)
+	}
+	return "创建", nil
 }
 
 // runGoModTidy 在指定目录运行 go mod tidy

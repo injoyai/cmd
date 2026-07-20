@@ -2,6 +2,8 @@ package handler
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -79,6 +81,96 @@ func TestRenderTemplate(t *testing.T) {
 		_, err := renderTemplate("nonexistent.tmpl", data)
 		if err == nil {
 			t.Error("expected error for nonexistent template, got nil")
+		}
+	})
+}
+
+func TestWriteFile(t *testing.T) {
+	t.Run("create new file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := filepath.Join(tmpDir, "test.txt")
+
+		action, err := writeFile(path, []byte("hello"), false)
+		if err != nil {
+			t.Fatalf("writeFile failed: %v", err)
+		}
+		if action != "创建" {
+			t.Errorf("action = %q, want %q", action, "创建")
+		}
+
+		content, _ := os.ReadFile(path)
+		if string(content) != "hello" {
+			t.Errorf("file content = %q, want %q", content, "hello")
+		}
+	})
+
+	t.Run("skip existing without force", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := filepath.Join(tmpDir, "test.txt")
+
+		// 先写入初始内容
+		_, err := writeFile(path, []byte("hello"), false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 再次写入,不带 force,应该跳过
+		action, err := writeFile(path, []byte("world"), false)
+		if err != nil {
+			t.Fatalf("writeFile failed: %v", err)
+		}
+		if action != "跳过" {
+			t.Errorf("action = %q, want %q", action, "跳过")
+		}
+
+		// 内容应保持不变
+		content, _ := os.ReadFile(path)
+		if string(content) != "hello" {
+			t.Errorf("file content = %q, want %q (should not be modified)", content, "hello")
+		}
+	})
+
+	t.Run("overwrite with force", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := filepath.Join(tmpDir, "test.txt")
+
+		// 先写入初始内容
+		_, err := writeFile(path, []byte("hello"), false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 带 force 覆盖
+		action, err := writeFile(path, []byte("world"), true)
+		if err != nil {
+			t.Fatalf("writeFile failed: %v", err)
+		}
+		if action != "覆盖" {
+			t.Errorf("action = %q, want %q", action, "覆盖")
+		}
+
+		// 内容应已更新
+		content, _ := os.ReadFile(path)
+		if string(content) != "world" {
+			t.Errorf("file content = %q, want %q", content, "world")
+		}
+	})
+
+	t.Run("create nested path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := filepath.Join(tmpDir, "subdir", "nested", "test.txt")
+
+		action, err := writeFile(path, []byte("nested"), false)
+		if err != nil {
+			t.Fatalf("writeFile failed: %v", err)
+		}
+		if action != "创建" {
+			t.Errorf("action = %q, want %q", action, "创建")
+		}
+
+		content, _ := os.ReadFile(path)
+		if string(content) != "nested" {
+			t.Errorf("file content = %q, want %q", content, "nested")
 		}
 	})
 }
