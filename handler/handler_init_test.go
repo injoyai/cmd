@@ -61,23 +61,23 @@ func TestRenderTemplate(t *testing.T) {
 		}
 	})
 
-	t.Run("Dockerfile template", func(t *testing.T) {
-		content, err := renderTemplate("Dockerfile.tmp", data)
+	t.Run("config.yaml template", func(t *testing.T) {
+		content, err := renderTemplate("config.yaml.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
-		if !bytes.Contains(content, []byte("FROM golang:1.25.0-alpine AS builder")) {
-			t.Errorf("Dockerfile template did not render GoVersion:\n%s", content)
+		if !bytes.Contains(content, []byte("testproj")) {
+			t.Errorf("config.yaml template did not render ModuleName:\n%s", content)
 		}
 	})
 
-	t.Run("gitignore template no variables", func(t *testing.T) {
-		content, err := renderTemplate("gitignore.tmp", data)
+	t.Run("README.md template", func(t *testing.T) {
+		content, err := renderTemplate("README.md.tmp", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
-		if !bytes.Contains(content, []byte("bin/")) || !bytes.Contains(content, []byte("*.exe")) {
-			t.Errorf("gitignore template missing expected content:\n%s", content)
+		if !bytes.Contains(content, []byte("# testproj")) {
+			t.Errorf("README.md template did not render ModuleName:\n%s", content)
 		}
 	})
 
@@ -87,19 +87,21 @@ func TestRenderTemplate(t *testing.T) {
 			t.Error("expected error for nonexistent template, got nil")
 		}
 	})
+}
 
-	t.Run("AGENTS.md template", func(t *testing.T) {
-		content, err := renderTemplate("AGENTS.md.tmp", data)
-		if err != nil {
-			t.Fatalf("renderTemplate failed: %v", err)
-		}
-		if !bytes.Contains(content, []byte("# testproj")) {
-			t.Errorf("AGENTS.md template did not render ModuleName:\n%s", content)
-		}
-		if !bytes.Contains(content, []byte("1.25.0")) {
-			t.Errorf("AGENTS.md template did not render GoVersion:\n%s", content)
-		}
-	})
+func TestStaticFiles(t *testing.T) {
+	// 验证所有成品文件都能从 embed FS 读取
+	for _, src := range sortedKeys(initStaticFiles) {
+		t.Run(src, func(t *testing.T) {
+			content, err := initStandards.ReadFile("standards/" + src)
+			if err != nil {
+				t.Fatalf("ReadFile failed: %v", err)
+			}
+			if len(content) == 0 {
+				t.Errorf("standard file %s is empty", src)
+			}
+		})
+	}
 }
 
 func TestWriteFile(t *testing.T) {

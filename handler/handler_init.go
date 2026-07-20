@@ -14,8 +14,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed init_templates
+//go:embed templates
 var initTemplates embed.FS
+
+//go:embed standards/AGENTS.md standards/Dockerfile standards/GOLANG.md standards/build.sh standards/.gitignore
+var initStandards embed.FS
 
 // initData 模板渲染数据
 type initData struct {
@@ -23,16 +26,21 @@ type initData struct {
 	GoVersion  string
 }
 
-// initFiles 模板名到目标路径的映射
-var initFiles = map[string]string{
-	"gitignore.tmp":   ".gitignore",
-	"build.sh.tmp":    "scripts/build.sh",
+// initTemplateFiles 需要渲染的模板文件 (模板名 -> 目标路径)
+var initTemplateFiles = map[string]string{
 	"config.yaml.tmp": "config/config.yaml",
-	"Dockerfile.tmp":  "Dockerfile",
+	"go.mod.tmp":      "go.mod",
 	"main.go.tmp":     "main.go",
 	"README.md.tmp":   "README.md",
-	"go.mod.tmp":      "go.mod",
-	"AGENTS.md.tmp":   "AGENTS.md",
+}
+
+// initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
+var initStaticFiles = map[string]string{
+	".gitignore":  ".gitignore",
+	"Dockerfile":  "Dockerfile",
+	"AGENTS.md":   "AGENTS.md",
+	"GOLANG.md":   "GOLANG.md",
+	"build.sh":    "scripts/build.sh",
 }
 
 // InitGo Golang 项目初始化命令
@@ -66,52 +74,50 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Printf("[创建目录] %s/\n", d)
 	}
 
-	// 4. 渲染并写入所有文件
-	data := &initData{
-		ModuleName: moduleName,
-		GoVersion:  goVersion,
-	}
-
-	// 按确定性顺序遍历 (排序模板名)
-	tmplNames := make([]string, 0, len(initFiles))
-	for name := range initFiles {
-		tmplNames = append(tmplNames, name)
-	}
-	sort.Strings(tmplNames)
-
+	// 4. 写入成品文件 (原样,不渲染)
 	counts := struct{ create, skip, overwrite int }{}
-	for _, tmplName := range tmplNames {
-		targetPath := filepath.Join(targetDir, initFiles[tmplName])
-
-		content, err := renderTemplate(tmplName, data)
+	for _, src := range sortedKeys(initStaticFiles) {
+		target := initStaticFiles[src]
+		targetPath := filepath.Join(targetDir, target)
+		content, err := initStandards.ReadFile("standards/" + src)
 		if err != nil {
-			logs.Err(fmt.Errorf("render %s: %w", tmplName, err))
+			logs.Err(fmt.Errorf("read standard %s: %w", src, err))
 			continue
 		}
-
 		action, err := writeFile(targetPath, content, force)
 		if err != nil {
 			logs.Err(fmt.Errorf("write %s: %w", targetPath, err))
 			continue
 		}
-
 		relPath, _ := filepath.Rel(targetDir, targetPath)
-		switch action {
-		case "创建":
-			counts.create++
-			fmt.Printf("[创建] %s\n", relPath)
-		case "覆盖":
-			counts.overwrite++
-			fmt.Printf("[覆盖] %s\n", relPath)
-		case "跳过":
-			counts.skip++
-			fmt.Printf("[跳过] %s 已存在\n", relPath)
+		printAction(action, relPath, &counts)
+	}
+
+	// 5. 渲染并写入模板文件
+	data := &initData{
+		ModuleName: moduleName,
+		GoVersion:  goVersion,
+	}
+	for _, name := range sortedKeys(initTemplateFiles) {
+		target := initTemplateFiles[name]
+		targetPath := filepath.Join(targetDir, target)
+		content, err := renderTemplate(name, data)
+		if err != nil {
+			logs.Err(fmt.Errorf("render %s: %w", name, err))
+			continue
 		}
+		action, err := writeFile(targetPath, content, force)
+		if err != nil {
+			logs.Err(fmt.Errorf("write %s: %w", targetPath, err))
+			continue
+		}
+		relPath, _ := filepath.Rel(targetDir, targetPath)
+		printAction(action, relPath, &counts)
 	}
 
 	fmt.Println("------------------------")
 
-	// 5. 运行 go mod tidy
+	// 6. 运行 go mod tidy
 	fmt.Println("[执行] go mod tidy")
 	if err := runGoModTidy(targetDir); err != nil {
 		fmt.Printf("⚠️  go mod tidy 执行失败: %v\n", err)
@@ -120,12 +126,37 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("[完成] go mod tidy")
 	}
 
-	// 6. 打印总结
+	// 7. 打印总结
 	fmt.Println("------------------------")
 	fmt.Printf("✅ 项目初始化完成\n")
 	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
 		counts.create, counts.skip, counts.overwrite)
 	fmt.Printf("   模块名: %s, Go 版本: %s\n", moduleName, goVersion)
+}
+
+// printAction 打印写入动作并累计计数
+func printAction(action, relPath string, counts *struct{ create, skip, overwrite int }) {
+	switch action {
+	case "创建":
+		counts.create++
+		fmt.Printf("[创建] %s\n", relPath)
+	case "覆盖":
+		counts.overwrite++
+		fmt.Printf("[覆盖] %s\n", relPath)
+	case "跳过":
+		counts.skip++
+		fmt.Printf("[跳过] %s 已存在\n", relPath)
+	}
+}
+
+// sortedKeys 返回 map 键的有序切片,保证输出顺序确定
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // resolveTargetDir 解析目标目录
@@ -155,7 +186,7 @@ func deriveModuleName(dir string) string {
 
 // renderTemplate 渲染指定模板文件,返回渲染后的字节内容
 func renderTemplate(name string, data *initData) ([]byte, error) {
-	tmpl, err := template.ParseFS(initTemplates, "init_templates/"+name)
+	tmpl, err := template.ParseFS(initTemplates, "templates/"+name)
 	if err != nil {
 		return nil, fmt.Errorf("parse template %s: %w", name, err)
 	}
