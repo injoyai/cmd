@@ -43,10 +43,13 @@ func resolveTargetDir(args []string) (string, error) {
 	return "", nil
 }
 
-// deriveModuleName 从目录路径推导模块名
+// deriveModuleName 从目录路径推导模块名,空或根路径时返回 "main"
 func deriveModuleName(dir string) string {
-	// Task 3 中实现
-	return ""
+	base := filepath.Base(dir)
+	if base == "" || base == "." || base == string(filepath.Separator) {
+		return "main"
+	}
+	return base
 }
 
 // renderTemplate 渲染指定模板文件
