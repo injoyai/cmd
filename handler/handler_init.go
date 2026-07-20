@@ -104,9 +104,17 @@ func writeFile(path string, content []byte, force bool) (string, error) {
 }
 
 // runGoModTidy 在指定目录运行 go mod tidy
+// 若 go 不在 PATH 中,返回错误
 func runGoModTidy(dir string) error {
-	// Task 7 中实现
-	return nil
+	goPath, err := exec.LookPath("go")
+	if err != nil {
+		return fmt.Errorf("go not found in PATH: %w", err)
+	}
+	cmd := exec.Command(goPath, "mod", "tidy")
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // 引用未使用的导入以避免编译错误 (临时,后续 Task 会移除)
