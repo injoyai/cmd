@@ -612,13 +612,13 @@ func main() {
 			Child: []*Command{
 				{
 					Flag: []*Flag{
-						{Name: "force", Short: "f", Memo: "覆盖已存在的文件"},
+						{Name: "force", Short: "f", Memo: "覆盖已存在的文件", DefaultValue: "false"},
 						{Name: "go-version", Short: "v", Memo: "Go 版本", DefaultValue: "1.25.0"},
 					},
 					Use:     "go",
 					Short:   "初始化 Golang 项目",
 					Long:    "在当前目录或指定目录生成 Golang 项目脚手架",
-					Example: "i init go [path]",
+					Example: "i init go [path] -f=true -v=1.20",
 					Run:     handler.InitGo,
 				},
 			},
