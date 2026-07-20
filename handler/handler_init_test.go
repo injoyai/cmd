@@ -38,28 +38,31 @@ func TestRenderTemplate(t *testing.T) {
 	data := &initData{ModuleName: "testproj", GoVersion: "1.25.0"}
 
 	t.Run("go.mod template", func(t *testing.T) {
-		content, err := renderTemplate("go.mod.tmpl", data)
+		content, err := renderTemplate("go.mod.tml", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
-		want := "module testproj\n\ngo 1.25.0\n"
+		want := "module testproj\n\ngo 1.25.0\n\nrequire github.com/injoyai/conv v1.2.5\n"
 		if string(content) != want {
 			t.Errorf("go.mod render mismatch:\ngot:\n%q\nwant:\n%q", content, want)
 		}
 	})
 
 	t.Run("main.go template", func(t *testing.T) {
-		content, err := renderTemplate("main.go.tmpl", data)
+		content, err := renderTemplate("main.go.tml", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
-		if !bytes.Contains(content, []byte(`fmt.Printf("启动 testproj, 配置: %s, 编译时间: %s\n", *configPath, BuildDate)`)) {
+		if !bytes.Contains(content, []byte(`cfg.GetString("app.name", "testproj")`)) {
 			t.Errorf("main.go template did not render ModuleName:\n%s", content)
+		}
+		if !bytes.Contains(content, []byte(`cfg.GetInt("server.port", 8080)`)) {
+			t.Errorf("main.go template missing cfg.GetInt:\n%s", content)
 		}
 	})
 
 	t.Run("Dockerfile template", func(t *testing.T) {
-		content, err := renderTemplate("Dockerfile.tmpl", data)
+		content, err := renderTemplate("Dockerfile.tml", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
@@ -69,7 +72,7 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	t.Run("gitignore template no variables", func(t *testing.T) {
-		content, err := renderTemplate("gitignore.tmpl", data)
+		content, err := renderTemplate("gitignore.tml", data)
 		if err != nil {
 			t.Fatalf("renderTemplate failed: %v", err)
 		}
@@ -79,9 +82,22 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	t.Run("nonexistent template", func(t *testing.T) {
-		_, err := renderTemplate("nonexistent.tmpl", data)
+		_, err := renderTemplate("nonexistent.tml", data)
 		if err == nil {
 			t.Error("expected error for nonexistent template, got nil")
+		}
+	})
+
+	t.Run("AGENTS.md template", func(t *testing.T) {
+		content, err := renderTemplate("AGENTS.md.tml", data)
+		if err != nil {
+			t.Fatalf("renderTemplate failed: %v", err)
+		}
+		if !bytes.Contains(content, []byte("# testproj")) {
+			t.Errorf("AGENTS.md template did not render ModuleName:\n%s", content)
+		}
+		if !bytes.Contains(content, []byte("Go 1.25.0")) {
+			t.Errorf("AGENTS.md template did not render GoVersion:\n%s", content)
 		}
 	})
 }

@@ -25,13 +25,14 @@ type initData struct {
 
 // initFiles 模板名到目标路径的映射
 var initFiles = map[string]string{
-	"gitignore.tmpl":   ".gitignore",
-	"build.sh.tmpl":    "scripts/build.sh",
-	"config.yaml.tmpl": "config/config.yaml",
-	"Dockerfile.tmpl":  "Dockerfile",
-	"main.go.tmpl":     "main.go",
-	"README.md.tmpl":   "README.md",
-	"go.mod.tmpl":      "go.mod",
+	"gitignore.tml":   ".gitignore",
+	"build.sh.tml":    "scripts/build.sh",
+	"config.yaml.tml": "config/config.yaml",
+	"Dockerfile.tml":  "Dockerfile",
+	"main.go.tml":     "main.go",
+	"README.md.tml":   "README.md",
+	"go.mod.tml":      "go.mod",
+	"AGENTS.md.tml":   "AGENTS.md",
 }
 
 // InitGo Golang 项目初始化命令
