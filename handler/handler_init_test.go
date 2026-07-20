@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -233,6 +234,30 @@ func TestResolveTargetDir(t *testing.T) {
 		}
 		if !info.IsDir() {
 			t.Error("target is not a directory")
+		}
+	})
+}
+
+func TestRunGoModTidy(t *testing.T) {
+	// 若 go 不在 PATH 中则跳过
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go not in PATH, skipping")
+	}
+
+	t.Run("valid go.mod", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// 写入最小化的 go.mod
+		if err := os.WriteFile(
+			filepath.Join(tmpDir, "go.mod"),
+			[]byte("module testproj\n\ngo 1.25.0\n"),
+			0644,
+		); err != nil {
+			t.Fatal(err)
+		}
+
+		err := runGoModTidy(tmpDir)
+		if err != nil {
+			t.Errorf("runGoModTidy failed: %v", err)
 		}
 	})
 }
