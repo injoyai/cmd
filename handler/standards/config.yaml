@@ -1,6 +1,6 @@
 # 应用配置
 app:
-  name: {{.ModuleName}}
+  name: myapp
   version: 0.0.1
 
 server:
