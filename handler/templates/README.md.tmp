@@ -6,22 +6,27 @@
 
 ## 环境要求
 
-- Go {{.GoVersion}}+
+- Go 1.21+ (或与你本机 `go mod init` 自动写入的版本一致)
 
 ## 目录结构
 
 ```
 .
 ├── bin/              # 编译输出目录
+├── cmd/              # 程序入口
+│   └── main.go
 ├── config/           # 配置文件
 │   └── config.yaml
+├── docker/           # Dockerfile
+│   └── Dockerfile
+├── docs/             # 文档
+│   └── GOLANG.md
 ├── internal/         # 内部包
 ├── scripts/          # 脚本
 │   └── build.sh
 ├── .gitignore
-├── Dockerfile
+├── AGENTS.md
 ├── go.mod
-├── main.go
 └── README.md
 ```
 
@@ -29,7 +34,7 @@
 
 ```bash
 # 编译
-go build -o bin/{{.ModuleName}} .
+go build -o bin/{{.ModuleName}} ./cmd
 
 # 运行
 ./bin/{{.ModuleName}} -c config/config.yaml
@@ -41,6 +46,6 @@ bash scripts/build.sh
 ## Docker
 
 ```bash
-docker build -t {{.ModuleName}} .
+docker build -f docker/Dockerfile -t {{.ModuleName}} .
 docker run --rm -v $(pwd)/config:/config {{.ModuleName}}
 ```
