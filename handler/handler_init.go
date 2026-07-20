@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"text/template"
 
 	"github.com/injoyai/logs"
@@ -35,7 +36,95 @@ var initFiles = map[string]string{
 
 // InitGo Golang 项目初始化命令
 func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
-	// Task 8 中实现
+	// 1. 解析目标目录
+	targetDir, err := resolveTargetDir(args)
+	if err != nil {
+		logs.Err(err)
+		return
+	}
+
+	// 2. 解析模块名
+	moduleName := deriveModuleName(targetDir)
+	goVersion := flags.GetString("go-version", "1.25.0")
+	force := flags.GetBool("force")
+
+	fmt.Printf("目标目录: %s\n", targetDir)
+	fmt.Printf("模块名: %s\n", moduleName)
+	fmt.Printf("Go 版本: %s\n", goVersion)
+	fmt.Printf("覆盖已存在文件: %v\n", force)
+	fmt.Println("------------------------")
+
+	// 3. 创建空目录 (bin/, internal/)
+	dirs := []string{"bin", "internal"}
+	for _, d := range dirs {
+		dirPath := filepath.Join(targetDir, d)
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			logs.Err(fmt.Errorf("create dir %s: %w", d, err))
+			return
+		}
+		fmt.Printf("[创建目录] %s/\n", d)
+	}
+
+	// 4. 渲染并写入所有文件
+	data := &initData{
+		ModuleName: moduleName,
+		GoVersion:  goVersion,
+	}
+
+	// 按确定性顺序遍历 (排序模板名)
+	tmplNames := make([]string, 0, len(initFiles))
+	for name := range initFiles {
+		tmplNames = append(tmplNames, name)
+	}
+	sort.Strings(tmplNames)
+
+	counts := struct{ create, skip, overwrite int }{}
+	for _, tmplName := range tmplNames {
+		targetPath := filepath.Join(targetDir, initFiles[tmplName])
+
+		content, err := renderTemplate(tmplName, data)
+		if err != nil {
+			logs.Err(fmt.Errorf("render %s: %w", tmplName, err))
+			continue
+		}
+
+		action, err := writeFile(targetPath, content, force)
+		if err != nil {
+			logs.Err(fmt.Errorf("write %s: %w", targetPath, err))
+			continue
+		}
+
+		relPath, _ := filepath.Rel(targetDir, targetPath)
+		switch action {
+		case "创建":
+			counts.create++
+			fmt.Printf("[创建] %s\n", relPath)
+		case "覆盖":
+			counts.overwrite++
+			fmt.Printf("[覆盖] %s\n", relPath)
+		case "跳过":
+			counts.skip++
+			fmt.Printf("[跳过] %s 已存在\n", relPath)
+		}
+	}
+
+	fmt.Println("------------------------")
+
+	// 5. 运行 go mod tidy
+	fmt.Println("[执行] go mod tidy")
+	if err := runGoModTidy(targetDir); err != nil {
+		fmt.Printf("⚠️  go mod tidy 执行失败: %v\n", err)
+		fmt.Println("   (项目文件已生成,可手动执行 go mod tidy)")
+	} else {
+		fmt.Println("[完成] go mod tidy")
+	}
+
+	// 6. 打印总结
+	fmt.Println("------------------------")
+	fmt.Printf("✅ 项目初始化完成\n")
+	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
+		counts.create, counts.skip, counts.overwrite)
+	fmt.Printf("   模块名: %s, Go 版本: %s\n", moduleName, goVersion)
 }
 
 // resolveTargetDir 解析目标目录
@@ -116,11 +205,3 @@ func runGoModTidy(dir string) error {
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
-
-// 引用未使用的导入以避免编译错误 (临时,后续 Task 会移除)
-var _ = fmt.Sprintf
-var _ = os.Stat
-var _ = exec.LookPath
-var _ = filepath.Base
-var _ = template.New
-var _ = logs.Err
