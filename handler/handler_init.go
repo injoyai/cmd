@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed standards/AGENTS.md standards/Dockerfile standards/GOLANG.md standards/build.sh standards/.gitignore standards/main.go standards/config.yaml standards/README.md
-var initStandards embed.FS
+//go:embed templates/AGENTS.md templates/Dockerfile templates/GOLANG.md templates/build.sh templates/.gitignore templates/main.go templates/config.yaml templates/README.md
+var initTemplates embed.FS
 
 // initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
 var initStaticFilesSimple = map[string]string{
@@ -83,7 +83,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 	for _, src := range sortedKeys(staticFiles) {
 		target := staticFiles[src]
 		targetPath := filepath.Join(targetDir, target)
-		content, err := initStandards.ReadFile("standards/" + src)
+		content, err := initTemplates.ReadFile("templates/" + src)
 		if err != nil {
 			logs.Err(fmt.Errorf("read standard %s: %w", src, err))
 			continue
