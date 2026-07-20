@@ -37,9 +37,9 @@ var initTemplateFiles = map[string]string{
 // initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
 var initStaticFiles = map[string]string{
 	".gitignore":  ".gitignore",
-	"Dockerfile":  "Dockerfile",
+	"Dockerfile":  "docker/Dockerfile",
 	"AGENTS.md":   "AGENTS.md",
-	"GOLANG.md":   "GOLANG.md",
+	"GOLANG.md":   "docs/GOLANG.md",
 	"build.sh":    "scripts/build.sh",
 }
 
