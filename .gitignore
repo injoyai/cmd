@@ -1,4 +1,5 @@
 bin/
+docs/
 output/
 .idea/
 *.exe
