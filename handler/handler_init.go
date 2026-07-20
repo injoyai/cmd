@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"os"
@@ -52,10 +53,17 @@ func deriveModuleName(dir string) string {
 	return base
 }
 
-// renderTemplate 渲染指定模板文件
+// renderTemplate 渲染指定模板文件,返回渲染后的字节内容
 func renderTemplate(name string, data *initData) ([]byte, error) {
-	// Task 4 中实现
-	return nil, nil
+	tmpl, err := template.ParseFS(initTemplates, "init_templates/"+name)
+	if err != nil {
+		return nil, fmt.Errorf("parse template %s: %w", name, err)
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return nil, fmt.Errorf("execute template %s: %w", name, err)
+	}
+	return buf.Bytes(), nil
 }
 
 // writeFile 写入文件,根据 force 决定是否覆盖已存在文件
