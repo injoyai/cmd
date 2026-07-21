@@ -70,6 +70,9 @@ var Resources = MResource{
 	"install_minio.sh":   {Local: "install_minio.sh", Key: []string{"install_minio"}},
 	"install_nodered.sh": {Local: "install_nodered.sh", Key: []string{"install_nodered"}},
 	"install_v2raya.sh":  {Local: "install_v2raya.sh", Key: []string{"install_v2raya"}},
+	"agents.md":          {Local: "AGENTS.md", Key: []string{"agents"}},
+	"golang.md":          {Local: "GOLANG.md", Key: []string{"go.md", "GOLANG.md"}},
+	".gitignore":         {Local: ".gitignore", Key: []string{"gitignore"}},
 }
 
 func init() {

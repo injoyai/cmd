@@ -43,36 +43,6 @@ var Exclusive = MResource{
 	"setup-ssh-key":  {Local: "setup_ssh_key.ps1", Key: []string{"setup_ssh_key", "setup-ssh-key.ps1"}},
 	"view":           {Local: "view.exe", Key: []string{"view.exe"}},
 
-	"cursor-register": {
-		Key:     []string{"cursor-auto-free"},
-		Local:   "cursor-register.exe",
-		FullUrl: []Url{"https://github.com/chengazhen/cursor-auto-free/releases/latest/download/CursorPro-Windows.zip"},
-		Handler: func(op *Config) error {
-			zipFilename := filepath.Join(op.Dir, "cursor-register.zip")
-			if err := op.download(zipFilename); err != nil {
-				return err
-			}
-			err := zip.Decode(zipFilename, op.Dir)
-			if err != nil {
-				return err
-			}
-			os.Remove(zipFilename)
-
-			err = os.Rename(filepath.Join(op.Dir, "CursorPro-Windows/CursorPro.exe"), op.Filename())
-			if err != nil {
-				return err
-			}
-			os.RemoveAll(filepath.Join(op.Dir, "CursorPro-Windows"))
-			return nil
-		},
-	},
-
-	"downloader": {
-		Key:     []string{"download"},
-		Local:   "downloader.exe",
-		FullUrl: []Url{"https://github.com/injoyai/downloader/releases/latest/download/downloader.exe"},
-	},
-
 	"youtube-dl": {
 		Key:     []string{"ytdl", "yt-dl"},
 		Local:   "youtube-dl.exe",
