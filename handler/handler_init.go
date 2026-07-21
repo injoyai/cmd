@@ -18,7 +18,7 @@ var initTemplates embed.FS
 // initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
 var initStaticFilesSimple = map[string]string{
 	".gitignore":  ".gitignore",
-	"build.sh":    "scripts/build.sh",
+	"build.sh":    "build.sh",
 	"main.go":     "main.go",
 	"config.yaml": "config/config.yaml",
 }
