@@ -2,6 +2,7 @@ package resource
 
 import (
 	"context"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -24,6 +25,9 @@ import (
 	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/logs"
 )
+
+//go:embed templates
+var Templates embed.FS
 
 func MustDownload(ctx context.Context, op *Config) (string, bool) {
 
@@ -53,27 +57,40 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		return "", false, errors.New("请输入需要下载的资源")
 	}
 
-	//1. 尝试下载自带资源
-	if val, ok := Resources.Get(op.Resource); ok {
-		op.init(val.GetLocalName())
-		//自带资源可能有多个源,按顺序挨个尝试
-		urls := val.GetFullUrls()
-		download = func(ctx context.Context, op *Config) (err error) {
-			for _, u := range urls {
-				op.SetUrl(u)
-				//获取自定义下载函数
-				handler := val.GetHandler()
-				if err = op.Download(handler); err == nil {
-					return
-				}
-				logs.Err(err)
-				<-time.After(time.Second * 2)
+	//1. 尝试使用模板文件
+	if download == nil {
+		bs, err := Templates.ReadFile("templates/" + op.Resource)
+		if err == nil {
+			op.init(op.Resource)
+			download = func(ctx context.Context, op *Config) error {
+				return oss.New(op.Filename(), string(bs))
 			}
-			return
 		}
 	}
 
-	//2. 尝试按照网址下载
+	//2. 尝试下载自带资源
+	if download == nil {
+		if val, ok := Resources.Get(op.Resource); ok {
+			op.init(val.GetLocalName())
+			//自带资源可能有多个源,按顺序挨个尝试
+			urls := val.GetFullUrls()
+			download = func(ctx context.Context, op *Config) (err error) {
+				for _, u := range urls {
+					op.SetUrl(u)
+					//获取自定义下载函数
+					handler := val.GetHandler()
+					if err = op.Download(handler); err == nil {
+						return
+					}
+					logs.Err(err)
+					<-time.After(time.Second * 2)
+				}
+				return
+			}
+		}
+	}
+
+	//3. 尝试按照网址下载
 	if download == nil {
 		u, err := url.Parse(op.Resource)
 		if err == nil && u.Host != "" {
@@ -109,7 +126,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		}
 	}
 
-	//3. 尝试按照存储库下载 https://example.com/store/{name}
+	//4. 尝试按照存储库下载 https://example.com/store/{name}
 	if download == nil {
 		op.init("")
 		download = func(ctx context.Context, op *Config) (err error) {

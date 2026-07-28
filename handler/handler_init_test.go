@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/injoyai/cmd/resource"
 )
 
 func TestDeriveModuleName(t *testing.T) {
@@ -39,7 +41,7 @@ func TestStaticFiles(t *testing.T) {
 	for _, files := range []map[string]string{initStaticFilesSimple, initStaticFilesFull} {
 		for _, src := range sortedKeys(files) {
 			t.Run(src, func(t *testing.T) {
-				content, err := initTemplates.ReadFile("templates/" + src)
+				content, err := resource.Templates.ReadFile("templates/" + src)
 				if err != nil {
 					t.Fatalf("ReadFile failed: %v", err)
 				}
