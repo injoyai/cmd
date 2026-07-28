@@ -1,19 +1,16 @@
 package handler
 
 import (
-	"embed"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 
+	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
-
-//go:embed templates/AGENTS.md templates/Dockerfile templates/GOLANG.md templates/build.sh templates/.gitignore templates/main.go templates/config.yaml templates/README.md
-var initTemplates embed.FS
 
 // initStaticFiles 成品文件原样写入 (源文件名 -> 目标路径)
 var initStaticFilesSimple = map[string]string{
@@ -83,7 +80,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 	for _, src := range sortedKeys(staticFiles) {
 		target := staticFiles[src]
 		targetPath := filepath.Join(targetDir, target)
-		content, err := initTemplates.ReadFile("templates/" + src)
+		content, err := resource.Templates.ReadFile("templates/" + src)
 		if err != nil {
 			logs.Err(fmt.Errorf("read standard %s: %w", src, err))
 			continue
