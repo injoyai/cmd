@@ -29,6 +29,23 @@ import (
 //go:embed templates
 var Templates embed.FS
 
+func getTemplateName(name string) string {
+	switch strings.ToLower(name) {
+	case "agents", "agents.md":
+		return "AGENTS.md"
+	case "dockerfile":
+		return "Dockerfile"
+	case "golang.md":
+		return "GOLANG.md"
+	case "build", "build.sh":
+		return "build.sh"
+	case "gitignore", ".gitignore":
+		return ".gitignore"
+	default:
+		return name
+	}
+}
+
 func MustDownload(ctx context.Context, op *Config) (string, bool) {
 
 	//忽略正则的资源地址
@@ -59,9 +76,10 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 
 	//1. 尝试使用模板文件
 	if download == nil {
-		bs, err := Templates.ReadFile("templates/" + op.Resource)
+		name := getTemplateName(op.Resource)
+		bs, err := Templates.ReadFile("templates/" + name)
 		if err == nil {
-			op.init(op.Resource)
+			op.init(name)
 			download = func(ctx context.Context, op *Config) error {
 				return oss.New(op.Filename(), string(bs))
 			}
