@@ -26,7 +26,7 @@ import (
 	"github.com/injoyai/logs"
 )
 
-//go:embed templates
+//go:embed templates templates/.gitignore
 var Templates embed.FS
 
 func getTemplateName(name string) string {

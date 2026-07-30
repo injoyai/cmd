@@ -25,6 +25,9 @@ func TestDeriveModuleName(t *testing.T) {
 		{"empty string", "", "main"},
 		{"dot", ".", "main"},
 		{"single name", "myproject", "myproject"},
+		{"chinese name", `F:\test\新建文件夹`, "main"},
+		{"mixed name", "/home/user/my-project_123", "my-project_123"},
+		{"special chars", "/home/user/my project", "my-project"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

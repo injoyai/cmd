@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/logs"
@@ -164,12 +165,28 @@ func resolveTargetDir(args []string) (string, error) {
 }
 
 // deriveModuleName 从目录路径推导模块名,空或根路径时返回 "main"
+// 清理非法字符 (Go module path 只允许字母、数字、-、_、.)
 func deriveModuleName(dir string) string {
 	base := filepath.Base(dir)
 	if base == "" || base == "." || base == string(filepath.Separator) {
 		return "main"
 	}
-	return base
+	// 清理非法字符为 -
+	var cleaned []rune
+	for _, r := range base {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			cleaned = append(cleaned, r)
+		} else {
+			cleaned = append(cleaned, '-')
+		}
+	}
+	result := string(cleaned)
+	// 去除首尾的 -
+	result = strings.Trim(result, "-")
+	if result == "" {
+		return "main"
+	}
+	return result
 }
 
 // writeFile 写入文件,根据 force 决定是否覆盖已存在文件
