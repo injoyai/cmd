@@ -29,7 +29,6 @@ var initStaticFilesFull = map[string]string{
 	"build.sh":    "scripts/build.sh",
 	"main.go":     "cmd/main.go",
 	"config.yaml": "config/config.yaml",
-	"README.md":   "README.md",
 }
 
 // InitGo Golang 项目初始化命令
