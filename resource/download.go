@@ -179,7 +179,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	op.PlayNotice()
 
 	//播放声音,不能协程执行,不然来不及播放
-	op.PlayVoice()
+	//op.PlayVoice()
 
 	return op.Filename(), false, nil
 }
