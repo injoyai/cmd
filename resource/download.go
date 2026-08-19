@@ -41,6 +41,8 @@ func getTemplateName(name string) string {
 		return "build.sh"
 	case "gitignore", ".gitignore":
 		return ".gitignore"
+	case "install","install.sh":
+		return "install.sh"
 	default:
 		return name
 	}
