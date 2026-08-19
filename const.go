@@ -10,6 +10,7 @@ import (
 
 var (
 	details = []string{
+		"v1.5.8: 优化资源install.sh",
 		"v1.5.7: AI优化,去除curd,增加view资源,增加i init go命令,更新AGENTS,去除声音提示",
 		"v1.5.6: 优化i upgrade,增加i len,增加i base64,增加i gui,增加i dial redis",
 		"v1.5.5: 增加脚本setup_ssh_key.ps1,优化http,升级依赖,修复udp server",
