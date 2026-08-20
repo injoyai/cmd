@@ -23,6 +23,12 @@ func SetupSSHKey(cmd *cobra.Command, args []string, flags *Flags) {
 	host := flags.GetString("host")
 	user := flags.GetString("user")
 	port := flags.GetInt("port")
-	s := fmt.Sprintf("%s -Server %s -User %s -Port %d", filename, host, user, port)
+	s := fmt.Sprint("powershell.exe",
+		" -NoProfile",
+		" -ExecutionPolicy ", "Bypass",
+		" -File ", filename,
+		" -Server ", host,
+		" -User ", user,
+		" -Port ", port)
 	logs.PrintErr(tool.ShellRun(s))
 }
