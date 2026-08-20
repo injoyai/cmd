@@ -43,6 +43,14 @@ func getTemplateName(name string) string {
 		return ".gitignore"
 	case "install","install.sh":
 		return "install.sh"
+	case "setup_ssh_key","setup_ssh_key.ps1":
+		return "setup-ssh-key.ps1"
+	case "install_go","install_go.sh":
+		return "install_go.sh"
+	case "ca.crt":
+		return "ca.crt"
+	case "ca.key":
+		return "ca.key"
 	default:
 		return name
 	}
