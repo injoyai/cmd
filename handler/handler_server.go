@@ -337,7 +337,7 @@ func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
 func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	switch runtime.GOOS {
-	case "linux":
+	case "linux", "darwin":
 		TCPServer(cmd, args, flags)
 		return
 	}

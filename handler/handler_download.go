@@ -77,7 +77,7 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
-	if !exist && runtime.GOOS == "linux" {
+	if !exist && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
 		tool.ShellRun("chmod +x " + filename)
 	}
 	fmt.Println("安装完成: ", filename, conv.Select(exist, "(已存在)", ""))

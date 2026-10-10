@@ -99,7 +99,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 				}
 				fmt.Println("请选择要打开的序号: ")
 				for {
-					n := g.InputVar().Int()
+					n := g.InputVar("").Int()
 					if n > 0 && n <= len(list) {
 						fmt.Print("环境变量")
 						logs.PrintErr(tool.ShellStart(list[n-1]))
