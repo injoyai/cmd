@@ -30,6 +30,16 @@ case "$OS" in
             *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
         esac
         ;;
+    Darwin)
+        IS_WINDOWS=0
+        BIN_DIR="/usr/local/bin"
+        EXT=""
+        case "$ARCH" in
+            x86_64) FILENAME="i_darwin_amd64" ;;
+            arm64)  FILENAME="i_darwin_arm64" ;;
+            *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+        esac
+        ;;
     MINGW*|MSYS*|CYGWIN*)
         IS_WINDOWS=1
         BIN_DIR="C:/bin"
