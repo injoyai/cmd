@@ -72,7 +72,7 @@ func main() {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "os", Memo: "系统类型: linux/windows", DefaultValue: "linux,windows"},
+				{Name: "os", Memo: "系统类型: linux/windows/darwin", DefaultValue: "linux,windows,darwin"},
 				{Name: "arch", Memo: "架构类型: amd64/arm64/arm", DefaultValue: "amd64,arm64,arm"},
 				{Name: "output", Short: "o", Memo: "输出文件"},
 				{Name: "upx", Short: "u", Memo: "使用upx压缩", DefaultValue: "true"},

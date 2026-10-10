@@ -32,31 +32,15 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 
 	switch strings.ToLower(args[0]) {
 	case "hosts":
-		if tool.ShellStart("C:\\Windows\\System32\\drivers\\etc\\hosts") != nil {
-			logs.PrintErr(tool.ShellStart("C:\\Windows\\System32\\drivers\\etc\\"))
-		}
+		logs.PrintErr(tool.ShellStart("/etc/hosts"))
 	case "injoy":
 		logs.PrintErr(tool.ShellStart(oss.UserInjoyDir()))
 	case "appdata":
-		cmd := `"" "` + oss.UserDataDir() + `"`
-		logs.PrintErr(tool.ShellStart(cmd))
+		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
 	case "startup":
-		cmd := `"" "` + oss.UserStartupDir() + `"`
-		logs.PrintErr(tool.ShellStart(cmd))
+		logs.PrintErr(tool.ShellStart(oss.UserStartupDir()))
 	case "gopath":
 		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
-	case "regedit", "注册表":
-		logs.PrintErr(tool.ShellStart("regedit"))
-	case "mas":
-		MAS(cmd, args[1:], flags)
-	case "edge":
-		EdgeServer(cmd, args[1:], flags)
-	case "edge_mini":
-		EdgeMiniServer(cmd, args[1:], flags)
-	case "server":
-		InServer(cmd, args[1:], flags)
-	case "nats":
-		NatsServer(cmd, args[1:], flags)
 	default:
 
 		//尝试在内置资源查找
@@ -77,17 +61,9 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 
-		//尝试在注册表查找
-		if list, _ := tool.APPPath(args[0]); len(list) > 0 {
-			fmt.Print("注册表")
-			cmd := `"" "` + list[0] + `"`
-			logs.PrintErr(tool.ShellStart(cmd))
-			return
-		}
-
 		//尝试从环境变量查找
 		if v, ok := os.LookupEnv(args[0]); ok {
-			list := strings.Split(v, ";")
+			list := strings.Split(v, ":")
 			switch {
 			case len(list) == 1:
 				fmt.Print("环境变量")
@@ -114,8 +90,4 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		//直接尝试打开
 		logs.PrintErr(tool.ShellStart(args[0]))
 	}
-}
-
-func MAS(cmd *cobra.Command, args []string, flags *Flags) {
-	logs.PrintErr(tool.PowerShellRun("irm https://get.activated.win | iex"))
 }
