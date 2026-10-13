@@ -17,7 +17,7 @@ func Kill(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 		//进程名称
-		logs.PrintErr(tool.ShellRun("pkill -9 -f "+args[0]))
+		logs.PrintErr(tool.ShellRun("pkill -9 -f " + args[0]))
 		return
 	}
 	fmt.Println("请输入进程id或名称, 例: i kill 12345")

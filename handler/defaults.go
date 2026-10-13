@@ -22,6 +22,10 @@ func normalizePushAddress(address string) string {
 	case "all", "ll", "1":
 		return fmt.Sprintf("255.255.255.255:%d", DefaultPushPort)
 	default:
+		//已包含端口则不追加默认端口
+		if _, _, err := net.SplitHostPort(address); err == nil {
+			return address
+		}
 		return fmt.Sprintf("%s:%d", address, DefaultPushPort)
 	}
 }

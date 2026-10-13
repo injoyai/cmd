@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/injoyai/cmd/tool"
@@ -49,8 +53,11 @@ func installChromedriver(dir string, reDownload bool, proxy ...string) (string, 
 		}
 	}
 
-	if list := strings.Split(version, "."); len(list) >= 2 {
-		url := getChromedriverUrl(list[0])
+	if list := strings.Split(version, "."); len(list) >= 2 && list[0] != "" {
+		url, err := getChromedriverUrl(list[0])
+		if err != nil {
+			return "", err
+		}
 		zipName := filepath.Join(dir, "chromedriver.zip")
 		if _, err := bar.Download(url, zipName, proxy...); err != nil {
 			return "", err
@@ -60,12 +67,48 @@ func installChromedriver(dir string, reDownload bool, proxy ...string) (string, 
 		}
 		os.Remove(zipName)
 		os.Remove(filepath.Join(dir, "LICENSE.chromedriver"))
+	} else {
+		return "", errors.New("未识别Chrome版本目录,无法下载对应的chromedriver")
 	}
 
 	return filename, nil
 }
 
-func getChromedriverUrl(version string) string {
+// getCftChromedriverUrl 从Chrome for Testing查询指定大版本(>=115)的chromedriver下载地址
+func getCftChromedriverUrl(milestone string) (string, error) {
+	resp, err := http.Get("https://googlechromelabs.github.io/chrome-for-testing/latest-versions-per-milestone-with-downloads.json")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	data := map[string]any{}
+	if err := json.Unmarshal(bs, &data); err != nil {
+		return "", err
+	}
+	milestones, _ := data["milestones"].(map[string]any)
+	m, _ := milestones[milestone].(map[string]any)
+	downloads, _ := m["downloads"].(map[string]any)
+	items, _ := downloads["chromedriver"].([]any)
+	for _, item := range items {
+		d, _ := item.(map[string]any)
+		if platform, _ := d["platform"].(string); platform == "win32" {
+			u, _ := d["url"].(string)
+			return u, nil
+		}
+	}
+	return "", fmt.Errorf("未找到大版本%s的chromedriver下载地址", milestone)
+}
+
+// getChromedriverUrl 根据Chrome大版本号获取驱动下载地址
+func getChromedriverUrl(version string) (string, error) {
+	//Chrome 115之后驱动迁移到Chrome for Testing,大版本必须完全匹配,需在线查询
+	if major, err := strconv.Atoi(version); err == nil && major >= 115 {
+		return getCftChromedriverUrl(version)
+	}
 	//http://chromedriver.storage.googleapis.com/index.html
 	url := "http://chromedriver.storage.googleapis.com/%s/chromedriver_win32.zip"
 	v := "96.0.4664.45"
@@ -157,5 +200,5 @@ func getChromedriverUrl(version string) string {
 	case "114":
 		v = "114.0.5735.16"
 	}
-	return fmt.Sprintf(url, v)
+	return fmt.Sprintf(url, v), nil
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gomodule/redigo/redis"
@@ -48,6 +49,7 @@ const (
 func Dial(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 
 	defaultType := DialTypeTCP
@@ -102,6 +104,7 @@ func Dial(cmd *cobra.Command, args []string, flags *Flags) {
 func DialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 	redial.RunTCP(args[0], func(c *client.Client) {
 		DialDeal(c, flags)
@@ -111,6 +114,7 @@ func DialTCP(cmd *cobra.Command, args []string, flags *Flags) {
 func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 	client.Run(func(ctx context.Context) (ios.ReadWriteCloser, string, error) {
 		c, err := net.Dial("udp", args[0])
@@ -123,6 +127,7 @@ func DialUDP(cmd *cobra.Command, args []string, flags *Flags) {
 func DialLog(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 	redial.RunTCP(args[0], func(c *client.Client) {
 		DialDeal(c, flags)
@@ -132,13 +137,10 @@ func DialLog(cmd *cobra.Command, args []string, flags *Flags) {
 func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 
 	switch {
-	case len(args) == 0:
-		fmt.Println("[错误] 未填写连接地址")
-		return
-
 	case regexp.MustCompile(`^(?:https?://)`).MatchString(args[0]):
 		args[0] = "ws" + str.CropFirst(args[0], "http")
 
@@ -192,11 +194,13 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) {
 func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(args) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
+		return
 	}
 	for {
 		addr := args[0]
-		if !strings.Contains(addr, ":") {
-			addr += ":22"
+		//使用SplitHostPort判断是否携带端口,兼容IPv6
+		if _, _, err := net.SplitHostPort(addr); err != nil {
+			addr = net.JoinHostPort(addr, "22")
 		}
 		username := flags.GetString("username")
 		if len(username) == 0 {
@@ -221,6 +225,7 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 		})
 		if err != nil {
 			logs.Err(err)
+			time.Sleep(time.Second * 3) //避免无退避快速重试刷屏
 			continue
 		}
 		DialDeal(c, flags)
@@ -229,16 +234,9 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) {
 			fmt.Print(string(msg.Payload()))
 		}
 		go c.Run(context.Background())
-		reader := bufio.NewReader(os.Stdin)
-		for {
-			select {
-			case <-c.Done():
-				return
-			default:
-				msg, _ := reader.ReadString('\n')
-				c.WriteString(msg)
-			}
-		}
+		//stdin由DialDeal统一处理,这里仅等待连接结束
+		<-c.Done()
+		return
 	}
 }
 
@@ -277,7 +275,7 @@ func DialRedis(cmd *cobra.Command, args []string, flags *Flags) {
 		bs, _, err := r.ReadLine()
 		if err != nil {
 			fmt.Println(err)
-			continue
+			return //EOF或输入错误时退出,避免忙循环
 		}
 		ls := strings.Split(string(bs), " ")
 		if len(ls) == 0 {
@@ -306,7 +304,6 @@ func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) {
 
 func DialDeal(c *client.Client, flags *Flags) {
 	oss.ListenExit(func() { c.CloseAll() })
-	r := bufio.NewReader(os.Stdin)
 	c.SetOption(func(c *client.Client) {
 		c.Logger.Debug(flags.GetBool("debug"))
 		switch strings.ToLower(flags.GetString("printType")) {
@@ -316,47 +313,66 @@ func DialDeal(c *client.Client, flags *Flags) {
 			c.Logger.WithHEX()
 		}
 		if !flags.GetBool("redial") {
-			c.SetRedial(false)
-		}
-		c.OnConnected = func(c *client.Client) error {
-			go func() {
-				for {
-					select {
-					case <-c.Runner2.Done():
-						return
-					default:
-						bs, _, err := r.ReadLine()
-						if err != nil {
-							logs.Err(err)
-							return
-						}
-						msg := string(bs)
-						switch {
-						case len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X'):
-							msg = msg[2:]
-							if len(msg)%2 != 0 {
-								msg = "0" + msg
-							}
-							err = c.WriteHEX(msg)
-							if err != nil {
-								logs.Err(err)
-								return
-							}
-
-						default:
-							_, err := c.WriteString(msg)
-							if err != nil {
-								logs.Err(err)
-								return
-							}
-
-						}
-					}
+			//redial.RunTCP底层RedialContext在应用完选项后会强制开启重连,
+			//直接SetRedial(false)会被覆盖,需在连接成功事件中再禁用
+			onConnected := c.Event.OnConnected
+			c.Event.OnConnected = func(c *client.Client) error {
+				c.SetRedial(false)
+				if onConnected != nil {
+					return onConnected(c)
 				}
-			}()
-			return nil
+				return nil
+			}
 		}
 	})
+	//单独启动一个stdin泵,避免重连时在OnConnected中重复启动,多个goroutine竞争同一个reader
+	go dialStdinPump(c)
+}
+
+func dialStdinPump(c *client.Client) {
+	r := bufio.NewReader(os.Stdin)
+	done := c.Runner2.Done()
+	//等待首次连接建立,未连接时内嵌的MoreWriter为nil,写入会空指针panic
+	select {
+	case <-c.Dialed():
+	case <-done:
+		return
+	}
+	for {
+		//通过临时goroutine读stdin,以便同时监听客户端关闭
+		type readResult struct {
+			bs  []byte
+			err error
+		}
+		ch := make(chan readResult, 1)
+		go func() {
+			bs, _, err := r.ReadLine()
+			ch <- readResult{bs, err}
+		}()
+		select {
+		case <-done:
+			return
+		case res := <-ch:
+			if res.err != nil {
+				return //stdin EOF或错误,退出
+			}
+			msg := string(res.bs)
+			switch {
+			case len(msg) > 2 && msg[0] == '0' && (msg[1] == 'x' || msg[1] == 'X'):
+				msg = msg[2:]
+				if len(msg)%2 != 0 {
+					msg = "0" + msg
+				}
+				if err := c.WriteHEX(msg); err != nil {
+					logs.Err(err)
+				}
+			default:
+				if _, err := c.WriteString(msg); err != nil {
+					logs.Err(err)
+				}
+			}
+		}
+	}
 }
 
 func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
@@ -370,6 +386,10 @@ func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 	addr = flags.GetString("addr", file.GetString("addr", addr))
 	key := flags.GetString("key", file.GetString("key"))
 	Type := flags.GetString("type", file.GetString("type", "tcp"))
+	if len(addr) == 0 || len(key) == 0 {
+		fmt.Println("[错误] 请填写服务地址与key, 例: i dial nps 服务器地址 key")
+		return
+	}
 	file.Set("addr", addr)
 	file.Set("key", key)
 	file.Set("type", Type)
@@ -392,8 +412,13 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("映射端口: ", file.GetString("port"))
 		fmt.Println("连接方式: ", file.GetString("type"))
 		fmt.Println("连接名称: ", file.GetString("name"))
+		return
 	}
-	serverAddr := conv.Default(file.GetString("serverAddr"), args...)
+	//命令行参数优先于缓存配置
+	serverAddr := file.GetString("serverAddr")
+	if len(args) > 0 && len(args[0]) > 0 {
+		serverAddr = args[0]
+	}
 	if len(serverAddr) == 0 {
 		fmt.Println("[错误] 未填写连接地址")
 		return
@@ -423,19 +448,26 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) {
 	file.Cover()
 
 	cfgPath := oss.UserInjoyDir("frpc.toml")
+	//解析服务地址与端口,生成合法的TOML(原实现用ReplaceAll拼接,地址无端口时会产生未闭合字符串)
+	serverHost, frpPort := serverAddr, "7000"
+	if host, port, err := net.SplitHostPort(serverAddr); err == nil && host != "" {
+		serverHost, frpPort = host, port
+	}
+	localIP, localPort := localAddr, ""
+	if host, port, err := net.SplitHostPort(localAddr); err == nil {
+		localIP, localPort = host, port
+	}
 	oss.New(cfgPath, fmt.Sprintf(`
-serverAddr = "%s
+serverAddr = "%s"
+serverPort = %s
 
 [[proxies]]
 name = "%s"
 type = "%s"
-localIP = "%s
+localIP = "%s"
+localPort = %s
 remotePort = %s
-`, strings.ReplaceAll(serverAddr, ":", "\"\nserverPort = "),
-		name,
-		Type,
-		strings.ReplaceAll(localAddr, ":", "\"\nlocalPort = "),
-		serverPort))
+`, serverHost, frpPort, name, Type, localIP, localPort, serverPort))
 	filename := "frpc -c " + cfgPath
 	logs.PrintErr(tool.ShellRun(filename))
 }

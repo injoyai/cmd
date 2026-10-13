@@ -32,12 +32,17 @@ func (this *Info) GetFullUrls() []string {
 func (this *Info) GetRemote() string {
 	switch runtime.GOARCH {
 	case "arm":
-		return this.RemoteArm
+		//arm专属资源为空则回退默认资源
+		if len(this.RemoteArm) > 0 {
+			return this.RemoteArm
+		}
 	case "arm64":
-		return this.RemoteArm64
-	default:
-		return this.Remote
+		//arm64专属资源为空则回退默认资源
+		if len(this.RemoteArm64) > 0 {
+			return this.RemoteArm64
+		}
 	}
+	return this.Remote
 }
 
 func (this *Info) GetHandler() Handler {
@@ -46,9 +51,9 @@ func (this *Info) GetHandler() Handler {
 
 // init 初始化,补充各个架构的值
 func (this *Info) init() {
-	if len(this.Local) == 0 && len(this.GetRemote()) >= 0 {
+	if len(this.Local) == 0 && len(this.GetRemote()) > 0 {
 		this.Local = this.GetRemote()
-	} else if len(this.GetRemote()) == 0 && len(this.Local) >= 0 {
+	} else if len(this.GetRemote()) == 0 && len(this.Local) > 0 {
 		this.Remote = this.Local
 		this.RemoteArm = this.Local
 	}

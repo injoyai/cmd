@@ -22,6 +22,7 @@ func shellRun(filename string) error {
 	c := exec.Command("sh", "-c", filename)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
+	c.Stdin = os.Stdin
 	return c.Run()
 }
 

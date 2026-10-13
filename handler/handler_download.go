@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,6 +89,21 @@ func Uninstall(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("请输入需要卸载的应用")
 		return
 	}
-	err := os.Remove(filepath.Join(oss.ExecDir(), args[0]))
+	filename, err := uninstallPath(args[0])
+	if err != nil {
+		fmt.Println("卸载失败: ", err)
+		return
+	}
+	err = os.Remove(filename)
 	fmt.Println("卸载结果: ", conv.New(err).String("成功"))
+}
+
+// uninstallPath 计算卸载路径,仅允许删除i所在目录内的文件,防止路径逃逸
+func uninstallPath(name string) (string, error) {
+	dir := oss.ExecDir()
+	filename := filepath.Clean(filepath.Join(dir, name))
+	if !strings.HasPrefix(filename, dir+string(os.PathSeparator)) {
+		return "", errors.New("仅允许删除i所在目录内的应用")
+	}
+	return filename, nil
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,8 @@ func Global(cmd *cobra.Command, args []string, flags *Flags) {
 		switch _type {
 		case "set":
 			for _, item := range strings.Split(val.Value, ",") {
-				if ls := strings.Split(item, "="); len(ls) == 2 {
+				//SplitN保留值中的=号
+				if ls := strings.SplitN(item, "=", 2); len(ls) == 2 {
 					global.File.Set(ls[0], ls[1])
 				}
 			}
@@ -33,7 +35,8 @@ func Global(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 		case "append":
 			for _, item := range strings.Split(val.Value, ",") {
-				if ls := strings.Split(item, "="); len(ls) == 2 {
+				//SplitN保留值中的=号
+				if ls := strings.SplitN(item, "=", 2); len(ls) == 2 {
 					global.File.Append(ls[0], ls[1])
 				}
 			}
@@ -43,7 +46,9 @@ func Global(cmd *cobra.Command, args []string, flags *Flags) {
 		return true
 	})
 
-	global.File.Save()
+	if err := global.Save(); err != nil {
+		logs.Err(err)
+	}
 
 	//打印最新配置信息
 	global.Print()

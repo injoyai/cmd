@@ -40,8 +40,8 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 
-		//不存在或者大小不一致则复制一份自己过去叫i_upgrade
-		if fi.Size() != fi2.Size() {
+		//大小或修改时间不一致则复制一份自己过去叫i_upgrade
+		if fi.Size() != fi2.Size() || !fi.ModTime().Equal(fi2.ModTime()) {
 			err = tool.CopyFile(execFilename, upgradeFilename)
 			if err != nil {
 				logs.Err(err)

@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/injoyai/cmd/global"
@@ -204,6 +206,8 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 
 	sum := int64(0)
 	current := int64(0)
+	mu := sync.Mutex{} //保护current/sum与进度条,OnFinishedItem在多个工作协程中并发调用
+	failed := int64(0) //最终下载失败的分片数量
 	b := bar.New(int64(len(list)))
 	b.SetFormatter(bar.NewWithM3u8(&current, &sum))
 
@@ -236,38 +240,65 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 				if err != nil {
 					return err
 				}
-				current, err = io.Copy(f, r.Body)
+				n, err := io.Copy(f, r.Body)
+				f.Close()
 				if err != nil {
-					f.Close()
 					return err
 				}
-				f.Close()
+				mu.Lock()
+				current = n
+				mu.Unlock()
 				<-time.After(time.Millisecond * 10)
 				return os.Rename(filename+".downloading", filename)
 			}()
 		}
 		if resp.Err != nil {
+			atomic.AddInt64(&failed, 1)
 			logs.Errf("\r\033[K%s\n", resp.Err)
 		}
+		mu.Lock()
 		sum += current
 		b.Add(1).Flush()
+		mu.Unlock()
 	})
 	for i := range list {
 		url := list[i]
 		filename := fmt.Sprintf("%05d"+op.suffix, i)
 		if doneName[filename] {
 			//过滤已经下载过的分片
+			mu.Lock()
 			b.Add(1).Flush()
+			mu.Unlock()
 			continue
 		}
 		//继续下载没有下载过的分片
-		t.Set(i, func(ctx context.Context) (*http.Response, error) { return http.Get(url) })
+		t.Set(i, func(ctx context.Context) (*http.Response, error) {
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if err != nil {
+				return nil, err
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return nil, err
+			}
+			//状态码非200时,错误页会被当作分片保存,合并出损坏视频
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				return nil, fmt.Errorf("下载分片失败: %s %s", resp.Status, url)
+			}
+			return resp, nil
+		})
 	}
 
 	//新建任务
 	err = t.Run(ctx)
 	if err != nil {
 		return err
+	}
+
+	//存在失败分片时,保留分片缓存不合并,避免产出残缺视频且下次无法续传
+	if n := atomic.LoadInt64(&failed); n > 0 {
+		return fmt.Errorf("有 %d 个分片下载失败,已保留分片缓存,请重新执行下载补齐", n)
 	}
 
 	//合并视频
@@ -277,7 +308,7 @@ func downloadM3u8(ctx context.Context, op *Config) error {
 
 // downloadStream 下载流媒体
 func downloadStream(ctx context.Context, op *Config) error {
-	MustDownload(ctx, &Config{
+	ffmpeg, _ := MustDownload(ctx, &Config{
 		Resource:     "ffmpeg",
 		Dir:          oss.ExecDir(),
 		ProxyEnable:  op.ProxyEnable,
@@ -290,7 +321,8 @@ func downloadStream(ctx context.Context, op *Config) error {
 	oss.RemoveAll(op.TempDir())
 	oss.New(op.TempDir())
 
-	if err := shell.Run(fmt.Sprintf("ffmpeg -i %s -c copy -f hls %s", op.Resource, filepath.Join(op.TempDir(), "/out.m3u8"))); err != nil {
+	//使用绝对路径调用ffmpeg并加引号;分片名补零,避免MergeTS按字典序合并时乱序
+	if err := shell.Run(fmt.Sprintf(`"%s" -i "%s" -c copy -f hls -hls_segment_filename "%s" "%s"`, ffmpeg, op.Resource, filepath.Join(op.TempDir(), "out%05d.ts"), filepath.Join(op.TempDir(), "out.m3u8"))); err != nil {
 		return err
 	}
 
@@ -299,8 +331,8 @@ func downloadStream(ctx context.Context, op *Config) error {
 
 func MergeTS(dir, output string) error {
 
-	//判断ffmpeg是否下载
-	MustDownload(g.Ctx(), &Config{
+	//判断ffmpeg是否下载,使用绝对路径调用,避免工作目录中找不到ffmpeg
+	ffmpeg, _ := MustDownload(g.Ctx(), &Config{
 		Resource:    "ffmpeg",
 		Dir:         oss.ExecDir(),
 		ProxyEnable: true,
@@ -326,7 +358,7 @@ func MergeTS(dir, output string) error {
 		return err
 	}
 
-	cmd := fmt.Sprintf("ffmpeg -y -f concat -i %s -c copy %s", lsFilename, output)
+	cmd := fmt.Sprintf(`"%s" -y -f concat -i "%s" -c copy "%s"`, ffmpeg, lsFilename, output)
 	fmt.Println("执行ffmpeg命令:", cmd)
 	return shell.Run(cmd)
 }

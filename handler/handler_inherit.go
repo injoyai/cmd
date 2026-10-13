@@ -23,12 +23,24 @@ func Swag(cmd *cobra.Command, args []string, flags *Flags) {
 		Resource: "swag",
 		Dir:      oss.ExecDir(),
 	})
-	param := []string{"swag init"}
+	//linux/darwin下Exec首参作为bash -c的脚本,其余参数会被忽略,
+	//所以必须拼接成完整命令行,一次传入
+	cmdline := "swag init"
 	flags.Range(func(key string, val *Flag) bool {
-		param = append(param, fmt.Sprintf(" -%s %s", val.Short, val.Value))
+		if len(val.Value) == 0 {
+			return true
+		}
+		name := val.Short
+		if len(name) == 0 {
+			name = val.Name
+		}
+		cmdline += fmt.Sprintf(" -%s %s", name, val.Value)
 		return true
 	})
-	bs, _ := shell.Exec(append(param, args...)...)
+	for _, v := range args {
+		cmdline += " " + v
+	}
+	bs, _ := shell.Exec(cmdline)
 	fmt.Println(bs)
 }
 
@@ -108,8 +120,14 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
 
-			// 设置环境变量
-			env := os.Environ()
+			//去除系统已有的GOOS/GOARCH/GOARM,避免环境变量重复导致设置不生效
+			env := make([]string, 0, len(os.Environ())+3)
+			for _, e := range os.Environ() {
+				if strings.HasPrefix(e, "GOOS=") || strings.HasPrefix(e, "GOARCH=") || strings.HasPrefix(e, "GOARM=") {
+					continue
+				}
+				env = append(env, e)
+			}
 			env = append(env, "GOOS="+osName)
 
 			if arch == "arm" {

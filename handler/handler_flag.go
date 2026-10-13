@@ -13,7 +13,10 @@ type Flags struct {
 func newFlags(list []*Flag) *Flags {
 	f := &Flags{m: make(map[string]*Flag)}
 	for _, v := range list {
-		f.m[v.Name] = v
+		//先到先得:子命令自己的flag优先于继承的父flag,避免同名时被父flag覆盖
+		if _, ok := f.m[v.Name]; !ok {
+			f.m[v.Name] = v
+		}
 	}
 	f.Extend = conv.NewExtend(f)
 	return f

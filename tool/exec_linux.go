@@ -18,6 +18,7 @@ func shellRun(cmd string) error {
 	c := exec.Command("sh", "-c", cmd)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
+	c.Stdin = os.Stdin
 	return c.Run()
 }
 

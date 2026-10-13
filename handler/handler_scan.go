@@ -65,6 +65,7 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	RangeNetwork(network, func(inter *Interfaces) {
 		inter.Print()
 		list := types.List[g.Map]{}
+		mu := sync.Mutex{}
 		wg := sync.WaitGroup{}
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
@@ -82,7 +83,9 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 					return
 				}
 				if sortResult {
+					mu.Lock()
 					list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
+					mu.Unlock()
 					return
 				}
 				fmt.Print(s)
@@ -124,12 +127,14 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	RangeNetwork(network, func(inter *Interfaces) {
 		inter.Print()
 		list := types.List[g.Map]{}
+		mu := sync.Mutex{}
 		wg := sync.WaitGroup{}
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
 			go func(ipv4 net.IP, timeout time.Duration) {
 				defer wg.Done()
-				addr := fmt.Sprintf("%s:%s", ipv4, args[0])
+				//使用JoinHostPort拼接,兼容IPv6
+				addr := net.JoinHostPort(ipv4.String(), args[0])
 				c, err := net.DialTimeout(Type, addr, timeout)
 				if err == nil {
 					bs := make([]byte, 1024)
@@ -144,7 +149,9 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 						return
 					}
 					if sortResult {
+						mu.Lock()
 						list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
+						mu.Unlock()
 					} else {
 						fmt.Print(s)
 					}
@@ -175,6 +182,7 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 	sortResult := flags.GetBool("sort")
 
 	result := types.List[g.Map]{}
+	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	for i, v := range list {
 		wg.Add(1)
@@ -201,10 +209,12 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 				fmt.Println(s)
 				return
 			}
+			mu.Lock()
 			result = append(result, g.Map{
 				"index": i,
 				"msg":   s,
 			})
+			mu.Unlock()
 		}(i, v)
 	}
 
@@ -229,6 +239,7 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	http.DefaultClient.Timeout = timeout
 
 	result := types.List[g.Map]{}
+	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
 	RangeNetwork(network, func(inter *Interfaces) {
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
@@ -258,10 +269,12 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 							fmt.Println(info)
 							return
 						}
+						mu.Lock()
 						result = append(result, g.Map{
 							"index": conv.Uint32([]byte(ipv4)),
 							"msg":   info,
 						})
+						mu.Unlock()
 					}
 
 				}
@@ -357,10 +370,13 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 func RangeNetwork(network string, fn func(inter *Interfaces)) error {
 	inters, err := net.Interfaces()
 	if err != nil {
+		//记录错误,避免调用方忽略错误时无任何输出
+		logs.Err(err)
 		return err
 	}
 	for i, inter := range inters {
-		if inter.Flags&(1<<net.FlagLoopback) == 1 || inter.Flags&(1<<net.FlagUp) == 0 {
+		//修复位运算:FlagLoopback/FlagUp是位标志,应该用位与判断,而非移位后比较
+		if inter.Flags&net.FlagLoopback != 0 || inter.Flags&net.FlagUp == 0 {
 			continue
 		}
 		if len(network) > 0 && network != "all" && !strings.Contains(inter.Name, network) {

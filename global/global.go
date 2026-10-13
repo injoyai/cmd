@@ -24,6 +24,18 @@ func GetString(key string, def ...string) string {
 	return File.GetString(key, def...)
 }
 
+// Save 持久化配置到文件
+func Save() error {
+	return SaveFile(File)
+}
+
+// SaveFile 持久化指定缓存文件
+// conv.Map的Set/Append/Del只修改hasSet数据,必须先Refresh编码回Var,否则落盘的仍是原始数据
+func SaveFile(f *cache.File) error {
+	f.Refresh()
+	return f.Save()
+}
+
 func GetProxy() string {
 	s := File.GetString("proxy")
 	if len(s) == 0 {

@@ -158,7 +158,7 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) {
 		set := strings.SplitN(flags.GetString("set"), "=", 2)
 		del := flags.GetString("del")
 		get := flags.GetString("get")
-		if len(_append) == 2 || len(set) == 2 || len(del) == 2 || len(get) > 0 {
+		if len(_append) == 2 || len(set) == 2 || len(del) > 0 || len(get) > 0 {
 			codecStr := strings.ToLower(flags.GetString("marshal", "json"))
 			_codec := codec.Json
 			switch codecStr {
@@ -173,17 +173,26 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 			for i, v := range args {
 				m := conv.NewMap(v, _codec)
+				modified := false
 				if len(_append) == 2 {
 					m.Append(_append[0], _append[1])
+					modified = true
 				}
 				if len(set) == 2 {
 					m.Set(set[0], set[1])
+					modified = true
 				}
 				if len(del) > 0 {
 					m.Del(del)
+					modified = true
 				}
 				if len(get) > 0 {
 					args[i] = m.GetString(get)
+				} else if modified {
+					//把修改结果序列化写回,否则修改无效
+					if bs, err := _codec.Marshal(m.Refresh().Interface()); err == nil {
+						args[i] = string(bs)
+					}
 				}
 			}
 		}
@@ -203,9 +212,13 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) {
 			case "utf8", "ascii":
 				bs = []byte(v)
 			case "base64":
-				bs, _ = base64.StdEncoding.DecodeString(v)
+				if decoded, err := base64.StdEncoding.DecodeString(v); err == nil {
+					bs = decoded
+				}
 			case "hex":
-				bs, _ = hex.DecodeString(v)
+				if decoded, err := hex.DecodeString(v); err == nil {
+					bs = decoded
+				}
 			default:
 				bs = []byte(v)
 			}
