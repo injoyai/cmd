@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/injoyai/bar"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +25,8 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 	*/
 
 	//size := 25_000_000
-	defaultUrl := "https://node-113-215-235-172.speedtest.cn:51090/download?size=25000000&r=0.3373401822935955"
+	//默认测速节点可通过全局配置testDownloadUrl覆盖
+	defaultUrl := global.GetString("testDownloadUrl", "https://node-113-215-235-172.speedtest.cn:51090/download?size=25000000&r=0.3373401822935955")
 
 	downloadUrl := conv.Default(defaultUrl, args...)
 	goroutines := flags.GetInt("goroutines", 8)
@@ -69,6 +72,7 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 		b.Go(func() {
 			resp, err := client.Get(downloadUrl)
 			if err != nil {
+				logs.Errf("[下载] %s\n", err)
 				return
 			}
 			defer resp.Body.Close()
@@ -82,11 +86,9 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 				default:
 					n, err := resp.Body.Read(buf)
 					if err != nil {
-						if err == io.EOF {
-							return
+						if err != io.EOF {
+							logs.Errf("[下载] %s\n", err)
 						}
-						//b.Logf("[错误] %s\n", err)
-						//b.Flush()
 						return
 					}
 					b.Add(int64(n))
@@ -104,7 +106,8 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 
 func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 
-	defaultUrl := "https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583"
+	//默认测速节点可通过全局配置testUploadUrl覆盖
+	defaultUrl := global.GetString("testUploadUrl", "https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583")
 
 	uploadUrl := conv.Default(defaultUrl, args...)
 	goroutines := flags.GetInt("goroutines", 8)
@@ -158,6 +161,7 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 
 			req, err := http.NewRequest("POST", uploadUrl, pr)
 			if err != nil {
+				logs.Errf("[上传] %s\n", err)
 				return
 			}
 
@@ -165,6 +169,8 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 			go func() {
 				resp, err := client.Do(req)
 				if err != nil {
+					logs.Errf("[上传] %s\n", err)
+					pr.CloseWithError(err) //通知写入侧停止,避免无意义的继续写入
 					return
 				}
 				io.Copy(io.Discard, resp.Body)
@@ -180,6 +186,7 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 				default:
 					n, err := pw.Write(data)
 					if err != nil {
+						logs.Errf("[上传] %s\n", err)
 						return
 					}
 					b.Add(int64(n))

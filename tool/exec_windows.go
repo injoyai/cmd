@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"github.com/go-ole/go-ole"
@@ -14,8 +15,38 @@ import (
 
 func shellStart(filename string) error {
 	cmd := exec.Command("cmd.exe")
-	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: "/c start " + filename}
+	//start把第一个带引号的参数视为窗口标题,需前置空标题
+	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: `/c start "" ` + startArg(filename)}
 	return cmd.Start()
+}
+
+// startArg 处理start命令的程序路径,防止路径包含空格时解析错误
+func startArg(cmdStr string) string {
+	cmdStr = strings.TrimSpace(cmdStr)
+	//调用方已自带引号,不做处理
+	if strings.HasPrefix(cmdStr, `"`) {
+		return cmdStr
+	}
+	//整体是存在的路径(无参数),含空格时加引号
+	if _, err := os.Stat(cmdStr); err == nil {
+		if strings.ContainsAny(cmdStr, " \t") {
+			return `"` + cmdStr + `"`
+		}
+		return cmdStr
+	}
+	//携带参数时,按可执行文件后缀定位程序部分,含空格则加引号
+	for _, ext := range []string{".exe", ".bat", ".cmd", ".com"} {
+		if i := strings.Index(strings.ToLower(cmdStr), ext); i > 0 {
+			name := cmdStr[:i+len(ext)]
+			if _, err := os.Stat(name); err == nil {
+				if strings.ContainsAny(name, " \t") {
+					return `"` + name + `"` + cmdStr[i+len(ext):]
+				}
+				return name + cmdStr[i+len(ext):]
+			}
+		}
+	}
+	return cmdStr
 }
 
 func shellRun(filename string) error {

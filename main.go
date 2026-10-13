@@ -202,13 +202,14 @@ func main() {
 				},
 				{
 					Flag: []*Flag{
-						{Name: "publish", Memo: "发布"},
-						{Name: "subscribe", Memo: "订阅"},
+						{Name: "publish", Memo: "发布主题"},
+						{Name: "subscribe", Memo: "订阅主题"},
 						{Name: "qos", DefaultValue: "0", Memo: "消息质量"},
+						{Name: "retained", Memo: "发布时是否为保留消息"},
 					},
 					Use:     "mqtt",
 					Short:   "MQTT连接",
-					Example: "i dial mqtt 127.0.0.1:80 --topic topic",
+					Example: "i dial mqtt 127.0.0.1:80 --subscribe topic --publish topic",
 					Run:     handler.DialMQTT,
 				},
 				{

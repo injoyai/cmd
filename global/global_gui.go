@@ -28,7 +28,7 @@ func RunGUI() {
 			for k, v := range conv.GMap(config) {
 				File.Set(k, v)
 			}
-			err := File.Save()
+			err := Save()
 			if err != nil {
 				app.Eval(fmt.Sprintf(`notice("%v");`, err))
 				return

@@ -26,6 +26,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	timeout := flags.GetSecond("timeout", 10)
 	method := strings.ToUpper(flags.GetString("method", http.MethodGet))
 	headerMap := flags.GetGMap("header")
+	formMap := flags.GetGMap("form")
 	body := flags.GetString("body")
 	retry := flags.GetInt("retry")
 	get := flags.GetString("get")
@@ -42,12 +43,22 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	http.DefaultClient.SetTimeout(timeout)
 
-	resp, err := http.Url(args[0]).
+	req := http.Url(args[0]).
 		Retry(retry).
-		SetBody(body).
 		SetHeaders(header).
-		SetMethod(method).
-		Do()
+		SetMethod(method)
+	if len(formMap) > 0 {
+		//form-data优先于body
+		form := map[string]any{}
+		for k, v := range formMap {
+			form[k] = conv.String(v)
+		}
+		req = req.SetFormField(form)
+	} else {
+		req = req.SetBody(body)
+	}
+
+	resp, err := req.Do()
 
 	if err != nil {
 		logs.Err(err)

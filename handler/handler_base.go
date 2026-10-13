@@ -42,7 +42,7 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) {
 	for _, v := range os.Environ() {
 		list := strings.SplitN(v, "=", 2)
 		if len(list) == 2 {
-			for _, ss := range strings.Split(list[1], ";") {
+			for _, ss := range strings.Split(list[1], string(os.PathListSeparator)) {
 				if strings.Contains(ss, args[0]) {
 					find = true
 					fmt.Println(ss)
@@ -145,8 +145,7 @@ func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func broadcast(address string, bs []byte) error {
-	address = normalizePushAddress(address)
-
+	//规范化仅在此处进行一次,避免双重拼接端口
 	addr, err := resolveBroadcastUDPAddr(address)
 	if err != nil {
 		return err
@@ -157,11 +156,6 @@ func broadcast(address string, bs []byte) error {
 		return err
 	}
 	defer conn.Close()
-
-	// 开启广播权限（有些系统必须设置）
-	if err := conn.SetWriteBuffer(1024); err != nil {
-		return err
-	}
 
 	_, err = conn.Write(bs)
 	return err

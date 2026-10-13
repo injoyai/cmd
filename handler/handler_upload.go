@@ -21,6 +21,7 @@ func UploadMinio(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.Err(err)
 		return
 	}
+	defer f.Close()
 
 	i, err := upload.NewMinio(&upload.MinioConfig{
 		Endpoint:   flags.GetString("endpoint"),

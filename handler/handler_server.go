@@ -63,7 +63,10 @@ func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	err := listen.RunTCP(
 		flags.GetInt("port", 10086),
 		func(s *server.Server) {
-			s.SetTimeout(flags.GetSecond("timeout", -1))
+			//仅在传入正值时设置,负值/0会导致库内判断恒为超时,所有客户端1分钟内被踢
+			if t := flags.GetSecond("timeout", 0); t > 0 {
+				s.SetTimeout(t)
+			}
 			s.Logger.Enable(flags.GetBool("debug"))
 			s.Logger.WithUTF8()
 		})
@@ -75,7 +78,10 @@ func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 	port := flags.GetInt("port", 10088)
 	err := listen.RunUDP(port, func(s *server.Server) {
-		s.SetTimeout(flags.GetSecond("timeout", -1))
+		//仅在传入正值时设置,负值/0会导致库内判断恒为超时,所有客户端1分钟内被踢
+		if t := flags.GetSecond("timeout", 0); t > 0 {
+			s.SetTimeout(t)
+		}
 		s.Logger.Enable(flags.GetBool("debug"))
 		s.Logger.WithUTF8()
 	})
@@ -164,7 +170,11 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
-		go shell.Start(filename)
+		go func() {
+			if err := shell.Start(filename); err != nil {
+				logs.Err(err)
+			}
+		}()
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
@@ -226,7 +236,11 @@ func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Sprintf(":%d", port),
 		in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ws, err := websocket.Upgrade(w, r, r.Header, 4096, 4096)
-			in.CheckErr(err)
+			if err != nil {
+				//非WebSocket请求(如浏览器直接GET),Upgrade已写入错误响应,直接返回避免对nil调用Close引发panic
+				logs.Err(err)
+				return
+			}
 			defer ws.Close()
 			if debug {
 				logs.Debugf("[%s] 新的Websocket连接...\n", r.URL.Path)
@@ -252,6 +266,11 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
 	if ls := strings.Split(proxy, "->"); len(ls) == 2 {
 		port = conv.Int(ls[0])
 		address = ls[1]
+	}
+
+	if port == 0 || len(address) == 0 {
+		fmt.Println("[错误] 请指定转发规则, 例: i forward 80->:8080 或 -p=80 -a=127.0.0.1:8080")
+		return
 	}
 
 	f := &forward.Forward{
@@ -401,7 +420,7 @@ func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	port := flags.GetInt("port", 8080)
 	logs.Infof("[:%d] 开启WebDAV服务成功...\n", port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", 8080), &webdav.Handler{
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), &webdav.Handler{
 		Prefix:     "/",
 		FileSystem: webdav.Dir(args[0]), // 本地目录映射
 		LockSystem: webdav.NewMemLS(),

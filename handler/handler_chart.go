@@ -36,7 +36,9 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 	case ".csv":
 		r := csv.NewReader(f)
 		r.FieldsPerRecord = -1
-		result["Sheet1"], _ = r.ReadAll()
+		var rows [][]string
+		rows, err = r.ReadAll()
+		result["Sheet1"] = rows
 
 	default:
 		result, err = excel.From(f)
