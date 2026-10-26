@@ -17,6 +17,15 @@ var Exclusive = MResource{
 	"upx":       {Local: "upx", Remote: "upx_darwin_amd64", RemoteArm64: "upx_darwin_arm64"},
 	"ffmpeg":    {Local: "ffmpeg", Remote: "ffmpeg_darwin_amd64", RemoteArm64: "ffmpeg_darwin_arm64"},
 
+	"tdl": {
+		Local:       "tdl",
+		Remote:      "tdl_MacOS_64bit.tar.gz",
+		RemoteArm:   "tdl_MacOS_64bit.tar.gz",
+		RemoteArm64: "tdl_MacOS_arm64.tar.gz",
+		FullUrl:     []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
+		Handler:     downloadTDL,
+	},
+
 	"ipinfo": {
 		Local:   "ipinfo",
 		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_{os}_{arch}.tar.gz"},

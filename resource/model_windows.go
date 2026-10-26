@@ -120,6 +120,15 @@ var Exclusive = MResource{
 		},
 	},
 
+	"tdl": {
+		Local:       "tdl.exe",
+		Remote:      "tdl_Windows_64bit.zip",
+		RemoteArm:   "tdl_Windows_armv5.zip",
+		RemoteArm64: "tdl_Windows_arm64.zip",
+		FullUrl:     []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
+		Handler:     downloadTDL,
+	},
+
 	"ipinfo": {
 		Local:   "ipinfo.exe",
 		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip"},
