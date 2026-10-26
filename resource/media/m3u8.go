@@ -1,4 +1,4 @@
-package resource
+package media
 
 import (
 	"context"
@@ -12,33 +12,34 @@ import (
 	"sync"
 	"time"
 
+	"github.com/injoyai/cmd/resource/core"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/str/bar"
 	"github.com/injoyai/logs"
 )
 
-type m3u8Downloader struct{}
+type M3u8Downloader struct{}
 
-func (m3u8Downloader) Match(resource string) bool {
+func (M3u8Downloader) Match(resource string) bool {
 	u, err := url.Parse(resource)
 	return err == nil && u.Host != "" && path.Ext(u.Path) == ".m3u8"
 }
 
-func (m3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, error) {
-	op.setFilename("", ".ts")
-	return downloadFile(ctx, op, downloadM3u8)
+func (M3u8Downloader) Download(ctx context.Context, op *core.Task) (string, bool, error) {
+	op.SetFilename("", ".ts")
+	return core.DownloadFile(ctx, op, downloadM3u8)
 }
 
-func downloadM3u8(ctx context.Context, op *Task) error {
+func downloadM3u8(ctx context.Context, op *core.Task) error {
 	fmt.Println(op)
-	list, err := tool.DecodeM3u8WithClient(ctx, op.URL(), op.client)
+	list, err := tool.DecodeM3u8WithClient(ctx, op.URL(), op.Client)
 	if err != nil {
 		return err
 	}
 	if len(list) == 0 {
 		return errors.New("播放列表中没有可下载的分片")
 	}
-	release, err := op.prepareMediaCache(strings.Join(list, "\n"), true)
+	release, err := prepareMediaCache(op, strings.Join(list, "\n"), true)
 	if err != nil {
 		return err
 	}
@@ -46,13 +47,14 @@ func downloadM3u8(ctx context.Context, op *Task) error {
 	if _, err := downloadSegments(ctx, op, list); err != nil {
 		return err
 	}
-	return op.MergeTS()
+	return MergeTask(op)
 }
 
 // downloadSegments 等待所有工作协程结束后再返回，失败时保留已完成的分片。
-func downloadSegments(ctx context.Context, op *Task, list []string) (int64, error) {
+func downloadSegments(ctx context.Context, op *core.Task, list []string) (int64, error) {
 	var sum, current int64
 	var done, failed int
+	var failure error
 	var mu sync.Mutex
 	b := bar.New(int64(len(list)))
 	b.SetFormatter(bar.NewWithM3u8(&current, &sum))
@@ -67,6 +69,9 @@ func downloadSegments(ctx context.Context, op *Task, list []string) (int64, erro
 		defer mu.Unlock()
 		if err != nil {
 			failed++
+			if failure == nil || (core.IsRetryable(failure) && !core.IsRetryable(err)) {
+				failure = err
+			}
 			logs.Err(err)
 			return
 		}
@@ -95,8 +100,8 @@ func downloadSegments(ctx context.Context, op *Task, list []string) (int64, erro
 					if err = ctx.Err(); err != nil {
 						break
 					}
-					n, err = downloadHTTPFile(ctx, op.client, list[i], filename(i), false)
-					if err == nil {
+					n, err = core.DownloadHTTPFile(ctx, op.Client, list[i], filename(i), false)
+					if err == nil || !core.IsRetryable(err) {
 						break
 					}
 				}
@@ -126,7 +131,7 @@ send:
 		return sum, err
 	}
 	if failed > 0 {
-		return sum, fmt.Errorf("有 %d 个分片下载失败,已保留分片缓存,请重新执行下载补齐", failed)
+		return sum, fmt.Errorf("有 %d 个分片下载失败,已保留分片缓存: %w", failed, failure)
 	}
 	return sum, nil
 }

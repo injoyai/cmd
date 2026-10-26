@@ -164,12 +164,16 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
 	{
 		fmt.Println("开始运行InfluxDB服务...")
-		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "influxdb",
 			Dir:          userDir,
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
+		if err != nil {
+			fmt.Println("下载失败:", err)
+			return
+		}
 		go func() {
 			if err := shell.Start(filename); err != nil {
 				logs.Err(err)
@@ -179,13 +183,17 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 	{
 		fmt.Println("开始运行Edge服务...")
 		shell.Stop("edge.exe")
-		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "edge",
 			Dir:          userDir,
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyEnable:  true,
 			ProxyAddress: proxy,
 		})
+		if err != nil {
+			fmt.Println("下载失败:", err)
+			return
+		}
 		logs.PrintErr(tool.Exec(filename, flags.GetString("runType")))
 	}
 }
@@ -201,13 +209,17 @@ func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) {
 	{
 		fmt.Println("开始运行EdgeMini服务...")
 		shell.Stop("edge_mini.exe")
-		filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "edge_mini",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyEnable:  true,
 			ProxyAddress: flags.GetString("proxy"),
 		})
+		if err != nil {
+			fmt.Println("下载失败:", err)
+			return
+		}
 		logs.PrintErr(tool.Exec(filename, flags.GetString("runType")))
 	}
 }
@@ -216,13 +228,17 @@ func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "influxdb",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	shell.Start(filename)
 }
 
@@ -285,13 +301,17 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "proxy",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 
 	proxy := "80->:8080"
 	if len(args) > 0 {
@@ -306,13 +326,17 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "livego",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	logs.PrintErr(tool.ShellRun(filename))
 }
 
@@ -320,13 +344,17 @@ func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func FrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "frps",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	logs.PrintErr(tool.ShellRun(filename))
 }
 
@@ -390,13 +418,17 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	shell.Stop(name)
 	fmt.Println("开始运行In服务...")
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	logs.PrintErr(tool.ShellStart(filename))
 }
 
@@ -432,12 +464,16 @@ func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 func NatsServer(cmd *cobra.Command, args []string, flags *Flags) {
 	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "nats",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	logs.PrintErr(tool.ShellRun(filename))
 }

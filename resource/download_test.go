@@ -2,16 +2,24 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/resource/core"
+	"github.com/injoyai/cmd/resource/internal/testutil"
 	"github.com/injoyai/goutil/cache/v2"
 )
+
+func TestMain(m *testing.M) { testutil.Main(m) }
 
 func TestDownloadTemplatePriorityAndCover(t *testing.T) {
 	previous, existed := Resources["agents"]
@@ -85,7 +93,7 @@ func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 					FullUrl: []Url{Url(srv.URL + "/release/tool.bin")},
 					Handler: func(op *Task) error {
 						handlerCalls++
-						return op.download(op.Filename())
+						return op.DownloadTo(op.Filename())
 					},
 				}
 				t.Cleanup(func() {
@@ -123,103 +131,253 @@ func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 	}
 }
 
-func TestDownloadURLsFallback(t *testing.T) {
-	var requests atomic.Int32
+func TestDownloadConfigCanBeReused(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requests.Add(1)
-		if r.URL.Path == "/unavailable" {
-			http.Error(w, "unavailable", http.StatusServiceUnavailable)
-			return
-		}
-		_, _ = w.Write([]byte("mirror content"))
+		_, _ = w.Write([]byte(r.URL.Path))
 	}))
 	defer srv.Close()
-	op := newTestTask(t, &Config{Name: "mirrors.bin", Dir: t.TempDir()})
-	if err := downloadURLs(op, nil, nil); err == nil {
-		t.Fatal("empty download sources must return an error")
-	}
-	if err := downloadURLs(op, []string{srv.URL + "/unavailable", srv.URL + "/available"}, nil); err != nil {
+	const key = "test-config-reuse"
+	previous, existed := Resources[key]
+	Resources[key] = &Info{Local: "first.bin", FullUrl: []Url{Url(srv.URL + "/first-mirror.bin")}}
+	t.Cleanup(func() {
+		if existed {
+			Resources[key] = previous
+		} else {
+			delete(Resources, key)
+		}
+	})
+	op := &Config{Resource: key, Dir: t.TempDir(), Cover: true}
+	before := *op
+	if _, _, err := Download(context.Background(), op); err != nil {
 		t.Fatal(err)
 	}
-	if requests.Load() != 2 || op.URL() != srv.URL+"/available" {
-		t.Fatalf("mirror fallback: requests = %d, selected URL = %q", requests.Load(), op.URL())
+	if !reflect.DeepEqual(*op, before) {
+		t.Error("Download changed caller configuration")
 	}
-	if data, err := os.ReadFile(op.Filename()); err != nil || string(data) != "mirror content" {
-		t.Fatalf("mirror content = %q, err = %v", data, err)
+	op.Resource = srv.URL + "/second.v1.bin"
+	filename, _, err := Download(context.Background(), op)
+	if err != nil || filename != filepath.Join(op.Dir, "second.v1.bin") {
+		t.Fatalf("reused config: filename = %q, err = %v", filename, err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "/second.v1.bin" {
+		t.Fatalf("reused config downloaded stale content: %q, err = %v", data, err)
 	}
 }
 
-func TestDownloadExistingMediaFile(t *testing.T) {
-	for _, link := range []string{
-		"https://example.com/video.m3u8?token=test",
-		"rtsp://example.com/live",
-		"rtmp://example.com/live",
-	} {
-		t.Run(link, func(t *testing.T) {
-			dir := t.TempDir()
-			want := filepath.Join(dir, "saved.ts")
-			if err := os.WriteFile(want, []byte("existing media"), 0644); err != nil {
-				t.Fatal(err)
-			}
-			filename, exist, err := Download(context.Background(), &Config{
-				Resource: link,
-				Dir:      dir,
-				Name:     "saved",
-			})
-			if err != nil || !exist || filename != want {
-				t.Fatalf("Download() = %q, %v, %v; want %q, true, nil", filename, exist, err, want)
+func TestDownloadCustomTemplateExtension(t *testing.T) {
+	op := &Config{Resource: "agents", Name: "custom", Dir: t.TempDir()}
+	before := *op
+	filename, _, err := Download(context.Background(), op)
+	if err != nil || filename != filepath.Join(op.Dir, "custom.md") {
+		t.Fatalf("custom template: filename = %q, err = %v", filename, err)
+	}
+	if !reflect.DeepEqual(*op, before) {
+		t.Fatal("template download changed caller configuration")
+	}
+}
+
+func TestDownloadRejectsInvalidProxyRule(t *testing.T) {
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+	}))
+	defer srv.Close()
+	op := &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir(), ProxyEnable: true, ProxyIgnore: []string{"["}}
+	filename, exist, err := Download(context.Background(), op)
+	if err == nil || filename != "" || exist || requests.Load() != 0 {
+		t.Fatalf("invalid proxy rule: filename = %q, exist = %v, err = %v, requests = %d", filename, exist, err, requests.Load())
+	}
+	if task, err := NewTask(op); err == nil || task != nil {
+		t.Fatal("NewTask must reject invalid proxy rules")
+	}
+}
+
+func TestDownloadExplicitURLOverride(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(r.URL.Path))
+	}))
+	defer srv.Close()
+	op := &Config{Resource: srv.URL + "/original.bin", Dir: t.TempDir()}
+	op.SourceURL = srv.URL + "/override.bin"
+	before := *op
+	filename, _, err := Download(context.Background(), op)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "/override.bin" {
+		t.Fatalf("explicit URL override not honored: %q, err = %v", data, err)
+	}
+	if !reflect.DeepEqual(*op, before) {
+		t.Fatal("download changed explicit URL configuration")
+	}
+	op.SourceURL = ""
+	op.Resource = srv.URL + "/second.bin"
+	filename, _, err = Download(context.Background(), op)
+	if err != nil || filepath.Base(filename) != "second.bin" {
+		t.Fatalf("cleared URL override: filename = %q, err = %v", filename, err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "/second.bin" {
+		t.Fatalf("cleared URL override still used: %q, err = %v", data, err)
+	}
+}
+
+func TestInvalidProxyAddressDoesNotExposeCredentials(t *testing.T) {
+	op := &Config{
+		Resource:     "https://example.com/file.bin",
+		ProxyEnable:  true,
+		ProxyAddress: "http://proxy-user:proxy-password@localhost:bad%",
+	}
+	_, _, err := Download(context.Background(), op)
+	if err == nil {
+		t.Fatal("invalid proxy address must fail before download")
+	}
+	if strings.Contains(err.Error(), "proxy-password") {
+		t.Fatal("invalid proxy error or log exposed credentials")
+	}
+}
+
+func TestHTTPDownloadCancellationAndPreservation(t *testing.T) {
+	started := make(chan struct{}, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		started <- struct{}{}
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+	dir := t.TempDir()
+	filename := filepath.Join(dir, "file.bin")
+	if err := os.WriteFile(filename, []byte("original"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		_, _, err := Download(ctx, &Config{Resource: srv.URL + "/file.bin", Dir: dir, Cover: true})
+		result <- err
+	}()
+	select {
+	case <-started:
+	case <-time.After(3 * time.Second):
+		t.Fatal("request did not start")
+	}
+	cancel()
+	select {
+	case err := <-result:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("cancelled download: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("download ignored cancellation")
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "original" {
+		t.Fatalf("original output changed: %q, %v", data, err)
+	}
+	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 1 {
+		t.Fatalf("temporary files left behind: %v, %v", entries, err)
+	}
+	if _, _, err := Download(ctx, &Config{Resource: srv.URL + "/file.bin", Dir: dir}); !errors.Is(err, context.Canceled) {
+		t.Fatalf("already-cancelled download returned %v", err)
+	}
+}
+
+func TestTelegramDownloadReturnsFailure(t *testing.T) {
+	log := testutil.InstallDownloadHelper(t, "tdl")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	filename, exist, err := MustDownload(ctx, &Config{Resource: "https://t.me/example/1", Dir: t.TempDir()})
+	if err == nil || ctx.Err() != nil || filename != "" || exist {
+		t.Fatalf("single Telegram download did not return failure: %q, %v, %v", filename, exist, err)
+	}
+	if data, err := os.ReadFile(log); err != nil || strings.Count(string(data), "tdl ") != 1 {
+		t.Fatalf("tdl invocations: %q, %v", data, err)
+	}
+}
+
+func TestMustDownloadRetriesThenSucceeds(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = w.Write([]byte("retry succeeded"))
+	}))
+	defer srv.Close()
+	config := &Config{Resource: srv.URL + "/retry.bin", Dir: t.TempDir()}
+	filename, exist, err := MustDownload(context.Background(), config)
+	if err != nil || filename != filepath.Join(config.Dir, "retry.bin") || exist || calls.Load() != 2 {
+		t.Fatalf("MustDownload retry result: filename=%q, exist=%v, calls=%d, err=%v", filename, exist, calls.Load(), err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "retry succeeded" {
+		t.Fatalf("retry output: %q, err=%v", data, err)
+	}
+}
+
+func TestMustDownloadStopsForPermanentHTTPError(t *testing.T) {
+	for _, status := range []int{401, 403, 404, 501} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			var requests atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				w.WriteHeader(status)
+			}))
+			defer srv.Close()
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			filename, exist, err := MustDownload(ctx, &Config{Resource: srv.URL + "/asset", Dir: t.TempDir()})
+			var response *core.HTTPError
+			if !errors.As(err, &response) || response.StatusCode != status || requests.Load() != 1 || filename != "" || exist {
+				t.Fatalf("permanent HTTP error: file=%q, exist=%v, requests=%d, err=%v", filename, exist, requests.Load(), err)
 			}
 		})
 	}
 }
 
-func TestDownloadM3u8Failure(t *testing.T) {
+func TestMustDownloadStopsForInvalidConfigAndLocalError(t *testing.T) {
+	for _, config := range []*Config{
+		nil, {}, {Resource: "asset", ProxyEnable: true, ProxyIgnore: []string{"["}},
+		{Resource: "asset", ProxyEnable: true, ProxyAddress: "http://"},
+	} {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		_, _, err := MustDownload(ctx, config)
+		cancel()
+		if err == nil || errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("invalid config did not fail immediately: %v", err)
+		}
+	}
+	var requests atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("invalid playlist"))
+		requests.Add(1)
+		w.Write([]byte("content"))
 	}))
 	defer srv.Close()
-	filename, exist, err := Download(context.Background(), &Config{
-		Resource: srv.URL + "/video.m3u8",
-		Dir:      t.TempDir(),
-	})
-	if err == nil || filename != "" || exist {
-		t.Fatalf("Download() = %q, %v, %v; want empty, false, error", filename, exist, err)
+	blocked := filepath.Join(t.TempDir(), "blocked")
+	if err := os.WriteFile(blocked, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, _, err := MustDownload(ctx, &Config{Resource: srv.URL + "/asset", Dir: blocked})
+	var path *os.PathError
+	if !errors.As(err, &path) || requests.Load() != 1 {
+		t.Fatalf("local error retried or lost: requests=%d, err=%v", requests.Load(), err)
 	}
 }
 
-func TestProxySkipsWhenUrlMatchesIgnoreRule(t *testing.T) {
-	op := &Config{
-		Resource:     "https://example.com/file.bin",
-		ProxyEnable:  true,
-		ProxyAddress: "http://proxy.local:8080",
-		ProxyIgnore:  []string{"example\\.com"},
-	}
-
-	if got := newTestTask(t, op).Proxy(); got != "" {
-		t.Fatalf("Proxy() = %q, want empty when url matches ignore rule", got)
-	}
-}
-
-func TestProxyReturnsAddressWhenNotIgnored(t *testing.T) {
-	op := &Config{
-		Resource:     "https://example.com/file.bin",
-		ProxyEnable:  true,
-		ProxyAddress: "http://proxy.local:8080",
-		ProxyIgnore:  []string{"localhost", "127\\.0\\.0\\.1"},
-	}
-
-	if got := newTestTask(t, op).Proxy(); got != "http://proxy.local:8080" {
-		t.Fatalf("Proxy() = %q, want %q", got, "http://proxy.local:8080")
-	}
-}
-
-func TestProxyEmptyWhenDisabled(t *testing.T) {
-	op := &Config{
-		Resource:     "https://example.com/file.bin",
-		ProxyAddress: "http://proxy.local:8080",
-	}
-
-	if got := newTestTask(t, op).Proxy(); got != "" {
-		t.Fatalf("Proxy() = %q, want empty when proxy disabled", got)
+func TestMustDownloadStopsDuringRetryWait(t *testing.T) {
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	_, _, err := MustDownload(ctx, &Config{Resource: srv.URL + "/asset", Dir: t.TempDir()})
+	if !errors.Is(err, context.DeadlineExceeded) || requests.Load() != 1 {
+		t.Fatalf("retry wait did not stop: requests=%d, err=%v", requests.Load(), err)
 	}
 }

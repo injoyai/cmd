@@ -1,4 +1,4 @@
-package resource
+package core
 
 import (
 	"context"
@@ -17,9 +17,9 @@ import (
 // Task 是一次下载的配置快照及运行状态，通过NewTask创建。
 type Task struct {
 	Config
-	ctx        context.Context
-	client     *http.Client
-	cacheDir   string
+	Ctx        context.Context
+	Client     *http.Client
+	CacheDir   string
 	url        string
 	filename   string
 	proxyRules []*regexp.Regexp
@@ -30,12 +30,18 @@ func NewTask(config *Config) (*Task, error) {
 	if config == nil {
 		return nil, errors.New("下载配置不能为空")
 	}
-	task := &Task{Config: *config, url: config.SourceURL, ctx: context.Background()}
+	task := &Task{Config: *config, url: config.SourceURL, Ctx: context.Background()}
 	task.ProxyIgnore = append([]string(nil), config.ProxyIgnore...)
 	if task.ProxyEnable && task.ProxyAddress != "" {
-		if _, err := url.Parse(task.ProxyAddress); err != nil {
+		proxy, err := url.Parse(task.ProxyAddress)
+		if err != nil || proxy.Hostname() == "" {
 			// 底层URL解析错误会回显完整代理地址，避免把凭据带入错误日志。
-			return nil, errors.New("代理地址格式无效，请检查端口和转义字符")
+			return nil, errors.New("代理地址格式无效，请检查主机、端口和转义字符")
+		}
+		switch proxy.Scheme {
+		case "", "http", "https", "socks5", "socks5h":
+		default:
+			return nil, errors.New("不支持的代理协议，请使用HTTP、HTTPS或SOCKS5代理")
 		}
 	}
 	rules, err := task.compileProxyRules()
@@ -43,7 +49,7 @@ func NewTask(config *Config) (*Task, error) {
 		return nil, err
 	}
 	task.proxyRules = rules
-	task.setFilename("", "")
+	task.SetFilename("", "")
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = func(req *http.Request) (*url.URL, error) {
 		address := task.proxyFor(req.URL.String())
@@ -52,16 +58,16 @@ func NewTask(config *Config) (*Task, error) {
 		}
 		return url.Parse(address)
 	}
-	task.client = &http.Client{Transport: transport}
+	task.Client = &http.Client{Transport: transport}
 	return task, nil
 }
 
 // Close 释放任务持有的空闲连接；包级Download会自动调用。
 func (this *Task) Close() {
-	this.client.CloseIdleConnections()
+	this.Client.CloseIdleConnections()
 }
 
-func (this *Task) setFilename(name, extension string) {
+func (this *Task) SetFilename(name, extension string) {
 	if name == "" {
 		name = sourceFilename(this.Resource)
 	}
@@ -103,11 +109,11 @@ func filenameExtension(name string) string {
 }
 
 func (this *Task) String() string {
-	return fmt.Sprintf("开始下载: %s  代理: %s", redactURL(this.URL()), redactURL(this.Proxy()))
+	return fmt.Sprintf("开始下载: %s  代理: %s", RedactURL(this.URL()), RedactURL(this.Proxy()))
 }
 
-// redactURL 只用于展示，实际请求继续使用原始地址。
-func redactURL(raw string) string {
+// RedactURL 只用于展示，实际请求继续使用原始地址。
+func RedactURL(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return "<无效地址>"
@@ -178,8 +184,8 @@ func (this *Task) TempFilename() string {
 }
 
 func (this *Task) TempDir() string {
-	if this.cacheDir != "" {
-		return this.cacheDir
+	if this.CacheDir != "" {
+		return this.CacheDir
 	}
 	id := sha256.Sum256([]byte(this.URL() + "\x00" + this.Filename()))
 	return filepath.Join(filepath.Dir(this.Filename()), fmt.Sprintf(".i-download-%x", id[:16]))

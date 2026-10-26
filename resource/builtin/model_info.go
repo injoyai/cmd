@@ -1,20 +1,20 @@
-package resource
+package builtin
 
 import (
 	"runtime"
-	"strings"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/resource/core"
+	"github.com/injoyai/cmd/resource/oss"
 )
 
 type Info struct {
-	Key         []string //索引
-	Local       string   //本地资源名称
-	Remote      string   //远程资源名称,默认amd64
-	RemoteArm   string   //远程资源名称,arm架构
-	RemoteArm64 string   //远程资源名称,arm64架构
-	FullUrl     []Url    //完整的资源地址,todo 缓存和最新目前在一起
-	Handler     Handler  //自定义处理,例如压缩文件
+	Key         []string     //索引
+	Local       string       //本地资源名称
+	Remote      string       //远程资源名称,默认amd64
+	RemoteArm   string       //远程资源名称,arm架构
+	RemoteArm64 string       //远程资源名称,arm64架构
+	FullUrl     []core.Url   //完整的资源地址,todo 缓存和最新目前在一起
+	Handler     core.Handler //自定义处理,例如压缩文件
 }
 
 func (this *Info) GetLocalName() string {
@@ -45,7 +45,7 @@ func (this *Info) GetRemote() string {
 	return this.Remote
 }
 
-func (this *Info) GetHandler() Handler {
+func (this *Info) GetHandler() core.Handler {
 	return this.Handler
 }
 
@@ -61,7 +61,7 @@ func (this *Info) init() {
 
 type MResource map[string]*Info
 
-func (this MResource) Get(key string) (Resource, bool) {
+func (this MResource) Get(key string) (core.Resource, bool) {
 	r, ok := this[key]
 	return r, ok
 }
@@ -78,7 +78,7 @@ var Resources = MResource{
 func init() {
 
 	//从配置中读取配置的基础地址,例 https://oss.xxx.com/store/{name}
-	urls := GetUrls()
+	urls := oss.GetUrls()
 
 	//建立索引
 	for k, v := range Resources {
@@ -106,20 +106,4 @@ func init() {
 		}
 	}
 
-}
-
-const (
-	DefaultUrl = "https://oss.002246.xyz/in-store/{name}"
-)
-
-// GetUrls 从配置中读取配置的基础地址,和默认地址,例 https://oss.xxx.com/store/{name}
-func GetUrls() []Url {
-	urls := []Url(nil)
-	for _, u := range strings.Split(global.GetString("resource"), ",") {
-		if len(u) != 0 {
-			urls = append(urls, Url(u))
-		}
-	}
-	urls = append(urls, DefaultUrl)
-	return urls
 }

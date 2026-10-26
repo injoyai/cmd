@@ -1,14 +1,15 @@
 package tool
 
 import (
+	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/grafov/m3u8"
+	"github.com/injoyai/cmd/resource/core"
 )
 
 func DecodeM3u8(rawurl string) ([]string, error) {
@@ -33,15 +34,20 @@ func decodeM3u8(ctx context.Context, rawurl string, client *http.Client, visited
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, core.NetworkError(err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("下载播放列表失败: %s", resp.Status)
+		return nil, &core.HTTPError{StatusCode: resp.StatusCode, URL: rawurl}
 	}
 
-	playlist, listType, err := m3u8.DecodeFrom(resp.Body, true)
+	var data bytes.Buffer
+	_, err = data.ReadFrom(resp.Body)
 	resp.Body.Close()
+	if err != nil {
+		return nil, core.NetworkError(err)
+	}
+	playlist, listType, err := m3u8.Decode(data, true)
 	if err != nil {
 		return nil, err
 	}

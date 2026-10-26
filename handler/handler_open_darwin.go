@@ -46,13 +46,17 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 		//尝试在内置资源查找
 		if r := resource.Resources[strings.ToLower(args[0])]; r != nil {
 			shell.Stop(r.GetLocalName())
-			filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
+			filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),
 				Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 				ProxyEnable:  true,
 				ProxyAddress: flags.GetString("proxy"),
 			})
+			if err != nil {
+				fmt.Println("下载失败:", err)
+				return
+			}
 			if !exist {
 				<-time.After(time.Millisecond * 500)
 			}

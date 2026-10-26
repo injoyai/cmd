@@ -1,9 +1,10 @@
-package resource
+package builtin
 
 import (
 	"os"
 	"path/filepath"
 
+	"github.com/injoyai/cmd/resource/core"
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/logs"
 )
@@ -45,15 +46,15 @@ var Exclusive = MResource{
 	"youtube-dl": {
 		Key:     []string{"ytdl", "yt-dl"},
 		Local:   "youtube-dl.exe",
-		FullUrl: []Url{"https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl.exe"},
+		FullUrl: []core.Url{"https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl.exe"},
 	},
 
 	"adb": {
 		Local:  "adb.exe",
 		Remote: "adb.zip",
-		Handler: func(op *Task) error {
+		Handler: func(op *core.Task) error {
 			zipFilename := filepath.Join(op.Dir, "adb.zip")
-			if err := op.download(zipFilename); err != nil {
+			if err := op.DownloadTo(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
@@ -76,10 +77,10 @@ var Exclusive = MResource{
 	"chrome104": {
 		Local:   "-",
 		Remote:  "chrome.zip",
-		FullUrl: []Url{"https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip"},
-		Handler: func(op *Task) error {
+		FullUrl: []core.Url{"https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip"},
+		Handler: func(op *core.Task) error {
 			zipFilename := filepath.Join(op.Dir, "chrome.zip")
-			if err := op.download(zipFilename); err != nil {
+			if err := op.DownloadTo(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
@@ -90,10 +91,10 @@ var Exclusive = MResource{
 	"influxdb": {
 		Key:     []string{"influx", "influxd"},
 		Local:   "influxd.exe",
-		FullUrl: []Url{"https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"},
-		Handler: func(op *Task) error {
+		FullUrl: []core.Url{"https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"},
+		Handler: func(op *core.Task) error {
 			zipFilename := filepath.Join(op.Dir, "influxdb.zip")
-			if err := op.download(zipFilename); err != nil {
+			if err := op.DownloadTo(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
@@ -110,9 +111,9 @@ var Exclusive = MResource{
 	"ps5": {
 		Local:  "-",
 		Remote: "PhotoShop CS5.zip",
-		Handler: func(op *Task) error {
+		Handler: func(op *core.Task) error {
 			zipFilename := filepath.Join(op.Dir, "ps5.zip")
-			if err := op.download(zipFilename); err != nil {
+			if err := op.DownloadTo(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
@@ -125,16 +126,16 @@ var Exclusive = MResource{
 		Remote:      "tdl_Windows_64bit.zip",
 		RemoteArm:   "tdl_Windows_armv5.zip",
 		RemoteArm64: "tdl_Windows_arm64.zip",
-		FullUrl:     []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
+		FullUrl:     []core.Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
 		Handler:     downloadTDL,
 	},
 
 	"ipinfo": {
 		Local:   "ipinfo.exe",
-		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip"},
-		Handler: func(op *Task) error {
+		FullUrl: []core.Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip"},
+		Handler: func(op *core.Task) error {
 			zipFilename := filepath.Join(op.Dir, "ipinfo.zip")
-			if err := op.download(zipFilename); err != nil {
+			if err := op.DownloadTo(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)
@@ -147,10 +148,10 @@ var Exclusive = MResource{
 
 	"nats": {
 		Local:   "nats.exe",
-		FullUrl: []Url{"https://github.com/nats-io/nats-server/releases/download/v2.12.1-RC.5/nats-server-v2.12.1-RC.5-windows-amd64.zip"},
-		Handler: func(op *Task) error {
+		FullUrl: []core.Url{"https://github.com/nats-io/nats-server/releases/download/v2.12.1-RC.5/nats-server-v2.12.1-RC.5-windows-amd64.zip"},
+		Handler: func(op *core.Task) error {
 			zipFilename := filepath.Join(op.Dir, "nats.zip")
-			if err := op.download(zipFilename); err != nil {
+			if err := op.DownloadTo(zipFilename); err != nil {
 				return err
 			}
 			defer os.Remove(zipFilename)

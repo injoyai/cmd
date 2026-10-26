@@ -1,4 +1,4 @@
-package resource
+package telegram
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/injoyai/cmd/resource/builtin"
+	"github.com/injoyai/cmd/resource/core"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/goutil/oss/compress/tar"
-	"github.com/injoyai/goutil/oss/compress/zip"
 )
 
-type telegramDownloader struct{}
+type Downloader struct{}
 
-func (telegramDownloader) Match(resource string) bool {
+func (Downloader) Match(resource string) bool {
 	return IsTelegramLink(resource)
 }
 
@@ -45,7 +45,7 @@ func IsTelegramLink(s string) bool {
 }
 
 // Download 使用tdl下载Telegram消息，一条消息可能产生多个文件，因此返回目录。
-func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+func (Downloader) Download(ctx context.Context, op *core.Task) (string, bool, error) {
 	filename, err := ensureTDL(ctx, op)
 	if err != nil {
 		return "", false, err
@@ -64,7 +64,7 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 	displayArgs := append([]string(nil), args...)
 	for i := 0; i+1 < len(displayArgs); i++ {
 		if displayArgs[i] == "--proxy" || displayArgs[i] == "-u" {
-			displayArgs[i+1] = redactURL(displayArgs[i+1])
+			displayArgs[i+1] = core.RedactURL(displayArgs[i+1])
 			i++
 		}
 	}
@@ -80,7 +80,7 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 }
 
 // ensureTDL 查找tdl,不存在则下载到i所在目录
-func ensureTDL(ctx context.Context, op *Task) (string, error) {
+func ensureTDL(ctx context.Context, op *core.Task) (string, error) {
 	if filename, err := exec.LookPath("tdl"); err == nil {
 		return filename, nil
 	}
@@ -95,7 +95,7 @@ func ensureTDL(ctx context.Context, op *Task) (string, error) {
 	}
 
 	fmt.Println("未找到tdl, 正在下载...")
-	filename, _, err := Download(ctx, &Config{
+	filename, _, err := builtin.Download(ctx, &core.Config{
 		Resource:     "tdl",
 		Dir:          oss.ExecDir(),
 		ProxyEnable:  op.ProxyEnable,
@@ -103,51 +103,4 @@ func ensureTDL(ctx context.Context, op *Task) (string, error) {
 		ProxyIgnore:  op.ProxyIgnore,
 	})
 	return filename, err
-}
-
-// downloadTDL 下载tdl发布包,并解压出可执行文件到op.Dir
-func downloadTDL(op *Task) error {
-	dir := filepath.Dir(op.Filename())
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return err
-	}
-	// 临时目录与目标文件位于同一文件系统，且只清理本次创建的内容。
-	temp, err := os.MkdirTemp(dir, ".tdl-*")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(temp)
-	archive := filepath.Join(temp, "archive"+archiveExt(op.URL()))
-	if err := op.download(archive); err != nil {
-		return err
-	}
-
-	if strings.HasSuffix(strings.ToLower(archive), ".zip") {
-		err = zip.Decode(archive, temp)
-	} else {
-		err = tar.Decode(archive, temp)
-	}
-	if err != nil {
-		return err
-	}
-
-	name := "tdl"
-	if runtime.GOOS == "windows" {
-		name += ".exe"
-	}
-	if err = os.Rename(filepath.Join(temp, name), op.Filename()); err != nil {
-		return err
-	}
-	if runtime.GOOS == "windows" {
-		return nil
-	}
-	return os.Chmod(op.Filename(), 0755)
-}
-
-// archiveExt 根据地址返回发布包后缀
-func archiveExt(u string) string {
-	if strings.HasSuffix(strings.ToLower(u), ".zip") {
-		return ".zip"
-	}
-	return ".tar.gz"
 }

@@ -31,7 +31,7 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          flags.GetString("dir"),
 		Coroutine:    flags.GetInt("coroutine"),
@@ -45,12 +45,16 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		VoiceEnable:  flags.GetBool("voiceEnable"),
 		VoiceText:    flags.GetString("voiceText"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	fmt.Println("下载完成: ", filename, conv.Select(exist, "(已存在)", ""))
 }
 
 func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
 	dir := "./"
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "install_go",
 		Dir:          dir,
 		Name:         flags.GetString("name"),
@@ -58,6 +62,10 @@ func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	filename = dir + filename
 	tool.ShellRun("chmod +x " + filename)
 	tool.ShellRun(filename + " " + strings.Join(args, " "))
@@ -70,7 +78,7 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 
-	filename, exist := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
 		Name:         flags.GetString("name"),
@@ -78,6 +86,10 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	if !exist && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
 		tool.ShellRun("chmod +x " + filename)
 	}

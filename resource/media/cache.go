@@ -1,4 +1,4 @@
-package resource
+package media
 
 import (
 	"crypto/sha256"
@@ -6,10 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/injoyai/cmd/resource/core"
 )
 
 // prepareMediaCache 只复用带有本资源标记的缓存，锁文件避免同时写同一组分片。
-func (op *Task) prepareMediaCache(identity string, resume bool) (func(), error) {
+func prepareMediaCache(op *core.Task, identity string, resume bool) (func(), error) {
 	id := fmt.Sprintf("%x", sha256.Sum256([]byte(op.URL()+"\x00"+op.Filename()+"\x00"+identity)))
 	parent := filepath.Dir(op.Filename())
 	if err := os.MkdirAll(parent, 0755); err != nil {
@@ -26,7 +28,7 @@ func (op *Task) prepareMediaCache(identity string, resume bool) (func(), error) 
 			os.Remove(lock)
 			return nil, err
 		}
-		op.cacheDir = dir
+		op.CacheDir = dir
 		return func() { os.Remove(lock) }, nil
 	}
 	if resume {

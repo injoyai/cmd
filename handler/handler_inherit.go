@@ -19,10 +19,13 @@ import (
 )
 
 func Swag(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload(g.Ctx(), &resource.Config{
+	if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource: "swag",
 		Dir:      oss.ExecDir(),
-	})
+	}); err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	//linux/darwin下Exec首参作为bash -c的脚本,其余参数会被忽略,
 	//所以必须拼接成完整命令行,一次传入
 	cmdline := "swag init"
@@ -50,12 +53,15 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) {
 			args[i] = "myip"
 		}
 	}
-	resource.MustDownload(g.Ctx(), &resource.Config{
+	if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "ipinfo",
 		Dir:          oss.ExecDir(),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy", global.GetProxy()),
-	})
+	}); err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
 }
 
@@ -104,10 +110,13 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 	output := flags.GetString("output", filepath.Base(wd))
 	upx := flags.GetBool("upx")
 	if upx {
-		resource.MustDownload(g.Ctx(), &resource.Config{
+		if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource: "upx",
 			Dir:      oss.ExecDir(),
-		})
+		}); err != nil {
+			fmt.Println("下载失败:", err)
+			return
+		}
 	}
 
 	osList := strings.Split(flags.GetString("os"), ",")

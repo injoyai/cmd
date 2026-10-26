@@ -1,12 +1,41 @@
 package handler
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/injoyai/goutil/oss"
 )
+
+func TestDownloadReportsFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	dir := t.TempDir()
+	output, err := os.Create(filepath.Join(dir, "stdout.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer output.Close()
+	func() {
+		previous := os.Stdout
+		os.Stdout = output
+		defer func() { os.Stdout = previous }()
+		Download(nil, []string{srv.URL + "/missing"}, NewFlags([]*Flag{{Name: "dir", Value: dir}}))
+	}()
+	data, err := os.ReadFile(output.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if text := string(data); !strings.Contains(text, "下载失败:") || !strings.Contains(text, "404") || strings.Contains(text, "下载完成") {
+		t.Fatalf("unexpected CLI output: %s", text)
+	}
+}
 
 func TestUninstallPath(t *testing.T) {
 	dir := oss.ExecDir()

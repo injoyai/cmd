@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/grafov/m3u8"
+	"github.com/injoyai/cmd/resource/core"
 )
 
 func TestDecodeM3u8RedirectBaseAndStatus(t *testing.T) {
@@ -30,6 +31,35 @@ func TestDecodeM3u8RedirectBaseAndStatus(t *testing.T) {
 	}
 	if _, err := DecodeM3u8(srv.URL + "/missing.m3u8"); err == nil {
 		t.Fatal("valid playlist body with HTTP 404 must fail")
+	}
+}
+
+func TestDecodeM3u8ErrorClassification(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		status    int
+		truncated bool
+		wantRetry bool
+	}{
+		{"missing", 404, false, false},
+		{"unavailable", 503, false, true},
+		{"invalid playlist", 200, false, false},
+		{"truncated response", 200, true, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.truncated {
+					w.Header().Set("Content-Length", "100")
+				}
+				w.WriteHeader(tt.status)
+				fmt.Fprint(w, "invalid playlist")
+			}))
+			defer srv.Close()
+			_, err := DecodeM3u8(srv.URL + "/video.m3u8")
+			if err == nil || core.IsRetryable(err) != tt.wantRetry {
+				t.Fatalf("playlist classification: err=%v, want retry=%v", err, tt.wantRetry)
+			}
+		})
 	}
 }
 

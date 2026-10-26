@@ -17,13 +17,17 @@ func SetupSSHKey(cmd *cobra.Command, args []string, flags *Flags) {
 		return
 	}
 	userDir := oss.UserInjoyDir()
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "setup_ssh_key",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	host := flags.GetString("host")
 	if len(host) == 0 {
 		logs.Err("请输入主机地址,例 i setup ssh-key --host 192.168.1.1")

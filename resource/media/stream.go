@@ -1,4 +1,4 @@
-package resource
+package media
 
 import (
 	"context"
@@ -16,22 +16,24 @@ import (
 	"time"
 
 	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/resource/builtin"
+	"github.com/injoyai/cmd/resource/core"
 	"github.com/injoyai/goutil/oss"
 )
 
-type streamDownloader struct{}
+type StreamDownloader struct{}
 
-func (streamDownloader) Match(resource string) bool {
+func (StreamDownloader) Match(resource string) bool {
 	u, err := url.Parse(resource)
 	return err == nil && u.Host != "" && (u.Scheme == "rtsp" || u.Scheme == "rtmp")
 }
 
-func (streamDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
-	op.setFilename("", ".ts")
-	return downloadFile(ctx, op, downloadStream)
+func (StreamDownloader) Download(ctx context.Context, op *core.Task) (string, bool, error) {
+	op.SetFilename("", ".ts")
+	return core.DownloadFile(ctx, op, downloadStream)
 }
 
-func downloadStream(ctx context.Context, op *Task) error {
+func downloadStream(ctx context.Context, op *core.Task) error {
 	fmt.Println(op)
 	recordCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -39,7 +41,7 @@ func downloadStream(ctx context.Context, op *Task) error {
 	if err != nil {
 		return err
 	}
-	release, err := op.prepareMediaCache("", false)
+	release, err := prepareMediaCache(op, "", false)
 	if err != nil {
 		return err
 	}
@@ -69,17 +71,17 @@ func downloadStream(ctx context.Context, op *Task) error {
 		mergeCtx, cancel = context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
 		defer cancel()
 	}
-	if err := op.mergeTS(mergeCtx, ffmpeg); err != nil {
+	if err := mergeTask(mergeCtx, op, ffmpeg); err != nil {
 		return errors.Join(recordCtx.Err(), err)
 	}
 	return recordCtx.Err()
 }
 
-func ensureFFmpeg(ctx context.Context, op *Task) (string, error) {
+func ensureFFmpeg(ctx context.Context, op *core.Task) (string, error) {
 	if filename, err := exec.LookPath("ffmpeg"); err == nil {
 		return filename, nil
 	}
-	filename, _, err := Download(ctx, &Config{
+	filename, _, err := builtin.Download(ctx, &core.Config{
 		Resource: "ffmpeg", Dir: oss.ExecDir(),
 		ProxyEnable: op.ProxyEnable, ProxyAddress: op.ProxyAddress, ProxyIgnore: op.ProxyIgnore,
 	})
@@ -96,11 +98,11 @@ func ensureFFmpeg(ctx context.Context, op *Task) (string, error) {
 
 // MergeTS 合并指定目录，保留源文件；失败时保留原有输出文件。
 func MergeTS(dir, output string) error {
-	op, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: global.GetProxy()})
+	op, err := core.NewTask(&core.Config{ProxyEnable: true, ProxyAddress: global.GetProxy()})
 	if err != nil {
 		return err
 	}
-	defer op.client.CloseIdleConnections()
+	defer op.Close()
 	ffmpeg, err := ensureFFmpeg(context.Background(), op)
 	if err != nil {
 		return err
@@ -165,20 +167,21 @@ func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
 	return os.Rename(temp.Name(), output)
 }
 
-func (this *Task) MergeTS() error {
-	ffmpeg, err := ensureFFmpeg(this.ctx, this)
+// MergeTask 合并任务分片，成功后清理本次任务的专用缓存。
+func MergeTask(this *core.Task) error {
+	ffmpeg, err := ensureFFmpeg(this.Ctx, this)
 	if err != nil {
 		return err
 	}
-	return this.mergeTS(this.ctx, ffmpeg)
+	return mergeTask(this.Ctx, this, ffmpeg)
 }
 
-func (this *Task) mergeTS(ctx context.Context, ffmpeg string) error {
+func mergeTask(ctx context.Context, this *core.Task, ffmpeg string) error {
 	if err := mergeTS(ctx, ffmpeg, this.TempDir(), this.Filename()); err != nil {
 		return err
 	}
-	if this.cacheDir != "" {
-		return os.RemoveAll(this.cacheDir)
+	if this.CacheDir != "" {
+		return os.RemoveAll(this.CacheDir)
 	}
 	return nil
 }

@@ -376,11 +376,14 @@ func dialStdinPump(c *client.Client) {
 }
 
 func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload(g.Ctx(), &resource.Config{
+	if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource: "npc",
 		Dir:      oss.ExecDir(),
 		Cover:    flags.GetBool("download"),
-	})
+	}); err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	addr := conv.Default("", args...)
 	file := cache.NewFile("dial", "nps")
 	addr = flags.GetString("addr", file.GetString("addr", addr))
@@ -399,13 +402,16 @@ func DialNPS(cmd *cobra.Command, args []string, flags *Flags) {
 }
 
 func DialFrp(cmd *cobra.Command, args []string, flags *Flags) {
-	resource.MustDownload(g.Ctx(), &resource.Config{
+	if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "frpc",
 		Dir:          oss.ExecDir(),
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
-	})
+	}); err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	file := cache.NewFile("dial", "frp")
 	if len(args) > 0 && args[0] == "config" {
 		fmt.Println("服务地址: ", file.GetString("serverAddr"))
@@ -477,13 +483,17 @@ func DialProxy(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("请填写代理地址")
 		return
 	}
-	filename, _ := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "proxy",
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download"),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
+	if err != nil {
+		fmt.Println("下载失败:", err)
+		return
+	}
 	proxy := "80->:8080"
 	if len(args) > 1 {
 		proxy = args[1]

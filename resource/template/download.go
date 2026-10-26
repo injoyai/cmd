@@ -1,16 +1,13 @@
-package resource
+package template
 
 import (
 	"context"
-	"embed"
 	"io/fs"
 	"strings"
 
+	"github.com/injoyai/cmd/resource/core"
 	"github.com/injoyai/goutil/oss"
 )
-
-//go:embed templates templates/.gitignore
-var Templates embed.FS
 
 func getTemplateName(name string) string {
 	switch strings.ToLower(name) {
@@ -39,18 +36,18 @@ func getTemplateName(name string) string {
 	}
 }
 
-type templateDownloader struct{}
+type Downloader struct{ Templates fs.FS }
 
-func (templateDownloader) Match(resource string) bool {
-	info, err := fs.Stat(Templates, "templates/"+getTemplateName(resource))
+func (d Downloader) Match(resource string) bool {
+	info, err := fs.Stat(d.Templates, "templates/"+getTemplateName(resource))
 	return err == nil && !info.IsDir()
 }
 
-func (templateDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+func (d Downloader) Download(ctx context.Context, op *core.Task) (string, bool, error) {
 	name := getTemplateName(op.Resource)
-	op.setFilename(name, "")
-	return downloadFile(ctx, op, func(ctx context.Context, op *Task) error {
-		bs, err := Templates.ReadFile("templates/" + name)
+	op.SetFilename(name, "")
+	return core.DownloadFile(ctx, op, func(ctx context.Context, op *core.Task) error {
+		bs, err := fs.ReadFile(d.Templates, "templates/"+name)
 		if err != nil {
 			return err
 		}
