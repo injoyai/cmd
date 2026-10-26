@@ -1,13 +1,22 @@
 #!/bin/bash
 set -e
 
+# 从脚本所在目录向上定位项目，支持脚本放在根目录或 scripts/ 下。
+project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+while [ ! -f "$project_dir/go.mod" ]; do
+    if [ "$project_dir" = "/" ]; then
+        echo "未找到 go.mod，无法确定项目根目录" >&2
+        exit 1
+    fi
+    project_dir="$(dirname -- "$project_dir")"
+done
+cd -- "$project_dir"
+
 date=$(date +%Y-%m-%d)
-dir="."
-cd $dir
 
 name='name'
 bin_dir="./bin"
-mkdir -p $bin_dir
+mkdir -p "$bin_dir"
 
 # 自动识别程序入口: cmd/main.go (完整模式) 或 当前目录 (简易模式)
 pkg="."
@@ -24,9 +33,9 @@ build_and_upload() {
 
     echo "开始编译 $name ..."
     if [ -n "$goarm" ]; then
-        GOOS=$goos GOARCH=$goarch GOARM=$goarm go build -v -ldflags="-s -w -X main.BuildDate=$date" -o $bin_dir/$name $pkg
+        GOOS=$goos GOARCH=$goarch GOARM=$goarm go build -v -ldflags="-s -w -X main.BuildDate=$date" -o "$bin_dir/$name" "$pkg"
     else
-        GOOS=$goos GOARCH=$goarch go build -v -ldflags="-s -w -X main.BuildDate=$date" -o $bin_dir/$name $pkg
+        GOOS=$goos GOARCH=$goarch go build -v -ldflags="-s -w -X main.BuildDate=$date" -o "$bin_dir/$name" "$pkg"
     fi
     echo "$name 编译完成..."
 
