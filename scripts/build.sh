@@ -34,14 +34,17 @@ build_and_upload() {
     fi
     echo "$name 编译完成..."
 
-    echo "开始压缩..."
-    upx -9 -k "$bin_dir/$name" || true
-    base="${name%.*}"   # 去掉最后一个 .后缀，比如 in.exe -> in
-    rm -f "$bin_dir/$base.ex~" "$bin_dir/$base.000" "$bin_dir/$base.~"
+    if command -v upx >/dev/null 2>&1; then
+        echo "开始压缩..."
+        upx -9 -k "$bin_dir/$name" || true
+        base="${name%.*}"   # 去掉最后一个 .后缀，比如 in.exe -> in
+        rm -f "$bin_dir/$base.ex~" "$bin_dir/$base.000" "$bin_dir/$base.~"
+    else
+        echo "未安装 upx，跳过压缩"
+    fi
 
     echo "开始上传..."
-    # 如果必须走 Windows cmd.exe 上传，用下面的；否则建议直接 ./in
-    cmd.exe /c "i upload minio $bin_dir/$name"
+    i upload minio "$bin_dir/$name"
 
     echo "===================="
 }
