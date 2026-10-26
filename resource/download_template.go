@@ -46,10 +46,10 @@ func (templateDownloader) Match(resource string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func (templateDownloader) Download(ctx context.Context, op *Config) (string, bool, error) {
+func (templateDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	name := getTemplateName(op.Resource)
 	op.setFilename(name, "")
-	return downloadFile(ctx, op, func(ctx context.Context, op *Config) error {
+	return downloadFile(ctx, op, func(ctx context.Context, op *Task) error {
 		bs, err := Templates.ReadFile("templates/" + name)
 		if err != nil {
 			return err

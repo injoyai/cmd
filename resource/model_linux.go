@@ -28,7 +28,7 @@ var Exclusive = MResource{
 	"ipinfo": {
 		Local:   "ipinfo",
 		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_{os}_{arch}.tar.gz"},
-		Handler: func(op *Config) error {
+		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "ipinfo.zip")
 			if err := op.download(zipFilename); err != nil {
 				return err
@@ -37,7 +37,7 @@ var Exclusive = MResource{
 			if err := tar.Decode(zipFilename, op.Dir); err != nil {
 				return err
 			}
-			return os.Rename(filepath.Join(op.Dir, strings.TrimRight(filepath.Base(op.Url()), ".tar.gz")), op.Filename())
+			return os.Rename(filepath.Join(op.Dir, strings.TrimRight(filepath.Base(op.URL()), ".tar.gz")), op.Filename())
 		},
 	},
 }

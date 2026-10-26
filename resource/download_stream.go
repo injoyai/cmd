@@ -2,15 +2,21 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
+	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"syscall"
+	"time"
 
-	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/goutil/oss/shell"
 )
 
 type streamDownloader struct{}
@@ -20,73 +26,159 @@ func (streamDownloader) Match(resource string) bool {
 	return err == nil && u.Host != "" && (u.Scheme == "rtsp" || u.Scheme == "rtmp")
 }
 
-func (streamDownloader) Download(ctx context.Context, op *Config) (string, bool, error) {
+func (streamDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	op.setFilename("", ".ts")
 	return downloadFile(ctx, op, downloadStream)
 }
 
-// downloadStream 下载流媒体
-func downloadStream(ctx context.Context, op *Config) error {
+func downloadStream(ctx context.Context, op *Task) error {
 	fmt.Println(op)
-	ffmpeg, _ := MustDownload(ctx, &Config{
-		Resource:     "ffmpeg",
-		Dir:          oss.ExecDir(),
-		ProxyEnable:  op.ProxyEnable,
-		ProxyAddress: op.ProxyAddress,
-		ProxyIgnore:  op.ProxyIgnore,
-	})
-
-	//合并视频,ctrl+c也能合并
-	oss.ListenExit(func() { op.MergeTS() })
-
-	oss.RemoveAll(op.TempDir())
-	oss.New(op.TempDir())
-
-	//使用绝对路径调用ffmpeg并加引号;分片名补零,避免MergeTS按字典序合并时乱序
-	if err := shell.Run(fmt.Sprintf(`"%s" -i "%s" -c copy -f hls -hls_segment_filename "%s" "%s"`, ffmpeg, op.Resource, filepath.Join(op.TempDir(), "out%05d.ts"), filepath.Join(op.TempDir(), "out.m3u8"))); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func MergeTS(dir, output string) error {
-
-	//判断ffmpeg是否下载,使用绝对路径调用,避免工作目录中找不到ffmpeg
-	ffmpeg, _ := MustDownload(g.Ctx(), &Config{
-		Resource:    "ffmpeg",
-		Dir:         oss.ExecDir(),
-		ProxyEnable: true,
-	})
-
-	lsFilename := filepath.Join(dir, "ts_list.txt")
-	lsFilename = strings.ReplaceAll(lsFilename, "\\", "/")
-	fmt.Println("生成TS列表文件:", lsFilename)
-	file, err := os.Create(lsFilename)
+	recordCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	ffmpeg, err := ensureFFmpeg(recordCtx, op)
 	if err != nil {
 		return err
 	}
-	//defer os.Remove(lsFilename)
-	defer file.Close()
+	release, err := op.prepareMediaCache("", false)
+	if err != nil {
+		return err
+	}
+	defer release()
+	cmd := exec.CommandContext(recordCtx, ffmpeg, "-i", op.URL(), "-c", "copy", "-f", "hls",
+		"-hls_list_size", "0", "-hls_segment_filename", filepath.Join(op.TempDir(), "out%09d.ts"),
+		filepath.Join(op.TempDir(), "out.m3u8"))
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	input, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+	// 先让ffmpeg写完最后一个分片；进程无响应时由WaitDelay终止。
+	cmd.Cancel = func() error {
+		_, err := io.WriteString(input, "q\n")
+		return err
+	}
+	cmd.WaitDelay = 5 * time.Second
+	if err := cmd.Run(); err != nil && recordCtx.Err() == nil {
+		return err
+	}
+	mergeCtx := recordCtx
+	if recordCtx.Err() != nil {
+		// 录制取消后仍给已落盘分片一次完成合并的机会。
+		var cancel context.CancelFunc
+		mergeCtx, cancel = context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
+		defer cancel()
+	}
+	if err := op.mergeTS(mergeCtx, ffmpeg); err != nil {
+		return errors.Join(recordCtx.Err(), err)
+	}
+	return recordCtx.Err()
+}
 
-	err = oss.RangeFileInfo(dir, func(info *oss.FileInfo) (bool, error) {
-		if strings.HasSuffix(info.Name(), ".ts") {
-			_, err = file.WriteString("file '" + info.Name() + "'\r\n")
+func ensureFFmpeg(ctx context.Context, op *Task) (string, error) {
+	if filename, err := exec.LookPath("ffmpeg"); err == nil {
+		return filename, nil
+	}
+	filename, _, err := Download(ctx, &Config{
+		Resource: "ffmpeg", Dir: oss.ExecDir(),
+		ProxyEnable: op.ProxyEnable, ProxyAddress: op.ProxyAddress, ProxyIgnore: op.ProxyIgnore,
+	})
+	if err != nil {
+		return "", err
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(filename, 0755); err != nil {
+			return "", err
 		}
-		return true, err
-	})
+	}
+	return filename, nil
+}
+
+// MergeTS 合并指定目录，保留源文件；失败时保留原有输出文件。
+func MergeTS(dir, output string) error {
+	op, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: global.GetProxy()})
 	if err != nil {
 		return err
 	}
-
-	cmd := fmt.Sprintf(`"%s" -y -f concat -i "%s" -c copy "%s"`, ffmpeg, lsFilename, output)
-	fmt.Println("执行ffmpeg命令:", cmd)
-	return shell.Run(cmd)
-}
-
-func (this *Config) MergeTS() error {
-	if err := MergeTS(this.TempDir(), this.Filename()); err != nil {
+	defer op.client.CloseIdleConnections()
+	ffmpeg, err := ensureFFmpeg(context.Background(), op)
+	if err != nil {
 		return err
 	}
-	return os.RemoveAll(this.TempDir())
+	return mergeTS(context.Background(), ffmpeg, dir, output)
+}
+
+func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	var list strings.Builder
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".ts") {
+			name := strings.ReplaceAll(entry.Name(), "'", "'\\''")
+			fmt.Fprintf(&list, "file '%s'\n", name)
+		}
+	}
+	if list.Len() == 0 {
+		return errors.New("没有可合并的TS分片")
+	}
+	file, err := os.CreateTemp(dir, ".ts-list-*.txt")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(file.Name())
+	_, writeErr := io.WriteString(file, list.String())
+	if err := errors.Join(writeErr, file.Close()); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
+		return err
+	}
+	temp, err := os.CreateTemp(filepath.Dir(output), ".i-merge-*"+filepath.Ext(output))
+	if err != nil {
+		return err
+	}
+	defer os.Remove(temp.Name())
+	if err := temp.Close(); err != nil {
+		return err
+	}
+	listFile, err := filepath.Abs(file.Name())
+	if err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", temp.Name())
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	info, err := os.Stat(temp.Name())
+	if err != nil {
+		return err
+	}
+	if info.Size() == 0 {
+		return errors.New("ffmpeg未生成有效输出，已保留分片缓存")
+	}
+	return os.Rename(temp.Name(), output)
+}
+
+func (this *Task) MergeTS() error {
+	ffmpeg, err := ensureFFmpeg(this.ctx, this)
+	if err != nil {
+		return err
+	}
+	return this.mergeTS(this.ctx, ffmpeg)
+}
+
+func (this *Task) mergeTS(ctx context.Context, ffmpeg string) error {
+	if err := mergeTS(ctx, ffmpeg, this.TempDir(), this.Filename()); err != nil {
+		return err
+	}
+	if this.cacheDir != "" {
+		return os.RemoveAll(this.cacheDir)
+	}
+	return nil
 }

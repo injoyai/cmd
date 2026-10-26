@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/injoyai/goutil/str/bar"
@@ -19,69 +22,108 @@ func (httpDownloader) Match(resource string) bool {
 	return err == nil && u.Host != ""
 }
 
-func (httpDownloader) Download(ctx context.Context, op *Config) (string, bool, error) {
-	return downloadFile(ctx, op, func(ctx context.Context, op *Config) error {
+func (httpDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+	return downloadFile(ctx, op, func(ctx context.Context, op *Task) error {
 		return op.Download()
 	})
 }
 
 // downloadURLs 按顺序尝试镜像地址，沿用资源自定义的安装处理函数。
-func downloadURLs(op *Config, urls []string, handler Handler) error {
+func downloadURLs(op *Task, urls []string, handler Handler) error {
 	if len(urls) == 0 {
 		return errors.New("没有可用的下载地址")
 	}
 	var err error
-	for _, u := range urls {
-		op.SetUrl(u)
+	for i, u := range urls {
+		if err := op.ctx.Err(); err != nil {
+			return err
+		}
+		op.SetURL(u)
 		if err = op.Download(handler); err == nil {
 			return nil
 		}
 		logs.Err(err)
-		<-time.After(time.Second * 2)
+		if i+1 < len(urls) {
+			if err := waitDownload(op.ctx, 2*time.Second); err != nil {
+				return err
+			}
+		}
 	}
 	return err
 }
 
-func (this *Config) Download(h ...Handler) error {
-	if this.state == nil {
-		task, err := this.newTask()
-		if err != nil {
-			return err
-		}
-		return task.Download(h...)
-	}
-
-	fmt.Println(this)
-
-	if len(h) > 0 && h[0] != nil {
-		//使用自定义的下载函数
-		return h[0](this)
-	}
-
-	//先下载到缓存文件中,例xxx.exe.temp,然后再修改名称xxx.exe
-	//以防出现下载失败,直接覆盖了源文件
-	if _, err := bar.Download(this.Url(), this.TempFilename(), this.Proxy()); err != nil {
-		os.Remove(this.TempFilename())
+func (this *Task) Download(h ...Handler) error {
+	if err := this.ctx.Err(); err != nil {
 		return err
 	}
-
-	//可能源文件不存在,忽略错误,可以直接重命名覆盖
-	//os.Remove(op.Filename())
-	//延迟0.05秒,有可能错误: rename proxy.exe.temp proxy.exe: The process cannot access the file because it is being used by another process.
-	<-time.After(time.Millisecond * 50)
-
-	//重命名
-	return os.Rename(this.TempFilename(), this.Filename())
+	fmt.Println(this)
+	if len(h) > 0 && h[0] != nil {
+		return h[0](this)
+	}
+	return this.download(this.Filename())
 }
 
-func (this *Config) download(filename string) error {
-	if this.state == nil {
-		task, err := this.newTask()
-		if err != nil {
-			return err
-		}
-		return task.download(filename)
-	}
-	_, err := bar.Download(this.Url(), filename, this.Proxy())
+func (this *Task) download(filename string) error {
+	_, err := downloadHTTPFile(this.ctx, this.client, this.URL(), filename, true)
 	return err
+}
+
+// downloadHTTPFile 只在完整写入并关闭文件后替换目标，失败时保留原文件。
+func downloadHTTPFile(ctx context.Context, client *http.Client, raw, filename string, progress bool) (int64, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, raw, nil)
+	if err != nil {
+		return 0, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("下载失败: %s %s", resp.Status, redactURL(raw))
+	}
+	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+		return 0, err
+	}
+	f, err := os.CreateTemp(filepath.Dir(filename), ".i-download-*.part")
+	if err != nil {
+		return 0, err
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+	var reader io.Reader = resp.Body
+	if progress && resp.ContentLength > 0 {
+		p := &httpProgress{bar: bar.New(resp.ContentLength)}
+		defer func() {
+			if !p.bar.Closed() {
+				p.bar.Close()
+			}
+		}()
+		reader = io.TeeReader(reader, p)
+	}
+	n, err := io.Copy(f, reader)
+	if err != nil {
+		return n, err
+	}
+	if err := f.Close(); err != nil {
+		return n, err
+	}
+	if err := ctx.Err(); err != nil {
+		return n, err
+	}
+	return n, os.Rename(f.Name(), filename)
+}
+
+type httpProgress struct {
+	bar  *bar.Bar
+	last time.Time
+}
+
+func (p *httpProgress) Write(data []byte) (int, error) {
+	p.bar.Add(int64(len(data)))
+	if time.Since(p.last) >= 100*time.Millisecond || p.bar.Final() {
+		p.bar.Flush()
+		p.last = time.Now()
+	}
+	return len(data), nil
 }

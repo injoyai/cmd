@@ -1,7 +1,9 @@
 package tool
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,23 +12,41 @@ import (
 )
 
 func DecodeM3u8(rawurl string) ([]string, error) {
+	return DecodeM3u8WithClient(context.Background(), rawurl, http.DefaultClient)
+}
+
+// DecodeM3u8WithClient 让播放列表、子列表和分片使用相同的代理与取消策略。
+func DecodeM3u8WithClient(ctx context.Context, rawurl string, client *http.Client) ([]string, error) {
+	return decodeM3u8(ctx, rawurl, client, make(map[string]bool))
+}
+
+func decodeM3u8(ctx context.Context, rawurl string, client *http.Client, visited map[string]bool) ([]string, error) {
+	if visited[rawurl] {
+		return nil, errors.New("m3u8播放列表循环引用")
+	}
+	visited[rawurl] = true
 
 	// 下载 m3u8 文件
-	resp, err := http.Get(rawurl)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawurl, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("下载播放列表失败: %s", resp.Status)
+	}
 
 	playlist, listType, err := m3u8.DecodeFrom(resp.Body, true)
+	resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
 
-	base, err := url.Parse(rawurl)
-	if err != nil {
-		return nil, err
-	}
+	base := resp.Request.URL
 
 	//多码率播放列表,自动选择码率最高的子流
 	if listType == m3u8.MASTER {
@@ -34,7 +54,7 @@ func DecodeM3u8(rawurl string) ([]string, error) {
 		if best == nil || len(best.URI) == 0 {
 			return nil, errors.New("master playlist中无有效子流")
 		}
-		return DecodeM3u8(resolveReference(base, best.URI))
+		return decodeM3u8(ctx, resolveReference(base, best.URI), client, visited)
 	}
 
 	if listType != m3u8.MEDIA {

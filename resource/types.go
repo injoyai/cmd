@@ -7,7 +7,7 @@ import (
 )
 
 // Handler 处理已解析的资源下载，例如下载发布包后解压安装。
-type Handler func(op *Config) error
+type Handler func(op *Task) error
 
 // Url 例如minio https://oss.xxx.com/store/{name}_{os}_{arch}
 type Url string
@@ -24,7 +24,7 @@ func (this Url) Format(name string) string {
 // 失败时返回错误，由调用方决定重试，完成通知由包级 Download 统一处理。
 type Downloader interface {
 	Match(resource string) bool
-	Download(ctx context.Context, op *Config) (filename string, exist bool, err error)
+	Download(ctx context.Context, op *Task) (filename string, exist bool, err error)
 }
 
 // Resource 描述内置资源的名称、下载地址和安装处理方式。

@@ -153,8 +153,8 @@ func TestDownloadTDL(t *testing.T) {
 					_, _ = w.Write(archive.Bytes())
 				}))
 				defer srv.Close()
-				op := &Config{Dir: dir, Name: name, Resource: "tdl"}
-				op.SetUrl(srv.URL + "/tdl" + ext)
+				op := newTestTask(t, &Config{Dir: dir, Name: name, Resource: "tdl"})
+				op.SetURL(srv.URL + "/tdl" + ext)
 				err := downloadTDL(op)
 				wantFiles := 3
 				if name == "invalid-archive" {

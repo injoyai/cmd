@@ -18,7 +18,7 @@ func TestDownloadTemplatePriorityAndCover(t *testing.T) {
 	Resources["agents"] = &Info{
 		Local:   "wrong.txt",
 		FullUrl: []Url{"http://unused/template"},
-		Handler: func(op *Config) error {
+		Handler: func(op *Task) error {
 			t.Error("embedded template must take priority over built-in resources")
 			return os.WriteFile(op.Filename(), []byte("wrong source"), 0644)
 		},
@@ -83,7 +83,7 @@ func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 				Resources[key] = &Info{
 					Local:   "tool.bin",
 					FullUrl: []Url{Url(srv.URL + "/release/tool.bin")},
-					Handler: func(op *Config) error {
+					Handler: func(op *Task) error {
 						handlerCalls++
 						return op.download(op.Filename())
 					},
@@ -134,15 +134,15 @@ func TestDownloadURLsFallback(t *testing.T) {
 		_, _ = w.Write([]byte("mirror content"))
 	}))
 	defer srv.Close()
-	op := &Config{Name: "mirrors.bin", Dir: t.TempDir()}
+	op := newTestTask(t, &Config{Name: "mirrors.bin", Dir: t.TempDir()})
 	if err := downloadURLs(op, nil, nil); err == nil {
 		t.Fatal("empty download sources must return an error")
 	}
 	if err := downloadURLs(op, []string{srv.URL + "/unavailable", srv.URL + "/available"}, nil); err != nil {
 		t.Fatal(err)
 	}
-	if requests.Load() != 2 || op.Url() != srv.URL+"/available" {
-		t.Fatalf("mirror fallback: requests = %d, selected URL = %q", requests.Load(), op.Url())
+	if requests.Load() != 2 || op.URL() != srv.URL+"/available" {
+		t.Fatalf("mirror fallback: requests = %d, selected URL = %q", requests.Load(), op.URL())
 	}
 	if data, err := os.ReadFile(op.Filename()); err != nil || string(data) != "mirror content" {
 		t.Fatalf("mirror content = %q, err = %v", data, err)
@@ -195,7 +195,7 @@ func TestProxySkipsWhenUrlMatchesIgnoreRule(t *testing.T) {
 		ProxyIgnore:  []string{"example\\.com"},
 	}
 
-	if got := op.Proxy(); got != "" {
+	if got := newTestTask(t, op).Proxy(); got != "" {
 		t.Fatalf("Proxy() = %q, want empty when url matches ignore rule", got)
 	}
 }
@@ -208,7 +208,7 @@ func TestProxyReturnsAddressWhenNotIgnored(t *testing.T) {
 		ProxyIgnore:  []string{"localhost", "127\\.0\\.0\\.1"},
 	}
 
-	if got := op.Proxy(); got != "http://proxy.local:8080" {
+	if got := newTestTask(t, op).Proxy(); got != "http://proxy.local:8080" {
 		t.Fatalf("Proxy() = %q, want %q", got, "http://proxy.local:8080")
 	}
 }
@@ -219,7 +219,7 @@ func TestProxyEmptyWhenDisabled(t *testing.T) {
 		ProxyAddress: "http://proxy.local:8080",
 	}
 
-	if got := op.Proxy(); got != "" {
+	if got := newTestTask(t, op).Proxy(); got != "" {
 		t.Fatalf("Proxy() = %q, want empty when proxy disabled", got)
 	}
 }

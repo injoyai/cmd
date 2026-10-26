@@ -45,7 +45,7 @@ func IsTelegramLink(s string) bool {
 }
 
 // Download 使用tdl下载Telegram消息，一条消息可能产生多个文件，因此返回目录。
-func (telegramDownloader) Download(ctx context.Context, op *Config) (string, bool, error) {
+func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	filename, err := ensureTDL(ctx, op)
 	if err != nil {
 		return "", false, err
@@ -80,7 +80,7 @@ func (telegramDownloader) Download(ctx context.Context, op *Config) (string, boo
 }
 
 // ensureTDL 查找tdl,不存在则下载到i所在目录
-func ensureTDL(ctx context.Context, op *Config) (string, error) {
+func ensureTDL(ctx context.Context, op *Task) (string, error) {
 	if filename, err := exec.LookPath("tdl"); err == nil {
 		return filename, nil
 	}
@@ -106,7 +106,7 @@ func ensureTDL(ctx context.Context, op *Config) (string, error) {
 }
 
 // downloadTDL 下载tdl发布包,并解压出可执行文件到op.Dir
-func downloadTDL(op *Config) error {
+func downloadTDL(op *Task) error {
 	dir := filepath.Dir(op.Filename())
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
@@ -117,7 +117,7 @@ func downloadTDL(op *Config) error {
 		return err
 	}
 	defer os.RemoveAll(temp)
-	archive := filepath.Join(temp, "archive"+archiveExt(op.Url()))
+	archive := filepath.Join(temp, "archive"+archiveExt(op.URL()))
 	if err := op.download(archive); err != nil {
 		return err
 	}

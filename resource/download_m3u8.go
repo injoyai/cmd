@@ -2,22 +2,18 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/injoyai/cmd/tool"
-	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/str/bar"
-	"github.com/injoyai/goutil/task"
 	"github.com/injoyai/logs"
 )
 
@@ -28,118 +24,109 @@ func (m3u8Downloader) Match(resource string) bool {
 	return err == nil && u.Host != "" && path.Ext(u.Path) == ".m3u8"
 }
 
-func (m3u8Downloader) Download(ctx context.Context, op *Config) (string, bool, error) {
+func (m3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	op.setFilename("", ".ts")
 	return downloadFile(ctx, op, downloadM3u8)
 }
 
-func downloadM3u8(ctx context.Context, op *Config) error {
+func downloadM3u8(ctx context.Context, op *Task) error {
 	fmt.Println(op)
-
-	//解析下载地址
-	list, err := tool.DecodeM3u8(op.Resource)
+	list, err := tool.DecodeM3u8WithClient(ctx, op.URL(), op.client)
 	if err != nil {
 		return err
 	}
+	if len(list) == 0 {
+		return errors.New("播放列表中没有可下载的分片")
+	}
+	release, err := op.prepareMediaCache(strings.Join(list, "\n"), true)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if _, err := downloadSegments(ctx, op, list); err != nil {
+		return err
+	}
+	return op.MergeTS()
+}
 
-	sum := int64(0)
-	current := int64(0)
-	mu := sync.Mutex{} //保护current/sum与进度条,OnFinishedItem在多个工作协程中并发调用
-	failed := int64(0) //最终下载失败的分片数量
+// downloadSegments 等待所有工作协程结束后再返回，失败时保留已完成的分片。
+func downloadSegments(ctx context.Context, op *Task, list []string) (int64, error) {
+	var sum, current int64
+	var done, failed int
+	var mu sync.Mutex
 	b := bar.New(int64(len(list)))
 	b.SetFormatter(bar.NewWithM3u8(&current, &sum))
-
-	//分片目录
-	cacheDir := op.TempDir()
-	os.MkdirAll(cacheDir, os.ModePerm)
-
-	//获取已经下载的分片
-	doneName := map[string]bool{}
-	oss.RangeFileInfo(cacheDir, func(info *oss.FileInfo) (bool, error) {
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".ts") {
-			doneName[info.Name()] = true
+	defer func() {
+		if !b.Closed() {
+			b.Close()
 		}
-		return true, nil
-	})
-
-	//新建下载任务
-	t := task.NewRange[*http.Response]()
-	t.SetCoroutine(op.Coroutine)
-	t.SetRetry(op.Retry)
-	t.OnFinishedItem(func(resp *task.ItemResp[*http.Response]) {
-		if resp.Err == nil {
-			//保存分片到文件夹,5位长度,最大99999分片,大于99999视频会乱序
-			filename := fmt.Sprintf("%05d.ts", resp.Index)
-			filename = filepath.Join(cacheDir, filename)
-			resp.Err = func() error {
-				r := resp.Data
-				defer r.Body.Close()
-				f, err := os.Create(filename + ".downloading")
-				if err != nil {
-					return err
-				}
-				n, err := io.Copy(f, r.Body)
-				f.Close()
-				if err != nil {
-					return err
-				}
-				mu.Lock()
-				current = n
-				mu.Unlock()
-				<-time.After(time.Millisecond * 10)
-				return os.Rename(filename+".downloading", filename)
-			}()
-		}
-		if resp.Err != nil {
-			atomic.AddInt64(&failed, 1)
-			logs.Errf("\r\033[K%s\n", resp.Err)
-		}
+	}()
+	var lastFlush time.Time
+	record := func(n int64, err error) {
 		mu.Lock()
-		sum += current
-		b.Add(1).Flush()
-		mu.Unlock()
-	})
+		defer mu.Unlock()
+		if err != nil {
+			failed++
+			logs.Err(err)
+			return
+		}
+		current = n
+		sum += n
+		done++
+		b.Add(1)
+		if time.Since(lastFlush) >= 100*time.Millisecond || done == len(list) {
+			b.Flush()
+			lastFlush = time.Now()
+		}
+	}
+	filename := func(i int) string {
+		return filepath.Join(op.TempDir(), fmt.Sprintf("%09d.ts", i))
+	}
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for range min(max(op.Coroutine, 1), len(list)) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				var n int64
+				var err error
+				for attempt := 0; attempt <= max(op.Retry, 0); attempt++ {
+					if err = ctx.Err(); err != nil {
+						break
+					}
+					n, err = downloadHTTPFile(ctx, op.client, list[i], filename(i), false)
+					if err == nil {
+						break
+					}
+				}
+				record(n, err)
+			}
+		}()
+	}
+send:
 	for i := range list {
-		url := list[i]
-		filename := fmt.Sprintf("%05d"+".ts", i)
-		if doneName[filename] {
-			//过滤已经下载过的分片
-			mu.Lock()
-			b.Add(1).Flush()
-			mu.Unlock()
+		if err := ctx.Err(); err != nil {
+			break
+		}
+		info, err := os.Stat(filename(i))
+		if err == nil && info.Mode().IsRegular() && info.Size() > 0 {
+			record(info.Size(), nil)
 			continue
 		}
-		//继续下载没有下载过的分片
-		t.Set(i, func(ctx context.Context) (*http.Response, error) {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-			if err != nil {
-				return nil, err
-			}
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return nil, err
-			}
-			//状态码非200时,错误页会被当作分片保存,合并出损坏视频
-			if resp.StatusCode != http.StatusOK {
-				resp.Body.Close()
-				return nil, fmt.Errorf("下载分片失败: %s %s", resp.Status, url)
-			}
-			return resp, nil
-		})
+		select {
+		case <-ctx.Done():
+			break send
+		case jobs <- i:
+		}
 	}
-
-	//新建任务
-	err = t.Run(ctx)
-	if err != nil {
-		return err
+	close(jobs)
+	wg.Wait()
+	if err := ctx.Err(); err != nil {
+		return sum, err
 	}
-
-	//存在失败分片时,保留分片缓存不合并,避免产出残缺视频且下次无法续传
-	if n := atomic.LoadInt64(&failed); n > 0 {
-		return fmt.Errorf("有 %d 个分片下载失败,已保留分片缓存,请重新执行下载补齐", n)
+	if failed > 0 {
+		return sum, fmt.Errorf("有 %d 个分片下载失败,已保留分片缓存,请重新执行下载补齐", failed)
 	}
-
-	//合并视频
-	return op.MergeTS()
-
+	return sum, nil
 }

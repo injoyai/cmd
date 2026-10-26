@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestConfigFilenameAndPureGetters(t *testing.T) {
+func TestTaskFilenameAndConfigIsolation(t *testing.T) {
 	for _, tt := range []struct {
 		resource string
 		name     string
@@ -27,13 +27,14 @@ func TestConfigFilenameAndPureGetters(t *testing.T) {
 		t.Run(tt.want, func(t *testing.T) {
 			op := &Config{Resource: tt.resource, Name: tt.name, Dir: t.TempDir()}
 			before := *op
-			if got := op.Filename(); got != filepath.Join(op.Dir, tt.want) {
+			task := newTestTask(t, op)
+			if got := task.Filename(); got != filepath.Join(op.Dir, tt.want) {
 				t.Errorf("Filename() = %q, want %q", got, filepath.Join(op.Dir, tt.want))
 			}
-			if got := op.TempFilename(); got != op.Filename()+".temp" {
+			if got := task.TempFilename(); got != task.Filename()+".temp" {
 				t.Errorf("TempFilename() = %q", got)
 			}
-			if op.GetName() == "" || op.TempDir() == op.Dir {
+			if task.GetName() == "" || task.TempDir() == op.Dir {
 				t.Error("empty stem would use the download directory as a cache directory")
 			}
 			if !reflect.DeepEqual(*op, before) {
@@ -99,8 +100,8 @@ func TestDownloadRejectsInvalidProxyRule(t *testing.T) {
 	if err == nil || filename != "" || exist || requests.Load() != 0 {
 		t.Fatalf("invalid proxy rule: filename = %q, exist = %v, err = %v, requests = %d", filename, exist, err, requests.Load())
 	}
-	if err := op.Download(); err == nil {
-		t.Fatal("direct Config.Download must also validate proxy rules")
+	if task, err := NewTask(op); err == nil || task != nil {
+		t.Fatal("NewTask must reject invalid proxy rules")
 	}
 }
 
@@ -110,7 +111,7 @@ func TestDownloadExplicitURLOverride(t *testing.T) {
 	}))
 	defer srv.Close()
 	op := &Config{Resource: srv.URL + "/original.bin", Dir: t.TempDir()}
-	op.SetUrl(srv.URL + "/override.bin")
+	op.SourceURL = srv.URL + "/override.bin"
 	before := *op
 	filename, _, err := Download(context.Background(), op)
 	if err != nil {
@@ -122,7 +123,7 @@ func TestDownloadExplicitURLOverride(t *testing.T) {
 	if !reflect.DeepEqual(*op, before) {
 		t.Fatal("download changed explicit URL configuration")
 	}
-	op.SetUrl("")
+	op.SourceURL = ""
 	op.Resource = srv.URL + "/second.bin"
 	filename, _, err = Download(context.Background(), op)
 	if err != nil || filepath.Base(filename) != "second.bin" {
@@ -168,11 +169,11 @@ func TestTaskProxyRulesFollowMirror(t *testing.T) {
 		ProxyAddress: "http://proxy.local:8080",
 		ProxyIgnore:  []string{`mirror\.example`},
 	}
-	task, err := op.newTask()
+	task, err := NewTask(op)
 	if err != nil {
 		t.Fatal(err)
 	}
-	task.SetUrl("https://mirror.example/file")
+	task.SetURL("https://mirror.example/file")
 	if task.Proxy() != "" {
 		t.Fatal("matching mirror did not bypass proxy")
 	}
@@ -180,25 +181,26 @@ func TestTaskProxyRulesFollowMirror(t *testing.T) {
 	if task.ProxyIgnore[0] != `mirror\.example` || task.Proxy() != "" {
 		t.Fatal("caller changes leaked into the active task")
 	}
-	task.SetUrl("https://another.example/file")
-	if task.Proxy() != op.ProxyAddress || op.Url() != op.Resource {
+	task.SetURL("https://another.example/file")
+	if task.Proxy() != op.ProxyAddress || op.SourceURL != "" {
 		t.Fatal("mirror proxy selection or caller URL was changed incorrectly")
 	}
 }
 
-func TestConfigStringRedactsCredentials(t *testing.T) {
+func TestTaskStringRedactsCredentials(t *testing.T) {
 	op := &Config{
 		Resource:     "https://source-user:source-password@example.com/file.bin",
 		ProxyEnable:  true,
 		ProxyAddress: "http://proxy-user:proxy-password@localhost:8080",
 	}
-	got := op.String()
+	task := newTestTask(t, op)
+	got := task.String()
 	for _, credential := range []string{"source-user", "source-password", "proxy-user", "proxy-password"} {
 		if strings.Contains(got, credential) {
 			t.Error("log output contains URL credentials")
 		}
 	}
-	if op.Proxy() != op.ProxyAddress || op.Url() != op.Resource {
+	if task.Proxy() != op.ProxyAddress || task.URL() != op.Resource {
 		t.Fatal("redaction changed actual download credentials")
 	}
 }
@@ -213,7 +215,62 @@ func TestInvalidProxyAddressDoesNotExposeCredentials(t *testing.T) {
 	if err == nil {
 		t.Fatal("invalid proxy address must fail before download")
 	}
-	if strings.Contains(err.Error(), "proxy-password") || strings.Contains(op.String(), "proxy-password") {
+	if strings.Contains(err.Error(), "proxy-password") {
 		t.Fatal("invalid proxy error or log exposed credentials")
+	}
+}
+
+func newTestTask(t *testing.T, config *Config) *Task {
+	t.Helper()
+	task, err := NewTask(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(task.Close)
+	return task
+}
+
+func TestNewTaskSnapshotsAreIndependent(t *testing.T) {
+	if task, err := NewTask(nil); err == nil || task != nil {
+		t.Fatal("NewTask(nil) must return an error")
+	}
+	config := &Config{
+		Resource:    "https://example.com/original.bin",
+		SourceURL:   "https://mirror.example/original.bin",
+		Dir:         t.TempDir(),
+		ProxyIgnore: []string{"example"},
+	}
+	first := newTestTask(t, config)
+	second := newTestTask(t, config)
+	first.SetURL("https://another.example/first.bin")
+	first.setFilename("first.bin", "")
+	first.ProxyIgnore[0] = "first-only"
+	wantFile := filepath.Join(config.Dir, "original.bin")
+	if second.URL() != config.SourceURL || second.Filename() != wantFile {
+		t.Fatal("task URL or output path leaked into another task")
+	}
+	if config.ProxyIgnore[0] != "example" || second.ProxyIgnore[0] != "example" {
+		t.Fatal("tasks share the caller's proxy ignore slice")
+	}
+	config.Resource = "https://changed.example/changed.bin"
+	config.SourceURL = ""
+	config.Name = "changed.bin"
+	config.Dir = t.TempDir()
+	if second.Resource != "https://example.com/original.bin" || second.Filename() != wantFile {
+		t.Fatal("caller configuration changes altered an existing task")
+	}
+}
+
+func TestTaskDirectDownload(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("standalone task"))
+	}))
+	defer srv.Close()
+	task := newTestTask(t, &Config{Resource: srv.URL + "/direct.v1.bin", Dir: t.TempDir()})
+	if err := task.Download(); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(task.Filename()); err != nil || string(data) != "standalone task" {
+		t.Fatalf("direct task content = %q, err = %v", data, err)
 	}
 }
