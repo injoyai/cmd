@@ -54,11 +54,13 @@ func TestIsTelegramLink(t *testing.T) {
 func TestTelegramLoginAndResume(t *testing.T) {
 	for _, tt := range []struct {
 		name, scenario, input string
+		threads               string
 		modes                 []string
 		wantErr               bool
 		wantDownloads         int
 	}{
 		{name: "已登录直接下载", scenario: "already-logged-in", wantDownloads: 1},
+		{name: "环境变量覆盖线程数", scenario: "success", threads: "12", input: "1\n", modes: []string{"qr"}, wantDownloads: 2},
 		{name: "扫码", scenario: "success", input: "1\n", modes: []string{"qr"}, wantDownloads: 2},
 		{name: "验证码输入保留给子进程", scenario: "login-input", input: "2\n12345\n", modes: []string{"code"}, wantDownloads: 2},
 		{name: "桌面客户端", scenario: "success", input: "3\n", modes: []string{"desktop"}, wantDownloads: 2},
@@ -72,6 +74,7 @@ func TestTelegramLoginAndResume(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			log := testutil.InstallDownloadHelper(t, "tdl")
 			t.Setenv("CMD_DOWNLOAD_HELPER_TDL", tt.scenario)
+			t.Setenv("TDL_THREADS", tt.threads)
 			dir := t.TempDir()
 			input, err := os.CreateTemp(dir, "stdin-*")
 			if err != nil {
@@ -126,7 +129,17 @@ func TestTelegramLoginAndResume(t *testing.T) {
 					if len(args) < 5 || args[1] != "-u" || args[2] != config.Resource || args[3] != "-d" || args[4] != dir {
 						t.Fatalf("download parameters changed: %q", args)
 					}
-					if downloads > 1 && (len(args) != 6 || args[5] != "--continue") {
+					args = args[5:]
+					if tt.threads == "" {
+						if len(args) < 2 || args[0] != "-t" || args[1] != "8" {
+							t.Fatalf("default threads not set to 8: %q", args)
+						}
+						args = args[2:]
+					}
+					if downloads == 1 && len(args) != 0 {
+						t.Fatalf("unexpected download parameters: %q", args)
+					}
+					if downloads > 1 && (len(args) != 1 || args[0] != "--continue") {
 						t.Fatalf("download did not resume: %q", args)
 					}
 				case "login":

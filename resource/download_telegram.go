@@ -52,12 +52,16 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 		dir = "./"
 	}
 	args := []string{"dl", "-u", op.Resource, "-d", dir}
+	if os.Getenv("TDL_THREADS") == "" {
+		args = append(args, "-t", "8")
+	}
 	var globalArgs []string
 	//tdl的全局参数需放在子命令之前
 	if proxy := op.Proxy(); len(proxy) > 0 {
 		globalArgs = []string{"--proxy", proxy}
 	}
-	args = append(globalArgs, args...)
+	downloadArgs := append(globalArgs, args...)
+	args = downloadArgs
 	for {
 		needsLogin, err := runTDL(ctx, filename, args)
 		if err == nil {
@@ -75,7 +79,7 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 		}
 		fmt.Println("登录成功，继续原下载任务...")
 		// 登录恢复后的任务沿用 tdl 保存的进度，避免再次询问是否继续。
-		args = append(append([]string(nil), globalArgs...), "dl", "-u", op.Resource, "-d", dir, "--continue")
+		args = append(append([]string(nil), downloadArgs...), "--continue")
 	}
 }
 

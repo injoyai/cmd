@@ -77,6 +77,8 @@ yt-dlp 优先从 PATH、`i` 所在目录查找，缺少时调用内置安装；f
 
 参数定义放在 `config.go`；任务、路径和代理选择放在 `task.go`；通用的 `DownloadFile`、`WaitDownload` 及完成通知放在 `download.go`。新增下载方式不需要修改 `MustDownload`。
 
+Telegram 下载默认使用 8 个单文件传输线程，登录后恢复下载也保留该设置；可通过 `TDL_THREADS` 环境变量覆盖，例如 `TDL_THREADS=4 i dl '消息链接'`。
+
 ## 错误与重试
 
 `IsRetryable(err)` 根据结构化错误及其原因判断，不匹配错误文本；未知错误默认停止。
