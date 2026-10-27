@@ -32,7 +32,7 @@ func runDownloadHelper(name string, args []string) error {
 	if err != nil {
 		return err
 	}
-	if name == "yt-dlp" {
+	if name == "yt-dlp" || (name == "tdl" && os.Getenv("CMD_DOWNLOAD_HELPER_TDL") != "") {
 		data, _ := json.Marshal(args)
 		fmt.Fprintln(f, name, string(data))
 	} else {
@@ -40,7 +40,7 @@ func runDownloadHelper(name string, args []string) error {
 	}
 	f.Close()
 	if name == "tdl" {
-		return errors.New("not logged in")
+		return runTDLHelper(args)
 	}
 	arg := func(key string) string {
 		for i := range args {
@@ -96,6 +96,44 @@ func runDownloadHelper(name string, args []string) error {
 	}
 	if os.Getenv("CMD_DOWNLOAD_HELPER_FAIL_MERGE") == "1" {
 		return errors.New("merge failed")
+	}
+	return nil
+}
+
+func runTDLHelper(args []string) error {
+	scenario := os.Getenv("CMD_DOWNLOAD_HELPER_TDL")
+	if scenario == "" {
+		fmt.Fprintln(os.Stderr, "download failed")
+		return errors.New("download failed")
+	}
+	if scenario == "already-logged-in" {
+		return nil
+	}
+	if args[0] == "--proxy" {
+		args = args[2:]
+	}
+	session := os.Getenv("CMD_DOWNLOAD_HELPER_LOG") + ".session"
+	if args[0] == "login" {
+		if scenario == "retry-login" && args[2] == "qr" {
+			fmt.Fprintln(os.Stderr, "QR code expired")
+			return errors.New("login failed")
+		}
+		if scenario == "login-input" {
+			var code string
+			if _, err := fmt.Fscanln(os.Stdin, &code); err != nil || code != "12345" {
+				fmt.Fprintln(os.Stderr, "missing login input")
+				return errors.New("missing login input")
+			}
+		}
+		return os.WriteFile(session, nil, 0600)
+	}
+	if scenario == "network" {
+		fmt.Fprintln(os.Stderr, "dial tcp: connection refused")
+		return errors.New("network failed")
+	}
+	if _, err := os.Stat(session); err != nil || scenario == "still-unauthorized" {
+		fmt.Fprintln(os.Stderr, "Error: callback: not authorized. please login first")
+		return errors.New("not authorized")
 	}
 	return nil
 }

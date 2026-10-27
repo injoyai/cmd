@@ -2,12 +2,17 @@ package resource
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/injoyai/cmd/internal/testutil"
 )
 
 func TestIsTelegramLink(t *testing.T) {
@@ -43,6 +48,156 @@ func TestIsTelegramLink(t *testing.T) {
 				t.Errorf("IsTelegramLink(%q) = %v, want %v", v.link, got, v.want)
 			}
 		})
+	}
+}
+
+func TestTelegramLoginAndResume(t *testing.T) {
+	for _, tt := range []struct {
+		name, scenario, input string
+		modes                 []string
+		wantErr               bool
+		wantDownloads         int
+	}{
+		{name: "已登录直接下载", scenario: "already-logged-in", wantDownloads: 1},
+		{name: "扫码", scenario: "success", input: "1\n", modes: []string{"qr"}, wantDownloads: 2},
+		{name: "验证码输入保留给子进程", scenario: "login-input", input: "2\n12345\n", modes: []string{"code"}, wantDownloads: 2},
+		{name: "桌面客户端", scenario: "success", input: "3\n", modes: []string{"desktop"}, wantDownloads: 2},
+		{name: "登录失败后换方式", scenario: "retry-login", input: "1\n2\n", modes: []string{"qr", "code"}, wantDownloads: 2},
+		{name: "空行和无效选择", scenario: "success", input: "\n9\n1\n", modes: []string{"qr"}, wantDownloads: 2},
+		{name: "取消", scenario: "success", input: "0\n", wantErr: true, wantDownloads: 1},
+		{name: "输入已关闭", scenario: "success", wantErr: true, wantDownloads: 1},
+		{name: "网络错误不登录", scenario: "network", input: "1\n", wantErr: true, wantDownloads: 1},
+		{name: "登录后仍未授权可取消", scenario: "still-unauthorized", input: "1\n0\n", modes: []string{"qr"}, wantErr: true, wantDownloads: 2},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			log := testutil.InstallDownloadHelper(t, "tdl")
+			t.Setenv("CMD_DOWNLOAD_HELPER_TDL", tt.scenario)
+			dir := t.TempDir()
+			input, err := os.CreateTemp(dir, "stdin-*")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer input.Close()
+			if _, err := input.WriteString(tt.input); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := input.Seek(0, io.SeekStart); err != nil {
+				t.Fatal(err)
+			}
+			output, err := os.CreateTemp(dir, "stdout-*")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer output.Close()
+			previousIn, previousOut := os.Stdin, os.Stdout
+			os.Stdin, os.Stdout = input, output
+			defer func() { os.Stdin, os.Stdout = previousIn, previousOut }()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			config := &Config{
+				Resource: "https://t.me/example/1", Dir: dir,
+				ProxyEnable: true, ProxyAddress: "socks5://proxy-user:proxy-password@localhost:1080",
+			}
+			filename, exist, err := MustDownload(ctx, config)
+			if (err != nil) != tt.wantErr || ctx.Err() != nil || exist {
+				t.Fatalf("Download() = %q, %v, %v; wantErr %v", filename, exist, err, tt.wantErr)
+			}
+			if !tt.wantErr && filename != dir {
+				t.Fatalf("download directory = %q; want %q", filename, dir)
+			}
+			data, err := os.ReadFile(log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var modes []string
+			downloads := 0
+			for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+				var args []string
+				if err := json.Unmarshal([]byte(strings.TrimPrefix(line, "tdl ")), &args); err != nil {
+					t.Fatal(err)
+				}
+				if len(args) < 3 || args[0] != "--proxy" || args[1] != config.ProxyAddress {
+					t.Fatalf("proxy not preserved: %q", args)
+				}
+				args = args[2:]
+				switch args[0] {
+				case "dl":
+					downloads++
+					if len(args) < 5 || args[1] != "-u" || args[2] != config.Resource || args[3] != "-d" || args[4] != dir {
+						t.Fatalf("download parameters changed: %q", args)
+					}
+					if downloads > 1 && (len(args) != 6 || args[5] != "--continue") {
+						t.Fatalf("download did not resume: %q", args)
+					}
+				case "login":
+					if len(args) != 3 || args[1] != "-T" {
+						t.Fatalf("unexpected login command: %q", args)
+					}
+					modes = append(modes, args[2])
+				default:
+					t.Fatalf("unexpected command: %q", args)
+				}
+			}
+			if downloads != tt.wantDownloads || strings.Join(modes, ",") != strings.Join(tt.modes, ",") {
+				t.Fatalf("downloads=%d modes=%v; want %d, %v", downloads, modes, tt.wantDownloads, tt.modes)
+			}
+			printed, err := os.ReadFile(output.Name())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (tt.scenario == "network" || tt.scenario == "already-logged-in") && strings.Contains(string(printed), "请选择登录方式") {
+				t.Fatal("download without authentication failure triggered login menu")
+			}
+			if strings.Contains(string(printed), "proxy-user") || strings.Contains(string(printed), "proxy-password") {
+				t.Fatal("command log leaked proxy credentials")
+			}
+		})
+	}
+}
+
+func TestTDLAuthOutput(t *testing.T) {
+	for _, tt := range []struct {
+		text string
+		want bool
+	}{
+		{"Error: callback: not authorized. please login first", true},
+		{"rpc error code 401: AUTH_KEY_UNREGISTERED", true},
+		{"rpc error code 401: AUTH_KEY_INVALID", true},
+		{"rpc error code 401: SESSION_REVOKED", true},
+		{"rpc error code 401: SESSION_EXPIRED", true},
+		{"CHANNEL_PRIVATE", false},
+		{"FLOOD_WAIT_120", false},
+		{"proxy authentication required: 407", false},
+		{"dial tcp: connection refused", false},
+		{"permission denied", false},
+	} {
+		w := &tdlAuthOutput{}
+		for _, b := range []byte(tt.text) {
+			if n, err := w.Write([]byte{b}); n != 1 || err != nil {
+				t.Fatalf("Write() = %d, %v", n, err)
+			}
+		}
+		_, _ = w.Write([]byte(strings.Repeat("x", 10000)))
+		if w.needsLogin != tt.want || len(w.tail) > 64 {
+			t.Fatalf("%q: needsLogin=%v tail=%d", tt.text, w.needsLogin, len(w.tail))
+		}
+	}
+}
+
+func TestTDLChoiceCancellation(t *testing.T) {
+	input, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer input.Close()
+	defer writer.Close()
+	previous := os.Stdin
+	os.Stdin = input
+	defer func() { os.Stdin = previous }()
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	if _, err := readTDLChoice(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("cancelled input returned %v", err)
 	}
 }
 
