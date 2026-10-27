@@ -13,6 +13,13 @@ import (
 
 type telegramDownloader struct{}
 
+// tdl 模板没有 ext 函数，记录原文件名最后一个点开始的后缀。
+const telegramFilenameTemplate = `{{ $original := filenamify .FileName }}{{ if .FileCaption }}` +
+	`{{ $ext := "" }}{{ range $i := len $original }}` +
+	`{{ if eq (printf "%.1s" (slice $original $i)) "." }}{{ $ext = slice $original $i }}{{ end }}{{ end }}` +
+	`{{ filenamify (replace .FileCaption "\r" " " "\n" " ") }}{{ $ext }}` +
+	`{{ else }}{{ $original }}{{ end }}`
+
 func (telegramDownloader) Match(resource string) bool {
 	return IsTelegramLink(resource)
 }
@@ -51,7 +58,7 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 	if len(dir) == 0 {
 		dir = "./"
 	}
-	args := []string{"dl", "-u", op.Resource, "-d", dir}
+	args := []string{"dl", "-u", op.Resource, "-d", dir, "--template", telegramFilenameTemplate}
 	if os.Getenv("TDL_THREADS") == "" {
 		args = append(args, "-t", "8")
 	}

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 )
 
@@ -111,6 +112,41 @@ func runTDLHelper(args []string) error {
 	}
 	if args[0] == "--proxy" {
 		args = args[2:]
+	}
+	if scenario == "file-name" {
+		dir := ""
+		pattern := "{{ .DialogID }}_{{ .MessageID }}_{{ filenamify .FileName }}"
+		for i := 0; i+1 < len(args); i++ {
+			switch args[i] {
+			case "-d":
+				dir = args[i+1]
+			case "--template":
+				pattern = args[i+1]
+			}
+		}
+		// Fixtures use valid filenames; only template selection is simulated here.
+		tpl, err := template.New("filename").Funcs(template.FuncMap{
+			"filenamify": func(s string) string { return s },
+			"replace": func(s string, pairs ...string) string {
+				return strings.NewReplacer(pairs...).Replace(s)
+			},
+		}).Parse(pattern)
+		if err != nil {
+			return err
+		}
+		var name strings.Builder
+		if err := tpl.Execute(&name, map[string]any{
+			"DialogID": 123, "MessageID": 7759,
+			"FileName":    os.Getenv("CMD_DOWNLOAD_HELPER_TDL_FILENAME"),
+			"FileCaption": os.Getenv("CMD_DOWNLOAD_HELPER_TDL_TEXT"),
+		}); err != nil {
+			return err
+		}
+		filename := filepath.Join(dir, name.String())
+		if err := os.WriteFile(filename+".tmp", []byte("telegram file"), 0600); err != nil {
+			return err
+		}
+		return os.Rename(filename+".tmp", filename)
 	}
 	session := os.Getenv("CMD_DOWNLOAD_HELPER_LOG") + ".session"
 	if args[0] == "login" {

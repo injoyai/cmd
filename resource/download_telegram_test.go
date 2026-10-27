@@ -130,6 +130,10 @@ func TestTelegramLoginAndResume(t *testing.T) {
 						t.Fatalf("download parameters changed: %q", args)
 					}
 					args = args[5:]
+					if len(args) < 2 || args[0] != "--template" || args[1] != telegramFilenameTemplate {
+						t.Fatalf("Telegram text filename template not set: %q", args)
+					}
+					args = args[2:]
 					if tt.threads == "" {
 						if len(args) < 2 || args[0] != "-t" || args[1] != "8" {
 							t.Fatalf("default threads not set to 8: %q", args)
@@ -163,6 +167,63 @@ func TestTelegramLoginAndResume(t *testing.T) {
 			}
 			if strings.Contains(string(printed), "proxy-user") || strings.Contains(string(printed), "proxy-password") {
 				t.Fatal("command log leaked proxy credentials")
+			}
+		})
+	}
+}
+
+func TestTelegramPreservesOriginalFilename(t *testing.T) {
+	testutil.InstallDownloadHelper(t, "tdl")
+	t.Setenv("CMD_DOWNLOAD_HELPER_TDL", "file-name")
+	t.Setenv("CMD_DOWNLOAD_HELPER_TDL_TEXT", "")
+	for _, name := range []string{"视频.mp4", "录屏.mkv", "音频.mp3", "资料.pdf", "安装包.apk", "原名.tmp.mp4", "原名.tmp"} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("CMD_DOWNLOAD_HELPER_TDL_FILENAME", name)
+			dir := t.TempDir()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			filename, exist, err := Download(ctx, &Config{Resource: "https://t.me/example/7759", Dir: dir})
+			if err != nil || exist || filename != dir {
+				t.Fatalf("Download() = %q, %v, %v", filename, exist, err)
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil || len(entries) != 1 || entries[0].Name() != name {
+				t.Fatalf("downloaded files = %v, %v; want only %q", entries, err, name)
+			}
+			if data, err := os.ReadFile(filepath.Join(dir, name)); err != nil || string(data) != "telegram file" {
+				t.Fatalf("downloaded content = %q, %v", data, err)
+			}
+		})
+	}
+}
+
+func TestTelegramTextFilename(t *testing.T) {
+	testutil.InstallDownloadHelper(t, "tdl")
+	t.Setenv("CMD_DOWNLOAD_HELPER_TDL", "file-name")
+	for _, tt := range []struct {
+		original, text, want string
+	}{
+		{"2.mp4", "视频标题", "视频标题.mp4"},
+		{"录屏.mkv", "演示 v1.2", "演示 v1.2.mkv"},
+		{"声音.mp3", "音频标题", "音频标题.mp3"},
+		{"资料.pdf", "文档标题", "文档标题.pdf"},
+		{"安装包.apk", "应用标题", "应用标题.apk"},
+		{"视频.tmp.mp4", "新标题", "新标题.mp4"},
+		{"说明", "无后缀标题", "无后缀标题"},
+		{"视频.mp4", "标题\r\n#标签", "标题  #标签.mp4"},
+	} {
+		t.Run(tt.original, func(t *testing.T) {
+			t.Setenv("CMD_DOWNLOAD_HELPER_TDL_FILENAME", tt.original)
+			t.Setenv("CMD_DOWNLOAD_HELPER_TDL_TEXT", tt.text)
+			dir := t.TempDir()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if _, _, err := Download(ctx, &Config{Resource: "https://t.me/example/7759", Dir: dir}); err != nil {
+				t.Fatal(err)
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil || len(entries) != 1 || entries[0].Name() != tt.want {
+				t.Fatalf("downloaded files = %v, %v; want only %q", entries, err, tt.want)
 			}
 		})
 	}
