@@ -13,6 +13,7 @@ import (
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/notice"
+	"github.com/injoyai/goutil/oss"
 )
 
 // downloader 是一种下载方式。Match 只判断是否适用，不修改配置或执行下载。
@@ -90,4 +91,31 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		return filename, exist, nil
 	}
 	return "", false, errors.New("资源不存在: " + op.Resource)
+}
+
+func WaitDownload(ctx context.Context, delay time.Duration) error {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+// DownloadFile 供输出单个文件的下载器共用，目录下载由对应下载器处理。
+func DownloadFile(ctx context.Context, op *Task, run func(context.Context, *Task) error) (string, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return "", false, err
+	}
+	op.Ctx = ctx
+	filename := op.Filename()
+	if oss.Exists(filename) && !op.Cover {
+		return filename, true, nil
+	}
+	if err := run(ctx, op); err != nil {
+		return "", false, err
+	}
+	return filename, false, nil
 }

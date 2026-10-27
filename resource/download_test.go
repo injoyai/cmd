@@ -380,3 +380,13 @@ func TestMustDownloadStopsDuringRetryWait(t *testing.T) {
 		t.Fatalf("retry wait did not stop: requests=%d, err=%v", requests.Load(), err)
 	}
 }
+
+func TestDownloadWaitCancelsDelay(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	started := time.Now()
+	err := WaitDownload(ctx, 4*time.Second)
+	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) >= time.Second {
+		t.Fatalf("download wait ignored cancellation: %v", err)
+	}
+}

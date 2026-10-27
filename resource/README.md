@@ -9,10 +9,10 @@
 resource/
 ├── config.go             # 输入参数 Config
 ├── task.go               # Task、路径解析、代理和 HTTP client
-├── download.go           # 下载方式匹配、重试与通知
+├── download.go           # 下载方式匹配、重试等待、输出检查与通知
 ├── download_<类型>.go    # HTTP、内置资源、模板、Telegram、网站视频及媒体下载
 ├── download_template.go  # 嵌入模板文件及模板下载
-├── http.go               # HTTP 传输、镜像切换和文件写入
+├── download_http.go      # HTTP 匹配、传输、镜像切换和文件写入
 ├── errors.go             # 错误分类与重试判断
 ├── catalog.go            # Info、通用资源清单和别名索引
 ├── catalog_darwin.go     # macOS 资源定义
@@ -23,8 +23,7 @@ resource/
 ├── install_ytdlp.go      # yt-dlp 查找、下载及可执行权限
 ├── install_ffmpeg.go     # ffmpeg 查找及安装
 ├── media_cache.go        # 媒体分片缓存
-├── media_merge.go        # TS 合并及任务缓存清理
-├── merge.go              # 指定目录的 TS 合并入口
+├── media_merge.go        # TS 合并入口、合并实现及任务缓存清理
 └── templates/            # 模板源文件，路径保持不变
 ```
 
@@ -56,7 +55,7 @@ type downloader interface {
 | 4 | `download_stream.go` | RTSP/RTMP 录制下载 |
 | 5 | `download_m3u8.go` | m3u8 分片下载 |
 | 6 | `download_ytdlp.go` | 按站点域名自动识别网站视频和播放列表，使用 yt-dlp 下载 |
-| 7 | `download_http.go` | 普通 URL 下载；底层传输和镜像源轮询放在 `http.go` |
+| 7 | `download_http.go` | 普通 URL 下载、HTTP 传输和镜像源轮询 |
 | 8 | `download_oss.go` | 将资源名替换进配置的仓库 URL，依次尝试配置地址和默认 OSS 地址 |
 
 OSS 下载沿用现有的公开 HTTP 仓库地址，不需要额外的 OSS SDK 或凭据。
@@ -76,7 +75,7 @@ yt-dlp 优先从 PATH、`i` 所在目录查找，缺少时调用内置安装；f
 
 输出单个文件的下载器通过 `Task.SetFilename(默认名称, 输出后缀)` 解析目标，再调用 `DownloadFile`，复用存在检查和 `Cover` 逻辑。空默认名称表示从资源地址获取；空输出后缀表示沿用默认名称的后缀。输出多个文件的下载器自行管理文件存在行为并返回目录，例如 Telegram。入口无需为某种下载方式设置 `outputDir` 等特殊标记。
 
-参数定义放在 `config.go`；任务、路径和代理选择放在 `task.go`；完成通知由统一入口处理。新增下载方式不需要修改 `MustDownload`。
+参数定义放在 `config.go`；任务、路径和代理选择放在 `task.go`；通用的 `DownloadFile`、`WaitDownload` 及完成通知放在 `download.go`。新增下载方式不需要修改 `MustDownload`。
 
 ## 错误与重试
 

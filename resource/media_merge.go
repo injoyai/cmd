@@ -9,7 +9,23 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/injoyai/cmd/global"
 )
+
+// MergeTS 合并指定目录，保留源文件；失败时保留原有输出文件。
+func MergeTS(dir, output string) error {
+	op, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: global.GetProxy()})
+	if err != nil {
+		return err
+	}
+	defer op.Close()
+	ffmpeg, err := ensureFFmpeg(context.Background(), op)
+	if err != nil {
+		return err
+	}
+	return mergeTS(context.Background(), ffmpeg, dir, output)
+}
 
 // mergeTS 使用指定的ffmpeg合并TS文件，成功后才替换输出，并保留源文件。
 func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {

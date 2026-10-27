@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 	"os"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestDownloadURLsFallback(t *testing.T) {
@@ -35,16 +33,6 @@ func TestDownloadURLsFallback(t *testing.T) {
 	}
 	if data, err := os.ReadFile(op.Filename()); err != nil || string(data) != "mirror content" {
 		t.Fatalf("mirror content = %q, err = %v", data, err)
-	}
-}
-
-func TestDownloadWaitCancelsDelay(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-	started := time.Now()
-	err := WaitDownload(ctx, 4*time.Second)
-	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) >= time.Second {
-		t.Fatalf("download wait ignored cancellation: %v", err)
 	}
 }
 
