@@ -14,8 +14,7 @@ import (
 	"time"
 
 	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/cmd/resource/core"
-	"github.com/injoyai/cmd/resource/internal/testutil"
+	"github.com/injoyai/cmd/internal/testutil"
 	"github.com/injoyai/goutil/cache/v2"
 )
 
@@ -328,7 +327,7 @@ func TestMustDownloadStopsForPermanentHTTPError(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			filename, exist, err := MustDownload(ctx, &Config{Resource: srv.URL + "/asset", Dir: t.TempDir()})
-			var response *core.HTTPError
+			var response *HTTPError
 			if !errors.As(err, &response) || response.StatusCode != status || requests.Load() != 1 || filename != "" || exist {
 				t.Fatalf("permanent HTTP error: file=%q, exist=%v, requests=%d, err=%v", filename, exist, requests.Load(), err)
 			}

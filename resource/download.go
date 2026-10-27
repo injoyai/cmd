@@ -11,26 +11,28 @@ import (
 	"time"
 
 	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/cmd/resource/builtin"
-	"github.com/injoyai/cmd/resource/core"
-	httpdownload "github.com/injoyai/cmd/resource/http"
-	"github.com/injoyai/cmd/resource/media"
-	"github.com/injoyai/cmd/resource/oss"
-	"github.com/injoyai/cmd/resource/telegram"
-	"github.com/injoyai/cmd/resource/template"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/notice"
 )
 
+// downloader 是一种下载方式。Match 只判断是否适用，不修改配置或执行下载。
+// Download 返回文件或目录路径；exist 仅在跳过已存在的目标文件时为 true。
+// 失败时返回错误，由调用方决定重试，完成通知由包级 Download 统一处理。
+type downloader interface {
+	Match(resource string) bool
+	Download(ctx context.Context, op *Task) (filename string, exist bool, err error)
+}
+
 // 匹配优先级由列表顺序决定，OSS 作为最后的兜底。
-var downloaders = []Downloader{
-	template.Downloader{Templates: Templates},
-	builtin.Downloader{},
-	telegram.Downloader{},
-	media.StreamDownloader{},
-	media.M3u8Downloader{},
-	httpdownload.Downloader{},
-	oss.Downloader{},
+var downloaders = []downloader{
+	templateDownloader{Templates: Templates},
+	builtinDownloader{},
+	telegramDownloader{},
+	streamDownloader{},
+	m3u8Downloader{},
+	ytdlpDownloader{},
+	httpDownloader{},
+	ossDownloader{},
 }
 
 // MustDownload 只重试临时网络故障，其他错误直接返回，由调用方停止后续操作。
@@ -47,12 +49,12 @@ func MustDownload(ctx context.Context, op *Config) (string, bool, error) {
 	wait := time.Second * 2
 	for {
 		filename, exist, err := Download(ctx, op)
-		if err == nil || !core.IsRetryable(err) {
+		if err == nil || !IsRetryable(err) {
 			return filename, exist, err
 		}
 		wait += time.Second * 2
 		fmt.Printf("下载失败，%s后重试: %v\n", wait, err)
-		if err := core.WaitDownload(ctx, wait); err != nil {
+		if err := WaitDownload(ctx, wait); err != nil {
 			return "", false, err
 		}
 	}

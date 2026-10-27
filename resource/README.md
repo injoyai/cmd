@@ -3,30 +3,39 @@
 包级 `Download(ctx, config)` 统一选择下载方式、返回结果和发送成功通知。
 `Download(ctx, *Config)` 保持单次下载语义。`MustDownload(ctx, *Config)` 返回 `(filename, exist, err)`，只对可恢复的网络错误持续重试；首次等待 4 秒，之后每次增加 2 秒。调用方必须检查 `err`，失败后停止安装、启动等后续操作。`Config` 保留原有公共参数字段，并新增 `SourceURL`；下载器和安装处理函数统一使用独立的 `Task`。
 
-下载实现按职责分包，根包保留统一入口和常用导出类型：
+`resource` 统一负责资源下载，按文件区分职责；原 `core`、`builtin` 已合并进本包，类型和函数只保留一处定义，不再通过 `types.go` 转发。
 
 ```text
 resource/
-├── download.go       # 调度、匹配顺序、重试与通知
-├── types.go          # 统一入口使用的类型别名和导出函数
-├── templates.go      # 嵌入现有 templates/ 文件
-├── core/             # Config、Task、公共接口、HTTP 传输和镜像轮询
-├── builtin/          # 内置资源、平台清单和安装处理
-├── template/         # 模板匹配、别名和下载
-├── telegram/         # Telegram 下载及 tdl 查找
-├── media/            # m3u8、RTSP/RTMP、分片缓存和 TS 合并
-├── http/             # 普通 URL 下载器
-├── oss/              # 仓库地址配置和兜底下载器
-├── templates/        # 模板源文件，路径保持不变
-└── internal/testutil/ # 测试用 ffmpeg、tdl 子进程
+├── config.go             # 输入参数 Config
+├── task.go               # Task、路径解析、代理和 HTTP client
+├── download.go           # 下载方式匹配、重试与通知
+├── download_<类型>.go    # HTTP、内置资源、模板、Telegram、网站视频及媒体下载
+├── download_template.go  # 嵌入模板文件及模板下载
+├── http.go               # HTTP 传输、镜像切换和文件写入
+├── errors.go             # 错误分类与重试判断
+├── catalog.go            # Info、通用资源清单和别名索引
+├── catalog_darwin.go     # macOS 资源定义
+├── catalog_linux.go      # Linux 资源定义
+├── catalog_windows.go    # Windows 资源定义
+├── source.go             # 仓库地址配置和 URL 占位符替换
+├── install_tdl.go        # tdl 查找、下载及解压安装
+├── install_ytdlp.go      # yt-dlp 查找、下载及可执行权限
+├── install_ffmpeg.go     # ffmpeg 查找及安装
+├── media_cache.go        # 媒体分片缓存
+├── media_merge.go        # TS 合并及任务缓存清理
+├── merge.go              # 指定目录的 TS 合并入口
+└── templates/            # 模板源文件，路径保持不变
 ```
 
-各下载器依赖 `core`，不引用根包。`media` 和 `telegram` 通过 `builtin.Download` 安装依赖工具；tdl 发布包的解压安装放在 `builtin/tdl.go`。模板下载器接收根包嵌入的文件系统。下载器顺序仍由根包显式维护。
+具体下载器使用未导出的 `httpDownloader`、`telegramDownloader` 等类型，共用本包的 `Task`。内置资源下载直接由 `builtinDownloader` 完成；依赖工具通过包内 `installBuiltin` 创建独立任务安装，复用相同的内置资源下载逻辑。
 
-每种下载方式实现 `core.Downloader`（根包的 `Downloader` 是其类型别名）：
+`Resources` 是 `map[string]*Info`，直接查询资源信息；不再维护仅由 `Info` 实现的 `Resource` 接口或 `MResource.Get` 包装。平台资源及其安装处理函数在 `catalog_<平台>.go` 中声明。架构选择沿用 `Info` 的 `Remote`、`RemoteAMD64`、`Remote386`、`RemoteArm`、`RemoteArm64` 字段。`Handler` 定义在 `catalog.go`，仓库地址类型 `Url` 定义在 `source.go`。模板下载器接收本包嵌入的文件系统，匹配顺序由 `download.go` 显式维护。
+
+下载方式实现包内的 `downloader` 接口：
 
 ```go
-type Downloader interface {
+type downloader interface {
     Match(resource string) bool
     Download(ctx context.Context, op *Task) (filename string, exist bool, err error)
 }
@@ -41,30 +50,37 @@ type Downloader interface {
 
 | 顺序 | 实现文件 | 处理内容 |
 | --- | --- | --- |
-| 1 | `template/download.go` | 嵌入模板及别名，例如 `agents`、`build.sh` |
-| 2 | `builtin/download.go` | 内置资源、平台资源及其自定义安装处理函数 |
-| 3 | `telegram/download.go` | Telegram 消息下载，以及 tdl 的查找和内置安装入口调用 |
-| 4 | `media/stream.go` | RTSP/RTMP 下载和 TS 合并 |
-| 5 | `media/m3u8.go` | m3u8 分片下载 |
-| 6 | `http/download.go` | 普通 URL 下载；底层传输和镜像源轮询放在 `core/http.go` |
-| 7 | `oss/download.go` | 将资源名替换进配置的仓库 URL，依次尝试配置地址和默认 OSS 地址 |
+| 1 | `download_template.go` | 嵌入模板及别名，例如 `agents`、`build.sh` |
+| 2 | `download_builtin.go` | 内置资源、平台资源及其自定义安装处理函数 |
+| 3 | `download_telegram.go` | Telegram 消息下载，通过 `install_tdl.go` 准备工具 |
+| 4 | `download_stream.go` | RTSP/RTMP 录制下载 |
+| 5 | `download_m3u8.go` | m3u8 分片下载 |
+| 6 | `download_ytdlp.go` | 按站点域名自动识别网站视频和播放列表，使用 yt-dlp 下载 |
+| 7 | `download_http.go` | 普通 URL 下载；底层传输和镜像源轮询放在 `http.go` |
+| 8 | `download_oss.go` | 将资源名替换进配置的仓库 URL，依次尝试配置地址和默认 OSS 地址 |
 
 OSS 下载沿用现有的公开 HTTP 仓库地址，不需要额外的 OSS SDK 或凭据。
-`Resource` 描述内置资源的名称、地址和安装处理方式，`Handler` 处理解压等安装步骤，`Downloader` 负责选择和执行下载方式。
+`Info` 描述内置资源的名称、地址和安装处理方式，`Handler` 处理解压等安装步骤，`downloader` 统一各下载方式的匹配和执行，包级 `Download` 负责调度。
+
+yt-dlp 自动识别 YouTube、Bilibili、AcFun、抖音、TikTok、Vimeo、Twitch、X/Twitter、Instagram、Facebook、Dailymotion、Reddit 及代码中列出的短链接域名，包含其子域名，按域名边界匹配以避免误判相似域名；不联网探测普通下载地址。站点清单在 `download_ytdlp.go` 中维护，不代表 yt-dlp 的全部支持范围。m3u8 和流媒体匹配优先于网站视频。
+
+yt-dlp 优先从 PATH、`i` 所在目录查找，缺少时调用内置安装；ffmpeg 复用媒体下载的查找与安装逻辑。`Dir` 传给 `--paths`，`Name` 作为字面名称（无扩展名时添加实际媒体扩展名），`Cover` 控制跳过已有文件或强制覆盖。未设置名称时沿用 yt-dlp 默认命名。代理使用任务的 `Proxy()` 结果（空字符串明确表示直连），忽略规则按输入页面地址判断，提取后的子请求共用该选择。播放列表可能产生多个文件，因此成功返回目录和 `exist=false`，是否跳过单个文件由 yt-dlp 管理。外部进程接收 Ctrl+C/任务取消，失败不回退为 HTML 下载，也不进行外层无限重试。
 
 ## 添加下载方式
 
-1. 在对应功能目录实现 `core.Downloader`；独立下载方式可以新增目录，共享媒体处理的方式放在 `media/`。
+`m3u8Downloader` 和 `streamDownloader` 共用 `prepareCache` 管理分片缓存，先通过 `ensureFFmpeg` 查找或安装工具，再将可执行路径传给 `mergeTask(ctx, task, ffmpeg)` 合并 TS。测试子进程辅助程序位于项目根目录的 `internal/testutil/`，不依赖 `resource`；任务创建辅助函数放在本包测试中。`tool` 不依赖 `resource`。录制取消后使用独立合并期限的行为保持不变。
+
+1. 在 `resource` 包新增 `download_<类型>.go`，使用未导出的具体类型实现 `downloader`；共用的依赖工具查找和安装放在对应的 `install_<工具>.go`。
 2. 将实现加入 `downloaders` 列表，放在可能匹配同一输入的通用下载器之前；OSS 兜底保持最后。
 3. 补充匹配优先级、成功和失败行为测试。
 
-输出单个文件的下载器通过 `Task.SetFilename(默认名称, 输出后缀)` 解析目标，再调用 `core.DownloadFile`，复用存在检查和 `Cover` 逻辑。空默认名称表示从资源地址获取；空输出后缀表示沿用默认名称的后缀。输出多个文件的下载器自行管理文件存在行为并返回目录，例如 Telegram。入口无需为某种下载方式设置 `outputDir` 等特殊标记。
+输出单个文件的下载器通过 `Task.SetFilename(默认名称, 输出后缀)` 解析目标，再调用 `DownloadFile`，复用存在检查和 `Cover` 逻辑。空默认名称表示从资源地址获取；空输出后缀表示沿用默认名称的后缀。输出多个文件的下载器自行管理文件存在行为并返回目录，例如 Telegram。入口无需为某种下载方式设置 `outputDir` 等特殊标记。
 
-参数定义放在 `core/config.go`；任务、路径和代理选择放在 `core/task.go`；完成通知由统一入口处理。新增下载方式不需要修改 `MustDownload`。
+参数定义放在 `config.go`；任务、路径和代理选择放在 `task.go`；完成通知由统一入口处理。新增下载方式不需要修改 `MustDownload`。
 
 ## 错误与重试
 
-`core.IsRetryable(err)` 根据结构化错误及其原因判断，不匹配错误文本；未知错误默认停止。
+`IsRetryable(err)` 根据结构化错误及其原因判断，不匹配错误文本；未知错误默认停止。
 
 | 错误 | 行为 |
 | --- | --- |
@@ -73,7 +89,7 @@ OSS 下载沿用现有的公开 HTTP 仓库地址，不需要额外的 OSS SDK �
 | HTTP 401、403、404 等其他状态 | 同一来源不重复重试；有其他镜像时依次尝试 |
 | 域名不存在、地址或代理配置无效、证书校验失败 | 停止，修正地址或配置后再执行 |
 | 文件权限、磁盘写入、解压或播放列表格式错误 | 停止，保留已有输出和可用缓存 |
-| tdl 未登录、ffmpeg/tdl 非零退出、其他未知错误 | 停止；外部工具退出码不能可靠区分网络与参数错误 |
+| tdl 未登录、ffmpeg/tdl/yt-dlp 非零退出、其他未知错误 | 停止；外部工具退出码不能可靠区分网络与参数错误 |
 | 用户取消、调用方截止时间到达 | 停止，等待重试期间也可取消 |
 
 镜像切换与同一任务重试分别处理：404 可以换下一个地址；本地写入和安装处理错误直接停止。如果尝试过的镜像中仍有临时故障，最终保留该错误，避免被另一个镜像的 404 覆盖。
@@ -100,13 +116,15 @@ m3u8 分片的 `Retry` 只对上述临时错误生效，永久错误只尝试一
 
 ## 从旧版 Config 方法迁移
 
+原来直接引用 `resource/core`、`resource/builtin` 的调用方需改为使用 `resource`；旧子包及别名转发已删除。`Downloader` 改为包内接口，未使用的 `Dir` 类型已删除。
+
 | 原调用 | 新调用 |
 | --- | --- |
 | `config.SetUrl(url)` | 设置 `config.SourceURL = url`，清除时赋空字符串 |
 | `config.Download(...)` | 先 `task, err := NewTask(config)`，检查错误后调用 `task.Download(...)` |
 | `config.Url()` / `SetUrl()` | 运行期间使用 `task.URL()` / `task.SetURL()` |
 | `config.Filename()` 等路径方法 | 使用 `task.Filename()` 等方法，或者直接取包级 `Download` 的返回值 |
-| `config.MergeTS()` / `task.MergeTS()` | `media.MergeTask(task)`；合并指定目录仍可调用 `resource.MergeTS(dir, output)` |
+| `config.MergeTS()` / `task.MergeTS()` | 媒体下载内部使用 `mergeTask`；合并指定目录调用 `resource.MergeTS(dir, output)` |
 | `Handler func(*Config) error` | `Handler func(*Task) error` |
 | 下载器的 `Download(ctx, *Config)` | `Download(ctx, *Task)` |
 
