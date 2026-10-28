@@ -10,6 +10,7 @@ import (
 
 var (
 	details = []string{
+		"v1.6.0: 修复CLI错误退出码、文件替换保护、WSS和WebSocket握手,优化下载执行权限、升级路径和脚本权限",
 		"v1.5.9: 重构下载模块,增加yt-dlp下载和tdl下载",
 		"v1.5.8: 优化资源install.sh,让AI全部优化了下",
 		"v1.5.7: AI优化,去除curd,增加view资源,增加i init go命令,更新AGENTS,去除声音提示",
