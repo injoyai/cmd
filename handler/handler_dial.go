@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -19,13 +20,12 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/str"
-	"github.com/injoyai/ios"
-	"github.com/injoyai/ios/client"
-	"github.com/injoyai/ios/client/dial"
-	"github.com/injoyai/ios/client/redial"
-	mqtt2 "github.com/injoyai/ios/module/mqtt"
-	"github.com/injoyai/ios/module/serial"
-	ssh2 "github.com/injoyai/ios/module/ssh"
+	"github.com/injoyai/ios/v2"
+	"github.com/injoyai/ios/v2/client"
+	"github.com/injoyai/ios/v2/client/redial"
+	mqtt2 "github.com/injoyai/ios/v2/module/mqtt"
+	"github.com/injoyai/ios/v2/module/serial"
+	ssh2 "github.com/injoyai/ios/v2/module/ssh"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -160,7 +160,7 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) error {
 	qos := byte(flags.GetInt("qos"))
 	timeout := flags.GetMillisecond("timeout", 3000)
 
-	return redial.RunMQTT(
+	return redial.Run(mqtt2.NewDial(
 		mqtt.NewClientOptions().
 			AddBroker(args[0]).
 			SetClientID(g.RandString(8)).
@@ -176,10 +176,7 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) error {
 			Qos:      qos,
 			Retained: retained,
 		},
-		func(c *client.Client) {
-			DialDeal(c, flags)
-		},
-	)
+	), func(c *client.Client) { DialDeal(c, flags) })
 }
 
 func DialSSH(cmd *cobra.Command, args []string, flags *Flags) error {
@@ -204,7 +201,7 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) error {
 				password = "root"
 			}
 		}
-		c, err := dial.SSH(&ssh2.Config{
+		c, err := client.Dial(ssh2.NewDial(&ssh2.Config{
 			Address:       addr,
 			User:          username,
 			Password:      password,
@@ -212,17 +209,17 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) error {
 			High:          flags.GetInt("high"),
 			Wide:          flags.GetInt("wide"),
 			TerminalModes: ssh.TerminalModes{},
-		})
+		}))
 		if err != nil {
 			logs.Err(err)
 			time.Sleep(time.Second * 3) //避免无退避快速重试刷屏
 			continue
 		}
 		DialDeal(c, flags)
-		c.Logger.Debug(false)
-		c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
-			fmt.Print(string(msg.Payload()))
-		}
+		c.Logger.Enable(false)
+		c.OnDealMessage(func(c *client.Client, msg ios.Acker) {
+			fmt.Print(string(msg.Bytes()))
+		})
 		go c.Run(context.Background())
 		//stdin由DialDeal统一处理,这里仅等待连接结束
 		<-c.Done()
@@ -234,14 +231,14 @@ func DialSerial(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		return fmt.Errorf("[错误] 未填写连接地址")
 	}
-	return redial.RunSerial(&serial.Config{
+	return redial.Run(serial.NewDial(&serial.Config{
 		Address:  args[0],
 		BaudRate: flags.GetInt("baudRate"),
 		DataBits: flags.GetInt("dataBits"),
 		StopBits: flags.GetInt("stopBits"),
 		Parity:   flags.GetString("parity"),
 		Timeout:  flags.GetMillisecond("timeout"),
-	}, func(c *client.Client) {
+	}), func(c *client.Client) {
 		DialDeal(c, flags)
 	})
 }
@@ -289,41 +286,32 @@ func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) error {
 }
 
 func DialDeal(c *client.Client, flags *Flags) {
-	oss.ListenExit(func() { c.CloseAll() })
-	c.SetOption(func(c *client.Client) {
-		c.Logger.Debug(flags.GetBool("debug"))
-		switch strings.ToLower(flags.GetString("printType")) {
-		case "utf8", "ascii":
-			c.Logger.WithUTF8()
-		case "hex":
-			c.Logger.WithHEX()
-		}
+	oss.ListenExit(func() { c.Exit() })
+	c.Logger.Enable(flags.GetBool("debug"))
+	switch strings.ToLower(flags.GetString("printType")) {
+	case "utf8", "ascii":
+		c.Logger.WithUTF8()
+	case "hex":
+		c.Logger.WithHEX()
+	}
+	// 首次连接后启动一次 stdin 泵，重连时复用，避免多个 reader 竞争。
+	var stdinOnce sync.Once
+	startStdin := func() { stdinOnce.Do(func() { go dialStdinPump(c) }) }
+	c.OnConnected(func(c *client.Client) {
+		// redial 在应用选项后才启用重连，需在连接成功时禁用。
 		if !flags.GetBool("redial") {
-			//redial.RunTCP底层RedialContext在应用完选项后会强制开启重连,
-			//直接SetRedial(false)会被覆盖,需在连接成功事件中再禁用
-			onConnected := c.Event.OnConnected
-			c.Event.OnConnected = func(c *client.Client) error {
-				c.SetRedial(false)
-				if onConnected != nil {
-					return onConnected(c)
-				}
-				return nil
-			}
+			c.SetRedial(false)
 		}
+		startStdin()
 	})
-	//单独启动一个stdin泵,避免重连时在OnConnected中重复启动,多个goroutine竞争同一个reader
-	go dialStdinPump(c)
+	if c.Origin() != nil {
+		startStdin()
+	}
 }
 
 func dialStdinPump(c *client.Client) {
 	r := bufio.NewReader(os.Stdin)
 	done := c.Runner2.Done()
-	//等待首次连接建立,未连接时内嵌的MoreWriter为nil,写入会空指针panic
-	select {
-	case <-c.Dialed():
-	case <-done:
-		return
-	}
 	for {
 		//通过临时goroutine读stdin,以便同时监听客户端关闭
 		type readResult struct {

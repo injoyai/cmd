@@ -13,7 +13,6 @@ require (
 	github.com/injoyai/base v1.2.23
 	github.com/injoyai/conv v1.2.8
 	github.com/injoyai/goutil v1.2.34
-	github.com/injoyai/ios v1.2.6
 	github.com/injoyai/ios/v2 v2.0.15
 	github.com/injoyai/logs v1.0.12
 	github.com/injoyai/lorca v0.0.0-20241219020631-030018723d82
@@ -63,10 +62,8 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.10.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
-	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/redis/go-redis/v9 v9.7.3 // indirect
 	github.com/robertkrimen/otto v0.2.1 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tealeg/xlsx v1.0.5 // indirect

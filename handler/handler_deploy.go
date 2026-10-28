@@ -15,13 +15,13 @@ import (
 	"github.com/injoyai/goutil/oss/compress/zip"
 	"github.com/injoyai/goutil/oss/shell"
 	"github.com/injoyai/goutil/str/bar"
-	"github.com/injoyai/ios"
-	"github.com/injoyai/ios/client"
-	"github.com/injoyai/ios/client/dial"
-	"github.com/injoyai/ios/client/frame"
-	"github.com/injoyai/ios/module/common"
-	"github.com/injoyai/ios/server"
-	"github.com/injoyai/ios/server/listen"
+	"github.com/injoyai/ios/v2"
+	"github.com/injoyai/ios/v2/client"
+	"github.com/injoyai/ios/v2/client/dial"
+	"github.com/injoyai/ios/v2/client/frame"
+	"github.com/injoyai/ios/v2/module/common"
+	"github.com/injoyai/ios/v2/server"
+	"github.com/injoyai/ios/v2/server/listen"
 	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
@@ -71,14 +71,22 @@ func DeployClient(addr string, flags *Flags) error {
 		Type = deployShell
 	}
 	restart := flags.GetBool("restart", Type == deployDeploy)
+	received := false
+	var responseErr error
 	c, err := dial.TCP(addr, func(c *client.Client) {
-		c.Logger.Debug()
+		c.Logger.Enable()
 		c.Logger.SetLevel(common.LevelInfo)
-		c.WithFrame(frame.Default)
-		c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
-			fmt.Println(string(msg.Payload()))
+		c.OnReadFrom(frame.Default.ReadFrom)
+		c.OnDealMessage(func(c *client.Client, msg ios.Acker) {
+			fmt.Println(string(msg.Bytes()))
+			var result resp
+			responseErr = json.Unmarshal(msg.Bytes(), &result)
+			if responseErr == nil && result.Code != 200 {
+				responseErr = fmt.Errorf("部署失败: %s", result.Msg)
+			}
+			received = true
 			c.Close()
-		}
+		})
 	})
 	if err != nil {
 		return err
@@ -116,6 +124,7 @@ func DeployClient(addr string, flags *Flags) error {
 		Shell: []string{shell},
 	})
 
+	// 整个部署请求只封一帧，进度复制可能分多次写入。
 	bs, err = frame.WriteWith(bs)
 	if err != nil {
 		return err
@@ -123,7 +132,11 @@ func DeployClient(addr string, flags *Flags) error {
 	if _, err := bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs)); err != nil {
 		return err
 	}
-	return c.Run(context.Background())
+	err = c.Run(context.Background())
+	if received {
+		return responseErr // 收到响应后主动关闭连接，以服务端结果为准。
+	}
+	return err
 }
 
 //====================DeployServer====================//
@@ -132,15 +145,15 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	port := flags.GetInt("port", DefaultUDPPort)
 	s, err := listen.TCP(port, func(s *server.Server) {
-		s.Logger.Debug()
+		s.Logger.Enable()
 		s.Logger.SetLevel(common.LevelInfo)
-		s.SetClientOption(func(c *client.Client) {
+		s.OnClient(func(c *client.Client) {
 			c.WithFrame(frame.Default)
-			c.OnDealMessage = func(c *client.Client, msg ios.Acker) {
+			c.OnDealMessage(func(c *client.Client, msg ios.Acker) {
 				defer c.Close()
 
 				var m *Deploy
-				err := json.Unmarshal(msg.Payload(), &m)
+				err := json.Unmarshal(msg.Bytes(), &m)
 				if err != nil {
 					logs.Err(err)
 					return
@@ -149,7 +162,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) error {
 				switch m.Type {
 				case deployDeploy:
 
-					err := DeployV1(msg.Payload())
+					err := DeployV1(msg.Bytes())
 					c.WriteAny(&resp{
 						Code: conv.Select(err == nil, 200, 500),
 						Msg:  conv.New(err).String("成功"),
@@ -185,7 +198,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) error {
 						})
 					}
 				}
-			}
+			})
 		})
 	})
 	if err != nil {
