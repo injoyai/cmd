@@ -8,17 +8,17 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/injoyai/bar"
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
+func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	/*
 		https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583
@@ -35,6 +35,15 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 
 	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", downloadUrl, _proxy, goroutines, seconds)
 
+	var failure error
+	var mu sync.Mutex
+	recordError := func(err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if failure == nil {
+			failure = err
+		}
+	}
 	f := bar.WithSpeedUnitAvg()
 	b := bar.NewCoroutine(
 		math.MaxInt,
@@ -72,7 +81,9 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 		b.Go(func() {
 			resp, err := client.Get(downloadUrl)
 			if err != nil {
-				logs.Errf("[下载] %s\n", err)
+				if ctx.Err() == nil {
+					recordError(err)
+				}
 				return
 			}
 			defer resp.Body.Close()
@@ -87,7 +98,9 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 					n, err := resp.Body.Read(buf)
 					if err != nil {
 						if err != io.EOF {
-							logs.Errf("[下载] %s\n", err)
+							if ctx.Err() == nil {
+								recordError(err)
+							}
 						}
 						return
 					}
@@ -102,9 +115,10 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) {
 	b.Close()
 	cancel()
 
+	return failure
 }
 
-func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
+func TestUpload(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	//默认测速节点可通过全局配置testUploadUrl覆盖
 	defaultUrl := global.GetString("testUploadUrl", "https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583")
@@ -116,6 +130,15 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 
 	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", uploadUrl, _proxy, goroutines, seconds)
 
+	var failure error
+	var mu sync.Mutex
+	recordError := func(err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if failure == nil {
+			failure = err
+		}
+	}
 	f := bar.WithSpeedUnitAvg()
 	b := bar.NewCoroutine(
 		math.MaxInt,
@@ -148,28 +171,33 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 	if len(_proxy) > 0 {
 		u, err := url.Parse(_proxy)
 		if err != nil {
-			b.Logf("[错误] %s", err)
-			b.Flush()
-			return
+			return err
 		}
 		client.Transport.(*http.Transport).Proxy = http.ProxyURL(u)
 	}
 
+	var requests sync.WaitGroup
 	for i := 0; i < goroutines; i++ {
 		b.Go(func() {
 			pr, pw := io.Pipe()
 
 			req, err := http.NewRequest("POST", uploadUrl, pr)
 			if err != nil {
-				logs.Errf("[上传] %s\n", err)
+				if ctx.Err() == nil {
+					recordError(err)
+				}
 				return
 			}
 
 			// 发请求
+			requests.Add(1)
 			go func() {
+				defer requests.Done()
 				resp, err := client.Do(req)
 				if err != nil {
-					logs.Errf("[上传] %s\n", err)
+					if ctx.Err() == nil {
+						recordError(err)
+					}
 					pr.CloseWithError(err) //通知写入侧停止,避免无意义的继续写入
 					return
 				}
@@ -186,7 +214,9 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 				default:
 					n, err := pw.Write(data)
 					if err != nil {
-						logs.Errf("[上传] %s\n", err)
+						if ctx.Err() == nil {
+							recordError(err)
+						}
 						return
 					}
 					b.Add(int64(n))
@@ -198,12 +228,17 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 	b.Wait()
+	requests.Wait()
 	b.Close()
 	cancel()
+
+	return failure
 }
 
-func TestSpeed(cmd *cobra.Command, args []string, flags *Flags) {
-	TestDownload(cmd, nil, flags)
+func TestSpeed(cmd *cobra.Command, args []string, flags *Flags) error {
+	if err := TestDownload(cmd, nil, flags); err != nil {
+		return err
+	}
 	fmt.Println()
-	TestUpload(cmd, nil, flags)
+	return TestUpload(cmd, nil, flags)
 }

@@ -72,7 +72,7 @@ var (
 	BuildDate = ""
 )
 
-func Version(cmd *cobra.Command, args []string, flags *handler.Flags) {
+func Version(cmd *cobra.Command, args []string, flags *handler.Flags) error {
 	if (len(args) == 0 || args[0] != "all") && len(details) > 10 {
 		details = details[:10]
 	}
@@ -82,4 +82,6 @@ func Version(cmd *cobra.Command, args []string, flags *handler.Flags) {
 		fmt.Println()
 		fmt.Println("编译日期: " + BuildDate)
 	}
+
+	return nil
 }

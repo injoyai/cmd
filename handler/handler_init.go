@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/injoyai/cmd/resource"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -32,12 +31,11 @@ var initStaticFilesFull = map[string]string{
 }
 
 // InitGo Golang 项目初始化命令
-func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
+func InitGo(cmd *cobra.Command, args []string, flags *Flags) error {
 	// 1. 解析目标目录
 	targetDir, err := resolveTargetDir(args)
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	// 2. 解析模块名与标志
@@ -62,8 +60,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		for _, d := range dirs {
 			dirPath := filepath.Join(targetDir, d)
 			if err := os.MkdirAll(dirPath, 0755); err != nil {
-				logs.Err(fmt.Errorf("create dir %s: %w", d, err))
-				return
+				return fmt.Errorf("create dir %s: %w", d, err)
 			}
 			fmt.Printf("[创建目录] %s/\n", d)
 		}
@@ -82,13 +79,11 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 		targetPath := filepath.Join(targetDir, target)
 		content, err := resource.Templates.ReadFile("templates/" + src)
 		if err != nil {
-			logs.Err(fmt.Errorf("read standard %s: %w", src, err))
-			continue
+			return fmt.Errorf("read standard %s: %w", src, err)
 		}
 		action, err := writeFile(targetPath, content, force)
 		if err != nil {
-			logs.Err(fmt.Errorf("write %s: %w", targetPath, err))
-			continue
+			return fmt.Errorf("write %s: %w", targetPath, err)
 		}
 		relPath, _ := filepath.Rel(targetDir, targetPath)
 		printAction(action, relPath, &counts)
@@ -96,22 +91,18 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 
 	fmt.Println("------------------------")
 
-	// 6. 生成 go.mod (若不存在)
-	fmt.Println("[执行] go mod init " + moduleName)
-	if err := runGoModInit(targetDir, moduleName, force); err != nil {
-		fmt.Printf("⚠️  go mod init 失败: %v\n", err)
-		fmt.Println("   (go.mod 可能已存在,可用 -f=true 强制重建)")
-	} else {
-		fmt.Println("[完成] go mod init")
+	// 已有模块默认保留，只有明确 force 才重建。
+	if _, err := os.Stat(filepath.Join(targetDir, "go.mod")); force || os.IsNotExist(err) {
+		fmt.Println("[执行] go mod init " + moduleName)
+		if err := runGoModInit(targetDir, moduleName, force); err != nil {
+			return fmt.Errorf("go mod init 失败: %w", err)
+		}
+	} else if err != nil {
+		return err
 	}
-
-	// 7. 运行 go mod tidy (生成 go.sum)
 	fmt.Println("[执行] go mod tidy")
 	if err := runGoModTidy(targetDir); err != nil {
-		fmt.Printf("⚠️  go mod tidy 执行失败: %v\n", err)
-		fmt.Println("   (项目文件已生成,可手动执行 go mod tidy)")
-	} else {
-		fmt.Println("[完成] go mod tidy")
+		return fmt.Errorf("go mod tidy 失败: %w", err)
 	}
 
 	// 8. 打印总结
@@ -120,6 +111,8 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
 		counts.create, counts.skip, counts.overwrite)
 	fmt.Printf("   模块名: %s\n", moduleName)
+
+	return nil
 }
 
 // printAction 打印写入动作并累计计数
@@ -191,6 +184,10 @@ func deriveModuleName(dir string) string {
 // writeFile 写入文件,根据 force 决定是否覆盖已存在文件
 // 返回动作: "创建" / "覆盖" / "跳过"
 func writeFile(path string, content []byte, force bool) (string, error) {
+	mode := os.FileMode(0644)
+	if filepath.Ext(path) == ".sh" {
+		mode = 0755
+	}
 	if _, err := os.Stat(path); err == nil {
 		// 文件已存在
 		if !force {
@@ -200,8 +197,13 @@ func writeFile(path string, content []byte, force bool) (string, error) {
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 			return "", fmt.Errorf("create parent dir: %w", err)
 		}
-		if err := os.WriteFile(path, content, 0644); err != nil {
+		if err := os.WriteFile(path, content, mode); err != nil {
 			return "", fmt.Errorf("write file: %w", err)
+		}
+		if mode == 0755 {
+			if err := os.Chmod(path, mode); err != nil {
+				return "", err
+			}
 		}
 		return "覆盖", nil
 	}
@@ -209,7 +211,7 @@ func writeFile(path string, content []byte, force bool) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return "", fmt.Errorf("create parent dir: %w", err)
 	}
-	if err := os.WriteFile(path, content, 0644); err != nil {
+	if err := os.WriteFile(path, content, mode); err != nil {
 		return "", fmt.Errorf("write file: %w", err)
 	}
 	return "创建", nil

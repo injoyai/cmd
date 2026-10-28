@@ -12,41 +12,38 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func Open(cmd *cobra.Command, args []string, flags *Flags) {
+func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		//打开执行目录
-		logs.PrintErr(tool.ShellStart(oss.ExecDir()))
-		return
+		return tool.ShellStart(oss.ExecDir())
 	}
 
 	//尝试在自定义中查找
 	if v, ok := global.File.GetSMap("customOpen")[args[0]]; ok {
 		fmt.Print("自定义")
-		logs.PrintErr(tool.ShellStart(v))
-		return
+		return tool.ShellStart(v)
 	}
 
 	switch strings.ToLower(args[0]) {
 	case "hosts":
-		logs.PrintErr(tool.ShellStart("/etc/hosts"))
+		return tool.ShellStart("/etc/hosts")
 	case "injoy":
-		logs.PrintErr(tool.ShellStart(oss.UserInjoyDir()))
+		return tool.ShellStart(oss.UserInjoyDir())
 	case "appdata":
-		logs.PrintErr(tool.ShellStart(oss.UserDataDir()))
+		return tool.ShellStart(oss.UserDataDir())
 	case "startup":
-		logs.PrintErr(tool.ShellStart(oss.UserStartupDir()))
+		return tool.ShellStart(oss.UserStartupDir())
 	case "gopath":
-		logs.PrintErr(tool.ShellStart(os.Getenv("GOPATH")))
+		return tool.ShellStart(os.Getenv("GOPATH"))
 	default:
 
 		//尝试在内置资源查找
 		if r := resource.Resources[strings.ToLower(args[0])]; r != nil {
 			shell.Stop(r.GetLocalName())
-			filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
+			filename, exist, err := resource.Install(g.Ctx(), &resource.Config{
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),
 				Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
@@ -54,15 +51,13 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 				ProxyAddress: flags.GetString("proxy"),
 			})
 			if err != nil {
-				fmt.Println("下载失败:", err)
-				return
+				return fmt.Errorf("下载失败: %w", err)
 			}
 			if !exist {
 				<-time.After(time.Millisecond * 500)
 			}
 			fmt.Print("内置资源")
-			logs.PrintErr(tool.ShellStart(filename))
-			return
+			return tool.ShellStart(filename)
 		}
 
 		//尝试从环境变量查找
@@ -71,8 +66,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 			switch {
 			case len(list) == 1:
 				fmt.Print("环境变量")
-				logs.PrintErr(tool.ShellStart(list[0]))
-				return
+				return tool.ShellStart(list[0])
+
 			case len(list) > 1:
 				for i, v := range list {
 					fmt.Printf("%d. %s\n", i+1, v)
@@ -82,16 +77,19 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) {
 					n := g.InputVar("").Int()
 					if n > 0 && n <= len(list) {
 						fmt.Print("环境变量")
-						logs.PrintErr(tool.ShellStart(list[n-1]))
+						if err := tool.ShellStart(list[n-1]); err != nil {
+							return err
+						}
 						break
 					}
 					fmt.Println("请输入正确的序号")
 				}
-				return
+				return nil
 			}
 		}
 
 		//直接尝试打开
-		logs.PrintErr(tool.ShellStart(args[0]))
+		return tool.ShellStart(args[0])
 	}
+
 }

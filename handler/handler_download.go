@@ -4,22 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/injoyai/cmd/resource"
-	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 )
 
-func Download(cmd *cobra.Command, args []string, flags *Flags) {
+func Download(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 || len(args[0]) == 0 {
-		fmt.Println("未输入下载的内容")
-		return
+		return fmt.Errorf("未输入下载的内容")
 	}
 	switch args[0] {
 	case "test", "demo":
@@ -27,8 +25,7 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		args[0] = "http://devimages.apple.com.edgekey.net/streaming/examples/bipbop_4x3/gear2/prog_index.m3u8"
 	case "gui":
 		//打开图形化界面
-		Open(cmd, []string{"downloader"}, flags)
-		return
+		return Open(cmd, []string{"downloader"}, flags)
 	}
 
 	filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
@@ -46,13 +43,14 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) {
 		VoiceText:    flags.GetString("voiceText"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
 	fmt.Println("下载完成: ", filename, conv.Select(exist, "(已存在)", ""))
+
+	return nil
 }
 
-func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
+func InstallGo(cmd *cobra.Command, args []string, flags *Flags) error {
 	dir := "./"
 	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "install_go",
@@ -63,22 +61,20 @@ func InstallGo(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	filename = dir + filename
-	tool.ShellRun("chmod +x " + filename)
-	tool.ShellRun(filename + " " + strings.Join(args, " "))
-	os.Remove(filename)
+	defer os.Remove(filename)
+	c := exec.Command("bash", append([]string{filename}, args...)...)
+	c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return c.Run()
 }
 
-func Install(cmd *cobra.Command, args []string, flags *Flags) {
+func Install(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println("请输入需要安装的应用")
-		return
+		return fmt.Errorf("请输入需要安装的应用")
 	}
 
-	filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, exist, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
 		Name:         flags.GetString("name"),
@@ -87,27 +83,28 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	if !exist && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
-		tool.ShellRun("chmod +x " + filename)
-	}
+
 	fmt.Println("安装完成: ", filename, conv.Select(exist, "(已存在)", ""))
+
+	return nil
 }
 
-func Uninstall(cmd *cobra.Command, args []string, flags *Flags) {
+func Uninstall(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println("请输入需要卸载的应用")
-		return
+		return fmt.Errorf("请输入需要卸载的应用")
 	}
 	filename, err := uninstallPath(args[0])
 	if err != nil {
-		fmt.Println("卸载失败: ", err)
-		return
+		return fmt.Errorf("卸载失败:  %w", err)
 	}
-	err = os.Remove(filename)
-	fmt.Println("卸载结果: ", conv.New(err).String("成功"))
+	if err := os.Remove(filename); err != nil {
+		return err
+	}
+	fmt.Println("卸载结果: 成功")
+
+	return nil
 }
 
 // uninstallPath 计算卸载路径,仅允许删除i所在目录内的文件,防止路径逃逸

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -28,6 +29,9 @@ func TestDeriveModuleName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if strings.HasPrefix(tt.name, "windows") && runtime.GOOS != "windows" {
+				t.Skip("Windows 路径语义仅在 Windows 验证")
+			}
 			got := deriveModuleName(tt.input)
 			if got != tt.want {
 				t.Errorf("deriveModuleName(%q) = %q, want %q", tt.input, got, tt.want)
@@ -169,6 +173,10 @@ func TestResolveTargetDir(t *testing.T) {
 	t.Run("relative path converts to absolute", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		// 切换到 tmpDir 的父目录,使用相对路径访问 tmpDir
+		tmpDir, err := filepath.EvalSymlinks(tmpDir)
+		if err != nil {
+			t.Fatal(err)
+		}
 		parent := filepath.Dir(tmpDir)
 		oldWd, _ := os.Getwd()
 		defer os.Chdir(oldWd)
@@ -288,4 +296,23 @@ func TestRunGoModInit(t *testing.T) {
 			t.Errorf("go.mod should be overwritten with new module:\n%s", content)
 		}
 	})
+}
+
+func TestWriteFileScriptMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix executable permission")
+	}
+	filename := filepath.Join(t.TempDir(), "build.sh")
+	for _, force := range []bool{false, true} {
+		if _, err := writeFile(filename, []byte("#!/bin/sh\n"), force); err != nil {
+			t.Fatal(err)
+		}
+		info, _ := os.Stat(filename)
+		if info.Mode().Perm() != 0755 {
+			t.Fatalf("mode=%o", info.Mode().Perm())
+		}
+		if err := os.Chmod(filename, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
 }

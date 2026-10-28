@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/handler"
@@ -15,10 +17,18 @@ type (
 )
 
 func main() {
+	if err := newRootCommand().Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
 
+func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "i",
-		Short: "Cli工具",
+		Use:           "i",
+		Short:         "Cli工具",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
 
 	addCommand := func(cmd ...*handler.Command) {
@@ -815,6 +825,6 @@ func main() {
 		},
 	)
 
-	root.Execute()
+	return root
 
 }

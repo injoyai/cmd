@@ -35,22 +35,20 @@ import (
 
 //====================SeleniumServer====================//
 
-func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
+func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	userDir := oss.UserInjoyDir()
 	filename := filepath.Join(userDir, "chromedriver.exe")
 	if !oss.Exists(filename) || flags.GetBool("download") {
 		if _, err := installChromedriver(userDir, flags.GetBool("download"), flags.GetString("proxy")); err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
 	}
 	port := flags.GetInt("port", DefaultSeleniumPort)
 	selenium.SetDebug(flags.GetBool("debug"))
 	ser, err := selenium.NewChromeDriverService(flags.GetString("chromedriver", filename), port)
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	defer ser.Stop()
 	logs.Infof("[:%d] 开启驱动成功\n", port)
@@ -59,7 +57,7 @@ func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 //====================TCPServer====================//
 
-func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
+func TCPServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	err := listen.RunTCP(
 		flags.GetInt("port", 10086),
 		func(s *server.Server) {
@@ -70,12 +68,12 @@ func TCPServer(cmd *cobra.Command, args []string, flags *Flags) {
 			s.Logger.Enable(flags.GetBool("debug"))
 			s.Logger.WithUTF8()
 		})
-	logs.PrintErr(err)
+	return err
 }
 
 //====================UDPServer====================//
 
-func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
+func UDPServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	port := flags.GetInt("port", 10088)
 	err := listen.RunUDP(port, func(s *server.Server) {
 		//仅在传入正值时设置,负值/0会导致库内判断恒为超时,所有客户端1分钟内被踢
@@ -85,12 +83,12 @@ func UDPServer(cmd *cobra.Command, args []string, flags *Flags) {
 		s.Logger.Enable(flags.GetBool("debug"))
 		s.Logger.WithUTF8()
 	})
-	logs.PrintErr(err)
+	return err
 }
 
 //====================MQTTServer====================//
 
-func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
+func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	port := flags.GetInt("port", 1883)
 	debug := flags.GetBool("debug")
@@ -99,7 +97,7 @@ func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 		logs.WriteToTCPServer(logPort)
 	}
 
-	fmt.Printf("ERROR: %v", func() error {
+	return func() error {
 		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if err != nil {
 			return err
@@ -147,23 +145,22 @@ func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) {
 			return err
 		}
 		return nil
-	}())
+	}()
 }
 
 //====================EdgeServer====================//
 
-func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
+func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) > 0 {
 		switch args[0] {
 		case "stop":
-			shell.Stop("edge.exe")
-			return
+			return shell.Stop("edge.exe")
 		}
 	}
 	{
 		fmt.Println("开始运行Edge服务...")
 		shell.Stop("edge.exe")
-		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+		filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 			Resource:     "edge",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
@@ -171,25 +168,27 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ProxyAddress: flags.GetString("proxy"),
 		})
 		if err != nil {
-			fmt.Println("下载失败:", err)
-			return
+			return fmt.Errorf("下载失败: %w", err)
 		}
-		logs.PrintErr(tool.Exec(filename, flags.GetString("runType")))
+		if err := tool.Exec(filename, flags.GetString("runType")); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
-func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) {
+func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) > 0 {
 		switch args[0] {
 		case "stop":
-			shell.Stop("edge_mini.exe")
-			return
+			return shell.Stop("edge_mini.exe")
 		}
 	}
 	{
 		fmt.Println("开始运行EdgeMini服务...")
 		shell.Stop("edge_mini.exe")
-		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+		filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 			Resource:     "edge_mini",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
@@ -197,18 +196,21 @@ func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) {
 			ProxyAddress: flags.GetString("proxy"),
 		})
 		if err != nil {
-			fmt.Println("下载失败:", err)
-			return
+			return fmt.Errorf("下载失败: %w", err)
 		}
-		logs.PrintErr(tool.Exec(filename, flags.GetString("runType")))
+		if err := tool.Exec(filename, flags.GetString("runType")); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 //====================InfluxServer====================//
 
-func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
+func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	userDir := oss.UserInjoyDir()
-	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "influxdb",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
@@ -216,24 +218,23 @@ func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	shell.Start(filename)
+	return shell.Start(filename)
 }
 
 //====================WebsocketServer====================//
 
-func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
+func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	port := flags.GetInt("port", 8200)
 	debug := flags.GetBool("debug")
 	logs.Infof("[:%d] 开启Websocket服务成功...\n", port)
-	logs.PrintErr(http.ListenAndServe(
+	return http.ListenAndServe(
 		fmt.Sprintf(":%d", port),
 		in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ws, err := websocket.Upgrade(w, r, r.Header, 4096, 4096)
+			ws, err := websocket.Upgrade(w, r, nil, 4096, 4096)
 			if err != nil {
-				//非WebSocket请求(如浏览器直接GET),Upgrade已写入错误响应,直接返回避免对nil调用Close引发panic
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				logs.Err(err)
 				return
 			}
@@ -249,12 +250,12 @@ func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) {
 				}
 			}
 		})),
-	))
+	)
 }
 
 //====================ForwardServer====================//
 
-func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
+func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	port := flags.GetInt("port")
 	address := flags.GetString("address")
 
@@ -265,8 +266,7 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 	if port == 0 || len(address) == 0 {
-		fmt.Println("[错误] 请指定转发规则, 例: i forward 80->:8080 或 -p=80 -a=127.0.0.1:8080")
-		return
+		return fmt.Errorf("[错误] 请指定转发规则, 例: i forward 80->:8080 或 -p=80 -a=127.0.0.1:8080")
 	}
 
 	f := &forward.Forward{
@@ -274,14 +274,14 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) {
 		Forward: core.NewDialTCP(address),
 	}
 	err := f.Run(context.Background())
-	logs.PrintErr(err)
+	return err
 }
 
 //====================ProxyServer====================//
 
-func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
+func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	userDir := oss.UserInjoyDir()
-	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "proxy",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
@@ -289,8 +289,7 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
 
 	proxy := "80->:8080"
@@ -299,14 +298,14 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	port := flags.GetInt("port", 7000)
 	s := fmt.Sprintf(`%s server "%s" -p=%d`, filename, proxy, port)
-	logs.PrintErr(tool.ShellRun(s))
+	return tool.ShellRun(s)
 }
 
 //====================StreamServer====================//
 
-func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
+func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	userDir := oss.UserInjoyDir()
-	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "livego",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
@@ -314,17 +313,16 @@ func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.PrintErr(tool.ShellRun(filename))
+	return tool.ShellRun(filename)
 }
 
 //====================FrpServer====================//
 
-func FrpServer(cmd *cobra.Command, args []string, flags *Flags) {
+func FrpServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	userDir := oss.UserInjoyDir()
-	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "frps",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
@@ -332,41 +330,37 @@ func FrpServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.PrintErr(tool.ShellRun(filename))
+	return tool.ShellRun(filename)
 }
 
 //====================HTTPServer====================//
 
-func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) {
+func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	port := flags.GetInt("port", DefaultHTTPPort)
 	logs.Infof("[:%d] 开启HTTP服务成功...\n", port)
-	logs.PrintErr(
-		http.ListenAndServe(
-			fmt.Sprintf(":%d", port),
-			in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				defer r.Body.Close()
-				body, err := io.ReadAll(r.Body)
-				in.CheckErr(err)
-				if flags.GetBool("debug") {
-					logs.Infof("Path: %s, Body: %s\n", r.URL, string(body))
-				}
-				in.Succ(nil)
-			})),
-		),
+	return http.ListenAndServe(
+		fmt.Sprintf(":%d", port),
+		in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			body, err := io.ReadAll(r.Body)
+			in.CheckErr(err)
+			if flags.GetBool("debug") {
+				logs.Infof("Path: %s, Body: %s\n", r.URL, string(body))
+			}
+			in.Succ(nil)
+		})),
 	)
 }
 
 //====================InServer====================//
 
-func InServer(cmd *cobra.Command, args []string, flags *Flags) {
+func InServer(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	switch runtime.GOOS {
 	case "linux", "darwin":
-		TCPServer(cmd, args, flags)
-		return
+		return TCPServer(cmd, args, flags)
 	}
 
 	name := "i_server.exe"
@@ -378,19 +372,17 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 	switch args[0] {
 	case "stop":
 		if err := shell.Stop(name); err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
 		logs.Info("关闭服务成功")
-		return
+		return nil
 
 	case "startup":
 		if err := tool.Shortcut(oss.UserStartupDir(strings.Split(name, ".")[0]+".lnk"), oss.UserInjoyDir(name)); err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
 		logs.Info("设置开机自启成功")
-		return
+		return nil
 
 	case "restart":
 
@@ -398,7 +390,7 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 
 	shell.Stop(name)
 	fmt.Println("开始运行In服务...")
-	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
@@ -406,27 +398,26 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.PrintErr(tool.ShellStart(filename))
+	return tool.ShellStart(filename)
 }
 
 //====================FileServer====================//
 
-func FileServer(cmd *cobra.Command, args []string, flags *Flags) {
+func FileServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		args = []string{"./"}
 	}
 	port := flags.GetInt("port", 8080)
 	logs.Infof("[:%d] 开启文件服务成功...\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(args[0])))
-	logs.Err(err)
+	return err
 }
 
 //====================WebDAVServer====================//
 
-func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) {
+func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		args = []string{"./"}
 	}
@@ -437,14 +428,14 @@ func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) {
 		FileSystem: webdav.Dir(args[0]), // 本地目录映射
 		LockSystem: webdav.NewMemLS(),
 	})
-	logs.Err(err)
+	return err
 }
 
 //====================NatsServer====================//
 
-func NatsServer(cmd *cobra.Command, args []string, flags *Flags) {
+func NatsServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	userDir := oss.UserInjoyDir()
-	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "nats",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
@@ -452,8 +443,7 @@ func NatsServer(cmd *cobra.Command, args []string, flags *Flags) {
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.PrintErr(tool.ShellRun(filename))
+	return tool.ShellRun(filename)
 }

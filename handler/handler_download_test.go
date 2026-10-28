@@ -16,25 +16,11 @@ func TestDownloadReportsFailure(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
-	dir := t.TempDir()
-	output, err := os.Create(filepath.Join(dir, "stdout.log"))
-	if err != nil {
-		t.Fatal(err)
+	err := Download(nil, []string{srv.URL + "/missing"}, NewFlags([]*Flag{{Name: "dir", Value: t.TempDir()}}))
+	if err == nil || !strings.Contains(err.Error(), "404") {
+		t.Fatalf("Download() error = %v", err)
 	}
-	defer output.Close()
-	func() {
-		previous := os.Stdout
-		os.Stdout = output
-		defer func() { os.Stdout = previous }()
-		Download(nil, []string{srv.URL + "/missing"}, NewFlags([]*Flag{{Name: "dir", Value: dir}}))
-	}()
-	data, err := os.ReadFile(output.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if text := string(data); !strings.Contains(text, "下载失败:") || !strings.Contains(text, "404") || strings.Contains(text, "下载完成") {
-		t.Fatalf("unexpected CLI output: %s", text)
-	}
+
 }
 
 func TestUninstallPath(t *testing.T) {
@@ -46,9 +32,9 @@ func TestUninstallPath(t *testing.T) {
 		wantErr bool
 	}{
 		{"目录内文件", "hfs.exe", false},
-		{"子目录文件", "sub\\a.exe", false},
-		{"上级目录逃逸", "..\\escape.exe", true},
-		{"多层逃逸", "sub\\..\\..\\escape.exe", true},
+		{"子目录文件", filepath.Join("sub", "a.exe"), false},
+		{"上级目录逃逸", filepath.Join("..", "escape.exe"), true},
+		{"多层逃逸", filepath.Join("sub", "..", "..", "escape.exe"), true},
 		{"目录本身", ".", true},
 	}
 

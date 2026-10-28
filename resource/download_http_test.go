@@ -1,11 +1,14 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 )
@@ -65,5 +68,51 @@ func TestDownloadURLsPermanentErrorsAndRetryableMirror(t *testing.T) {
 	})
 	if calls != 1 || !errors.Is(err, os.ErrPermission) {
 		t.Fatalf("local failure tried other mirrors: calls=%d, err=%v", calls, err)
+	}
+}
+
+func TestHTTPReplacementPreservesMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix file permissions")
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("new")) }))
+	defer srv.Close()
+	filename := filepath.Join(t.TempDir(), "tool")
+	if err := os.WriteFile(filename, []byte("old"), 0750); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DownloadHTTPFile(context.Background(), srv.Client(), srv.URL, filename, false); err != nil {
+		t.Fatal(err)
+	}
+	info, _ := os.Stat(filename)
+	if info.Mode().Perm() != 0750 {
+		t.Fatalf("mode=%o", info.Mode().Perm())
+	}
+}
+
+func TestInstallSetsExecutablePermission(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("program")) }))
+	defer srv.Close()
+	cfg := &Config{Resource: srv.URL + "/tool", Dir: t.TempDir()}
+	filename, exist, err := Install(context.Background(), cfg)
+	if err != nil || exist {
+		t.Fatalf("exist=%v error=%v", exist, err)
+	}
+	if runtime.GOOS != "windows" {
+		info, _ := os.Stat(filename)
+		if info.Mode().Perm()&0111 != 0111 {
+			t.Fatalf("mode=%o", info.Mode().Perm())
+		}
+		if err := os.Chmod(filename, 0600); err != nil {
+			t.Fatal(err)
+		}
+		_, exist, err = Install(context.Background(), cfg)
+		if err != nil || !exist {
+			t.Fatalf("reuse: exist=%v error=%v", exist, err)
+		}
+		info, _ = os.Stat(filename)
+		if info.Mode().Perm()&0111 != 0111 {
+			t.Fatalf("reused mode=%o", info.Mode().Perm())
+		}
 	}
 }

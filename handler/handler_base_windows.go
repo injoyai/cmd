@@ -7,18 +7,20 @@ import (
 
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func Kill(cmd *cobra.Command, args []string, flags *Flags) {
+func Kill(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) > 0 {
-		logs.PrintErr(tool.ShellRun(killCmd(args[0])))
-		return
+		return tool.ShellRun(killCmd(args[0]))
 	}
 	resp, err := shell.Exec("taskkill /?")
-	logs.PrintErr(err)
+	if err != nil {
+		return err
+	}
 	fmt.Println(resp)
+
+	return nil
 }
 
 // killCmd 拼接taskkill命令,去掉可能携带的引号,纯数字视为PID,否则视为进程名

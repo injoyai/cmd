@@ -14,17 +14,15 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func Swag(cmd *cobra.Command, args []string, flags *Flags) {
-	if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+func Swag(cmd *cobra.Command, args []string, flags *Flags) error {
+	if _, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource: "swag",
 		Dir:      oss.ExecDir(),
 	}); err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
 	//linux/darwin下Exec首参作为bash -c的脚本,其余参数会被忽略,
 	//所以必须拼接成完整命令行,一次传入
@@ -43,37 +41,40 @@ func Swag(cmd *cobra.Command, args []string, flags *Flags) {
 	for _, v := range args {
 		cmdline += " " + v
 	}
-	bs, _ := shell.Exec(cmdline)
+	bs, err := shell.Exec(cmdline)
 	fmt.Println(bs)
+
+	return err
 }
 
-func IP(cmd *cobra.Command, args []string, flags *Flags) {
+func IP(cmd *cobra.Command, args []string, flags *Flags) error {
 	for i := range args {
 		if args[i] == "self" {
 			args[i] = "myip"
 		}
 	}
-	if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+	if _, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "ipinfo",
 		Dir:          oss.ExecDir(),
 		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy", global.GetProxy()),
 	}); err != nil {
-		fmt.Println("下载失败:", err)
-		return
+		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.PrintErr(tool.ShellRun("ipinfo " + strings.Join(args, " ")))
+	return tool.ShellRun("ipinfo " + strings.Join(args, " "))
 }
 
-func Len(cmd *cobra.Command, args []string, flags *Flags) {
+func Len(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		fmt.Println(0)
-		return
+		return nil
 	}
 	fmt.Println(len(args[0]))
+
+	return nil
 }
 
-func Base64(cmd *cobra.Command, args []string, flags *Flags) {
+func Base64(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		args = []string{""}
 	}
@@ -91,6 +92,8 @@ func Base64(cmd *cobra.Command, args []string, flags *Flags) {
 	fmt.Println("Encode:")
 	s := base64.StdEncoding.EncodeToString([]byte(args[0]))
 	fmt.Println(s)
+
+	return nil
 }
 
 func buildGoCommandArgs(output, osName, arch string, args []string) []string {
@@ -103,19 +106,18 @@ func buildGoCommandArgs(output, osName, arch string, args []string) []string {
 	return buildArgs
 }
 
-func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
+func GoBuild(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	wd, _ := os.Getwd()
 
 	output := flags.GetString("output", filepath.Base(wd))
 	upx := flags.GetBool("upx")
 	if upx {
-		if _, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
+		if _, _, err := resource.Install(g.Ctx(), &resource.Config{
 			Resource: "upx",
 			Dir:      oss.ExecDir(),
 		}); err != nil {
-			fmt.Println("下载失败:", err)
-			return
+			return fmt.Errorf("下载失败: %w", err)
 		}
 	}
 
@@ -152,14 +154,18 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 
 			fmt.Println("开始编译:", osName, arch)
-			logs.PrintErr(c.Run())
+			if err := c.Run(); err != nil {
+				return err
+			}
 
 			if upx {
 				//fmt.Println("开始upx压缩:", out)
 				cmdUpx := exec.Command("upx", "-9", "-k", out)
 				cmdUpx.Stdout = os.Stdout
 				cmdUpx.Stderr = os.Stderr
-				logs.PrintErr(cmdUpx.Run())
+				if err := cmdUpx.Run(); err != nil {
+					return err
+				}
 
 				// ---- 清理临时文件 ----
 				ext := filepath.Ext(out)        // .exe
@@ -181,4 +187,6 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) {
 
 		}
 	}
+
+	return nil
 }

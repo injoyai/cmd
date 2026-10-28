@@ -61,7 +61,7 @@ type resp struct {
 
 //====================DeployClient====================//
 
-func DeployClient(addr string, flags *Flags) {
+func DeployClient(addr string, flags *Flags) error {
 
 	target := flags.GetString("target")
 	source := flags.GetString("source")
@@ -81,9 +81,10 @@ func DeployClient(addr string, flags *Flags) {
 		}
 	})
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
+
+	defer c.Close()
 
 	//读取文件 target source
 	var file []*_deployFile
@@ -93,15 +94,13 @@ func DeployClient(addr string, flags *Flags) {
 		logs.Debugf("打包文件: %s\n", zipPath)
 		err := zip.Encode(source, zipPath)
 		if err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
 		defer os.Remove(zipPath)
 
 		bs, err := os.ReadFile(zipPath)
 		if err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
 
 		file = append(file, (&_deployFile{
@@ -117,15 +116,19 @@ func DeployClient(addr string, flags *Flags) {
 		Shell: []string{shell},
 	})
 
-	bs, _ = frame.WriteWith(bs)
-	bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs))
-
-	c.Run(context.Background())
+	bs, err = frame.WriteWith(bs)
+	if err != nil {
+		return err
+	}
+	if _, err := bar.New(int64(len(bs))).Copy(c, bytes.NewBuffer(bs)); err != nil {
+		return err
+	}
+	return c.Run(context.Background())
 }
 
 //====================DeployServer====================//
 
-func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
+func DeployServer(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	port := flags.GetInt("port", DefaultUDPPort)
 	s, err := listen.TCP(port, func(s *server.Server) {
@@ -185,10 +188,10 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 		})
 	})
-	if logs.PrintErr(err) {
-		return
+	if err != nil {
+		return err
 	}
-	logs.Err(s.Run(context.Background()))
+	return s.Run(context.Background())
 }
 
 func DeployV1(bytes []byte) error {

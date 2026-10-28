@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -13,11 +12,10 @@ func IsWindows() bool {
 	return runtime.GOOS == "windows"
 }
 
-func Global(cmd *cobra.Command, args []string, flags *Flags) {
+func Global(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	if IsWindows() && (flags.GetBool("gui") || (len(args) > 0 && args[0] == "gui")) {
-		global.RunGUI()
-		return
+		return global.RunGUI()
 	}
 
 	flags.Range(func(_type string, val *Flag) bool {
@@ -47,9 +45,11 @@ func Global(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 
 	if err := global.Save(); err != nil {
-		logs.Err(err)
+		return err
 	}
 
 	//打印最新配置信息
 	global.Print()
+
+	return nil
 }

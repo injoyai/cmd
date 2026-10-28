@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -21,48 +20,48 @@ import (
 	"go.bug.st/serial"
 )
 
-func ScanNetstat(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanNetstat(cmd *cobra.Command, args []string, flags *Flags) error {
 	s := "netstat -ano"
 	if find := flags.GetString("find"); len(find) > 0 {
 		s += fmt.Sprintf(` | findstr "%s"`, find)
 	}
-	logs.PrintErr(tool.ShellRun(s))
+	return tool.ShellRun(s)
 }
 
-func ScanTask(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanTask(cmd *cobra.Command, args []string, flags *Flags) error {
 	s := "tasklist"
 	if find := flags.GetString("find"); len(find) > 0 {
 		s += fmt.Sprintf(` | findstr "%s"`, find)
 	}
-	logs.PrintErr(tool.ShellRun(s))
+	return tool.ShellRun(s)
 }
 
-func ScanNetwork(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanNetwork(cmd *cobra.Command, args []string, flags *Flags) error {
 	is, err := net.Interfaces()
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	for _, v := range is {
 		fmt.Printf("\n%s(%s):\n", v.Name, v.HardwareAddr.String())
 		ips, err := v.Addrs()
 		if err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
 		for _, vv := range ips {
 			fmt.Printf("  - %s \n", vv.String())
 		}
 	}
+
+	return nil
 }
 
-func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) error {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
 	find := flags.GetString("find")
 
-	RangeNetwork(network, func(inter *Interfaces) {
+	return RangeNetwork(network, func(inter *Interfaces) {
 		inter.Print()
 		list := types.List[g.Map]{}
 		mu := sync.Mutex{}
@@ -104,18 +103,17 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
-func ScanSSH(cmd *cobra.Command, args []string, flags *Flags) {
-	ScanPort(cmd, []string{"22"}, flags)
+func ScanSSH(cmd *cobra.Command, args []string, flags *Flags) error {
+	return ScanPort(cmd, []string{"22"}, flags)
 }
 
-func ScanRtsp(cmd *cobra.Command, args []string, flags *Flags) {
-	ScanPort(cmd, []string{"554"}, flags)
+func ScanRtsp(cmd *cobra.Command, args []string, flags *Flags) error {
+	return ScanPort(cmd, []string{"554"}, flags)
 }
 
-func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanPort(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		log.Println("[错误]", "缺少端口")
-		return
+		return fmt.Errorf("缺少端口")
 	}
 
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 1000))
@@ -124,7 +122,7 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	Type := flags.GetString("type", "tcp")
 	find := flags.GetString("find")
 
-	RangeNetwork(network, func(inter *Interfaces) {
+	return RangeNetwork(network, func(inter *Interfaces) {
 		inter.Print()
 		list := types.List[g.Map]{}
 		mu := sync.Mutex{}
@@ -171,11 +169,10 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) {
 	})
 }
 
-func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) error {
 	list, err := serial.GetPortsList()
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	find := flags.GetString("find")
@@ -228,9 +225,10 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 	}
 
+	return nil
 }
 
-func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
+func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) error {
 	timeout := time.Millisecond * time.Duration(flags.GetInt("timeout", 200))
 	sortResult := flags.GetBool("sort")
 	network := flags.GetString("network")
@@ -241,7 +239,7 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 	result := types.List[g.Map]{}
 	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	RangeNetwork(network, func(inter *Interfaces) {
+	err := RangeNetwork(network, func(inter *Interfaces) {
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
 			go func(ipv4 net.IP) {
@@ -291,6 +289,8 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) {
 			fmt.Println(v["msg"])
 		}
 	}
+
+	return err
 }
 
 //func ScanServer(cmd *cobra.Command, args []string, flags *Flags) {

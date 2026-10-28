@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/injoyai/conv"
-	"github.com/injoyai/logs"
 	"github.com/injoyai/lorca"
 	"github.com/spf13/cobra"
 )
@@ -13,7 +12,7 @@ import (
 //go:embed redirect.html
 var redirect string
 
-func GUI(cmd *cobra.Command, args []string, flags *Flags) {
+func GUI(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	addr := conv.Default(redirect, args...)
 	if len(args) > 0 {
@@ -33,6 +32,5 @@ func GUI(cmd *cobra.Command, args []string, flags *Flags) {
 		return app.Bind("Navigate", func(url string) { app.Load(url) })
 	})
 
-	logs.PrintErr(err)
-
+	return err
 }

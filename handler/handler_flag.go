@@ -79,10 +79,11 @@ func (this *Command) Deal(flags ...*Flag) *cobra.Command {
 	this.Command.Short = conv.Select(this.Command.Short == "", this.Short, this.Command.Short)
 	this.Command.Long = conv.Select(this.Command.Long == "", this.Long, this.Command.Long)
 	this.Command.Example = conv.Select(this.Command.Example == "", this.Example, this.Command.Example)
-	this.Command.Run = func(cmd *cobra.Command, args []string) {
+	this.Command.RunE = func(cmd *cobra.Command, args []string) error {
 		if this.Run != nil {
-			this.Run(cmd, args, newFlags(flags))
+			return this.Run(cmd, args, newFlags(flags))
 		}
+		return nil
 	}
 	for _, v := range this.Child {
 		this.Command.AddCommand(v.Deal(flags...))
@@ -90,4 +91,4 @@ func (this *Command) Deal(flags ...*Flag) *cobra.Command {
 	return this.Command
 }
 
-type RunFunc func(cmd *cobra.Command, args []string, flag *Flags)
+type RunFunc func(cmd *cobra.Command, args []string, flag *Flags) error

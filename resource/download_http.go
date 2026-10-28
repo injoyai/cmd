@@ -122,6 +122,13 @@ func DownloadHTTPFile(ctx context.Context, client *http.Client, raw, filename st
 	if err := ctx.Err(); err != nil {
 		return n, err
 	}
+	if info, err := os.Stat(filename); err == nil {
+		if err := os.Chmod(f.Name(), info.Mode().Perm()); err != nil {
+			return n, err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return n, err
+	}
 	return n, os.Rename(f.Name(), filename)
 }
 

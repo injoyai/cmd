@@ -11,8 +11,8 @@ import (
 //go:embed global.html
 var html string
 
-func RunGUI() {
-	lorca.Run(&lorca.Config{
+func RunGUI() error {
+	return lorca.Run(&lorca.Config{
 		Width:  720,
 		Height: 860,
 		Index:  html,

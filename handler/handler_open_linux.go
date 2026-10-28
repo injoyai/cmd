@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"github.com/injoyai/logs"
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
-func Open(cmd *cobra.Command, args []string, flags *Flags) {
-	logs.Err("不支持")
+func Open(cmd *cobra.Command, args []string, flags *Flags) error {
+	return fmt.Errorf("不支持")
 }

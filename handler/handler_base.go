@@ -13,20 +13,19 @@ import (
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/types"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func Hint(msg string) func(cmd *cobra.Command, args []string, flags *Flags) {
-	return func(cmd *cobra.Command, args []string, flags *Flags) {
-		fmt.Println(msg)
+func Hint(msg string) RunFunc {
+	return func(cmd *cobra.Command, args []string, flags *Flags) error {
+		return fmt.Errorf("%s", msg)
 	}
 }
 
-func Where(cmd *cobra.Command, args []string, flags *Flags) {
+func Where(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 || args[0] == "self" {
 		fmt.Println(oss.ExecDir())
-		return
+		return nil
 	}
 
 	var find bool
@@ -55,45 +54,48 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println("未找到")
 	}
 
+	return nil
 }
 
-func Date(cmd *cobra.Command, args []string, flags *Flags) {
+func Date(cmd *cobra.Command, args []string, flags *Flags) error {
 	fmt.Println(time.Now().String())
+
+	return nil
 }
 
-func Doc(cmd *cobra.Command, args []string, flags *Flags) {
+func Doc(cmd *cobra.Command, args []string, flags *Flags) error {
 	fmt.Println(`配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
+
+	return nil
 }
 
-func Speak(cmd *cobra.Command, args []string, flags *Flags) {
+func Speak(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		logs.Err("未填写发送内容")
-		return
+		return fmt.Errorf("未填写发送内容")
 	}
 	err := notice.NewVoice(&notice.VoiceConfig{
 		Rate:   flags.GetInt("rate", 0),
 		Volume: flags.GetInt("volume", 100),
 	}).Speak(args[0])
-	logs.PrintErr(err)
+	return err
 }
 
-func PushServer(cmd *cobra.Command, args []string, flags *Flags) {
+func PushServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		logs.Err("未填写发送内容")
-		return
+		return fmt.Errorf("未填写发送内容")
 	}
 	err := broadcast(flags.GetString("address"), []byte(args[0]))
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	fmt.Println("推送成功")
+
+	return nil
 }
 
-func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
+func PushVoice(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println("未填写发送内容")
-		return
+		return fmt.Errorf("未填写发送内容")
 	}
 	msg := types.Message{
 		Type: "notice.voice",
@@ -102,16 +104,16 @@ func PushVoice(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	err := broadcast(flags.GetString("address"), conv.Bytes(msg))
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	fmt.Println("推送成功")
+
+	return nil
 }
 
-func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
+func PushNotice(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println("未填写发送内容")
-		return
+		return fmt.Errorf("未填写发送内容")
 	}
 	msg := types.Message{
 		Type: "notice.notice",
@@ -120,16 +122,16 @@ func PushNotice(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	err := broadcast(flags.GetString("address"), conv.Bytes(msg))
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	fmt.Println("推送成功")
+
+	return nil
 }
 
-func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
+func PushPopup(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println("未填写发送内容")
-		return
+		return fmt.Errorf("未填写发送内容")
 	}
 	msg := types.Message{
 		Type: "notice.popup",
@@ -138,10 +140,11 @@ func PushPopup(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 	err := broadcast(flags.GetString("address"), conv.Bytes(msg))
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	fmt.Println("推送成功")
+
+	return nil
 }
 
 func broadcast(address string, bs []byte) error {
@@ -161,7 +164,7 @@ func broadcast(address string, bs []byte) error {
 	return err
 }
 
-func Resources(cmd *cobra.Command, args []string, flags *Flags) {
+func Resources(cmd *cobra.Command, args []string, flags *Flags) error {
 	find := flags.GetString("find")
 	co := 0
 	for k, v := range resource.Resources {
@@ -172,18 +175,18 @@ func Resources(cmd *cobra.Command, args []string, flags *Flags) {
 		}
 	}
 	fmt.Println("数量:", co)
+
+	return nil
 }
 
-func Wake(cmd *cobra.Command, args []string, flags *Flags) {
+func Wake(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println("请输入需要唤醒电脑的MAC地址")
-		return
+		return fmt.Errorf("请输入需要唤醒电脑的MAC地址")
 	}
 
 	hw, err := net.ParseMAC(args[0])
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	buf := make([]byte, 102)
@@ -200,16 +203,16 @@ func Wake(cmd *cobra.Command, args []string, flags *Flags) {
 
 	conn, err := net.Dial("udp", "255.255.255.255:9")
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	defer conn.Close()
 
 	_, err = conn.Write(buf)
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	fmt.Println("已发送唤醒命令")
+
+	return nil
 }

@@ -19,15 +19,16 @@ import (
 //go:embed chart.html
 var html string
 
-func Chart(cmd *cobra.Command, args []string, flags *Flags) {
+func Chart(cmd *cobra.Command, args []string, flags *Flags) error {
 	logs.SetFormatterWithDefault()
 	if len(args) == 0 {
-		logs.Err("无效路径")
-		return
+		return fmt.Errorf("无效路径")
 	}
 
 	f, err := os.Open(args[0])
-	logs.PanicErr(err)
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 
 	var result = map[string][][]string{}
@@ -45,15 +46,14 @@ func Chart(cmd *cobra.Command, args []string, flags *Flags) {
 
 	}
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	width := flags.GetInt("width", 700)
 	height := flags.GetInt("height", 400)
 	x, y := excel.ToInt(flags.GetString("label", "A1"))
 
-	lorca.Run(&lorca.Config{
+	return lorca.Run(&lorca.Config{
 		Width:  width,
 		Height: height,
 		Index:  html,

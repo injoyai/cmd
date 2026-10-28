@@ -5,6 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Kill(cmd *cobra.Command, args []string, flags *Flags) {
-	fmt.Println("未实现")
+func Kill(cmd *cobra.Command, args []string, flags *Flags) error {
+	return fmt.Errorf("未实现")
 }

@@ -6,17 +6,17 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/conv"
 	"github.com/injoyai/conv/codec"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func Dir(cmd *cobra.Command, args []string, flags *Flags) {
+func Dir(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
 		args = []string{"./"}
 	}
@@ -25,19 +25,17 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 	replace := strings.SplitN(flags.GetString("replace"), "=", 2) //替换
 	find := []byte(flags.GetString("find"))                       //查找某个内容
 	count := flags.GetBool("count")
-	show := flags.GetBool("show")
 	_type := strings.ToLower(flags.GetString("type"))
 	output := flags.GetString("output", "./output.ts")
 
 	switch {
 	case _type == "merge_ts" || _type == "mergets":
-		err := resource.MergeTS(args[0], output)
-		logs.PrintErr(err)
+		return resource.MergeTS(args[0], output)
 
 	case count:
 		countFile := 0
 		countDir := 0
-		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+		err := oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 			if info.IsDir() {
 				countDir++
 			} else {
@@ -45,14 +43,16 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 			return true, nil
 		}, level)
+		if err != nil {
+			return err
+		}
 		fmt.Println("文件夹数量:", countDir)
 		fmt.Println("文件数量:", countFile)
 
 	case len(find) > 0:
-		//查找所有文件内容
-		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+		return oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
 			if !info.IsDir() {
-				bs, err := oss.ReadBytes(info.Filename())
+				bs, err := os.ReadFile(info.Filename())
 				if err != nil {
 					return false, err
 				}
@@ -62,45 +62,67 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) {
 			}
 			return true, nil
 		}, level)
-
 	case len(replace) == 2:
-		//替换所有文件的内容
-		oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
-			if !info.IsDir() {
-				bs, err := oss.ReadBytes(info.Filename())
-				if !logs.PrintErr(err) {
-					bs = bytes.Replace(bs, []byte(replace[0]), []byte(replace[1]), -1)
-					f, err := os.Create(info.Filename())
-					if err == nil {
-						f.Write(bs)
-						f.Close()
-						fmt.Printf("%s  %s >>> %s \n", info.Filename(), replace[0], replace[1])
-					}
-					logs.PrintErr(err)
-				}
+		return oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
+			if info.IsDir() {
+				return true, nil
 			}
+			if err := replaceFile(info.Filename(), []byte(replace[0]), []byte(replace[1])); err != nil {
+				return false, err
+			}
+			fmt.Printf("%s  %s >>> %s \n", info.Filename(), replace[0], replace[1])
 			return true, nil
 		}, level)
-
-	case show:
-		//展示目录树
-		d, err := oss.ReadTree(args[0], level)
-		if !logs.PrintErr(err) {
-			fmt.Println(d)
-		}
 
 	default:
 		//展示目录树
 		d, err := oss.ReadTree(args[0], level)
-		if !logs.PrintErr(err) {
-			fmt.Println(d)
+		if err != nil {
+			return err
 		}
-
+		fmt.Println(d)
 	}
 
+	return nil
 }
 
-func Text(cmd *cobra.Command, args []string, flags *Flags) {
+// replaceFile 先完整写入同目录临时文件，成功关闭后才替换原文件。
+func replaceFile(filename string, old, replacement []byte) error {
+	filename, err := filepath.EvalSymlinks(filename)
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	updated := bytes.ReplaceAll(data, old, replacement)
+	if bytes.Equal(data, updated) {
+		return nil
+	}
+	info, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(filepath.Dir(filename), ".i-replace-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+	if _, err := f.Write(updated); err != nil {
+		return err
+	}
+	if err := f.Chmod(info.Mode().Perm()); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(f.Name(), filename)
+}
+
+func Text(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	//判断是否是路径,如果是路径,则加载文件
 	for i, v := range args {
@@ -109,8 +131,7 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) {
 			//说明是路径
 			bs, err := os.ReadFile(v)
 			if err != nil {
-				logs.Err(err)
-				return
+				return err
 			}
 			args[i] = string(bs)
 		}
@@ -120,7 +141,7 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) {
 	if l := flags.GetString("length"); len(l) > 0 && conv.Bool(l) {
 		for _, v := range args {
 			fmt.Println(len(v))
-			return
+			return nil
 		}
 	}
 
@@ -240,4 +261,5 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) {
 		fmt.Println(v)
 	}
 
+	return nil
 }

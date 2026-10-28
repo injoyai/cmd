@@ -8,14 +8,12 @@ import (
 	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/net/http/v2"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
+func HTTP(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		logs.Err("缺少请求地址")
-		return
+		return fmt.Errorf("缺少请求地址")
 	}
 
 	if !strings.HasPrefix(args[0], "https://") && !strings.HasPrefix(args[0], "http://") {
@@ -38,8 +36,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	}
 
 	if err := http.DefaultClient.SetProxy(proxy); err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	http.DefaultClient.SetTimeout(timeout)
 
@@ -61,21 +58,18 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 	resp, err := req.Do()
 
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	bs, err := httputil.DumpResponse(resp.Response, true)
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 	msg := string(bs)
 
 	bodyBs, err := resp.ReadBody()
 	if err != nil {
-		logs.Err(err)
-		return
+		return err
 	}
 
 	if len(get) > 0 {
@@ -90,11 +84,12 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) {
 
 	if len(output) > 0 {
 		if err = oss.New(output, bodyBs); err != nil {
-			logs.Err(err)
-			return
+			return err
 		}
-		return
+		return nil
 	}
 
 	fmt.Println(msg)
+
+	return nil
 }
