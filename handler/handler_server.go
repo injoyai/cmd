@@ -160,35 +160,15 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) {
 			return
 		}
 	}
-	proxy := flags.GetString("proxy")
-	userDir := oss.UserInjoyDir()
-	{
-		fmt.Println("开始运行InfluxDB服务...")
-		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
-			Resource:     "influxdb",
-			Dir:          userDir,
-			ProxyEnable:  true,
-			ProxyAddress: proxy,
-		})
-		if err != nil {
-			fmt.Println("下载失败:", err)
-			return
-		}
-		go func() {
-			if err := shell.Start(filename); err != nil {
-				logs.Err(err)
-			}
-		}()
-	}
 	{
 		fmt.Println("开始运行Edge服务...")
 		shell.Stop("edge.exe")
 		filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 			Resource:     "edge",
-			Dir:          userDir,
+			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyEnable:  true,
-			ProxyAddress: proxy,
+			ProxyAddress: flags.GetString("proxy"),
 		})
 		if err != nil {
 			fmt.Println("下载失败:", err)
