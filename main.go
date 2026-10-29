@@ -43,9 +43,9 @@ func newRootCommand() *cobra.Command {
 	addCommand(
 
 		&Command{
-			Use:     "version",
+			Use:     "version [all]",
 			Short:   "查看版本",
-			Example: "i version",
+			Example: "i version\ni version all",
 			Run:     Version,
 		},
 

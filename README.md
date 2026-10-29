@@ -56,6 +56,8 @@ i version
 i --help
 ```
 
+`i version` 显示最近 10 条版本记录，`i version all` 显示全部记录。
+
 ---
 
 ## 命令速查

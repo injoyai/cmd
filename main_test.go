@@ -174,6 +174,9 @@ func TestCLIExitStatus(t *testing.T) {
 			if tt.fail && stderr.Len() == 0 {
 				t.Fatalf("failure missing stderr: %s", &out)
 			}
+			if tt.args[0] == "version" && (out.Len() == 0 || stderr.Len() != 0) {
+				t.Fatalf("version should write to stdout: stdout=%s stderr=%s", &out, &stderr)
+			}
 		})
 	}
 }
