@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 
 	hls "github.com/grafov/m3u8"
+	"github.com/injoyai/cmd/internal/testutil"
 )
 
 func TestDownloadSegmentsByteCounts(t *testing.T) {
@@ -158,5 +161,101 @@ func TestResolveReference(t *testing.T) {
 		if got := resolveReference(base, c.in); got != c.want {
 			t.Errorf("resolveReference(%q) = %q, want %q", c.in, got, c.want)
 		}
+	}
+}
+
+func TestDownloadM3u8Failure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("invalid playlist"))
+	}))
+	defer srv.Close()
+	filename, exist, err := Download(context.Background(), &Config{
+		Resource: srv.URL + "/video.m3u8",
+		Dir:      t.TempDir(),
+	})
+	if err == nil || filename != "" || exist {
+		t.Fatalf("Download() = %q, %v, %v; want empty, false, error", filename, exist, err)
+	}
+}
+
+func TestM3u8RetriesBodyAndResumes(t *testing.T) {
+	var first, second atomic.Int32
+	var repair atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/video.m3u8":
+			fmt.Fprint(w, "#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\na.ts\n#EXTINF:1,\nb.ts\n#EXT-X-ENDLIST\n")
+		case "/a.ts":
+			first.Add(1)
+			fmt.Fprint(w, "first")
+		case "/b.ts":
+			second.Add(1)
+			if !repair.Load() {
+				w.Header().Set("Content-Length", "100")
+			}
+			fmt.Fprint(w, "second")
+		}
+	}))
+	defer srv.Close()
+	testutil.InstallDownloadHelper(t, "ffmpeg")
+	dir := t.TempDir()
+	legacy := filepath.Join(dir, "video")
+	if err := os.Mkdir(legacy, 0755); err != nil {
+		t.Fatal(err)
+	}
+	keep := filepath.Join(legacy, "keep.txt")
+	if err := os.WriteFile(keep, []byte("keep"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	config := &Config{Resource: srv.URL + "/video.m3u8", Dir: dir, Retry: 2, Coroutine: 2}
+	if _, _, err := Download(context.Background(), config); err == nil || second.Load() != 3 {
+		t.Fatalf("body failure did not use Retry=2: calls=%d, err=%v", second.Load(), err)
+	}
+	repair.Store(true)
+	filename, _, err := Download(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "firstsecond" {
+		t.Fatalf("merged output: %q, %v", data, err)
+	}
+	if first.Load() != 1 || second.Load() != 4 {
+		t.Fatalf("resume redownloaded successful segments: first=%d, second=%d", first.Load(), second.Load())
+	}
+	if data, err := os.ReadFile(keep); err != nil || string(data) != "keep" {
+		t.Fatalf("existing user directory changed: %q, %v", data, err)
+	}
+	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 2 {
+		t.Fatalf("completed cache was not cleaned: %v, %v", entries, err)
+	}
+}
+
+func TestM3u8ProxyCoversMasterAndSegments(t *testing.T) {
+	var requests atomic.Int32
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		switch r.URL.Path {
+		case "/master.m3u8":
+			fmt.Fprint(w, "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100\nmedia.m3u8\n")
+		case "/media.m3u8":
+			fmt.Fprint(w, "#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\na.ts\n#EXT-X-ENDLIST\n")
+		case "/a.ts":
+			fmt.Fprint(w, "proxied")
+		default:
+			t.Errorf("unexpected proxy path: %s", r.URL.Path)
+			w.WriteHeader(404)
+		}
+	}))
+	defer proxy.Close()
+	testutil.InstallDownloadHelper(t, "ffmpeg")
+	filename, _, err := Download(context.Background(), &Config{
+		Resource: "http://source.invalid/master.m3u8", Dir: t.TempDir(),
+		ProxyEnable: true, ProxyAddress: proxy.URL,
+	})
+	if err != nil || requests.Load() != 3 {
+		t.Fatalf("master/media/segment proxy requests=%d, err=%v", requests.Load(), err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "proxied" {
+		t.Fatalf("proxy output: %q, %v", data, err)
 	}
 }

@@ -127,16 +127,6 @@ func TestTaskDirectDownload(t *testing.T) {
 	}
 }
 
-func newTestTask(t *testing.T, config *Config) *Task {
-	t.Helper()
-	task, err := NewTask(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(task.Close)
-	return task
-}
-
 func TestTaskProxy(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -172,4 +162,14 @@ func TestTaskProxyAddressValidation(t *testing.T) {
 	for _, address := range []string{"http://proxy.local:8080", "https://proxy.local", "socks5://proxy.local:1080", "socks5h://proxy.local:1080", "//proxy.local:8080"} {
 		newTestTask(t, &Config{ProxyEnable: true, ProxyAddress: address})
 	}
+}
+
+func newTestTask(t *testing.T, config *Config) *Task {
+	t.Helper()
+	task, err := NewTask(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(task.Close)
+	return task
 }

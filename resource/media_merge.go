@@ -20,7 +20,7 @@ func MergeTS(dir, output string) error {
 		return err
 	}
 	defer op.Close()
-	ffmpeg, err := ensureFFmpeg(context.Background(), op)
+	ffmpeg, err := ensureTool(context.Background(), op, "ffmpeg")
 	if err != nil {
 		return err
 	}

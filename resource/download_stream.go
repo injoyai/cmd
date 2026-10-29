@@ -30,7 +30,7 @@ func downloadStream(ctx context.Context, op *Task) error {
 	fmt.Println(op)
 	recordCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ffmpeg, err := ensureFFmpeg(recordCtx, op)
+	ffmpeg, err := ensureTool(recordCtx, op, "ffmpeg")
 	if err != nil {
 		return err
 	}

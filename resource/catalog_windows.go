@@ -23,7 +23,7 @@ var Exclusive = map[string]*Info{
 	"motrix":        {Local: "motrix.exe"},
 	"frpc":          {Local: "frpc.exe"},
 	"frps":          {Local: "frps.exe"},
-	"i":             {Local: "i.exe", Remote: "i_windows_amd64.exe", RemoteArm: "i_windows_arm.exe", RemoteArm64: "i_windows_arm64.exe"},
+	"i":             {Local: "i.exe", Remote: map[string]string{"amd64": "i_windows_amd64.exe", "arm": "i_windows_arm.exe", "arm64": "i_windows_arm64.exe"}},
 	"forward":       {Local: "forward.exe"},
 	"gomobile":      {Local: "gomobile.exe"},
 	"monitor-price": {Local: "monitor-price.exe"},
@@ -33,7 +33,7 @@ var Exclusive = map[string]*Info{
 	"listen":         {Local: "listen.exe"},
 	"timer":          {Local: "timer.exe"},
 	"edge":           {Local: "edge.exe"},
-	"edge_mini":      {Local: "edge_mini.exe", Remote: "edge_mini_windows_amd64.exe", RemoteArm: "edge_mini_windows_arm.exe", RemoteArm64: "edge_mini_windows_arm64.exe"},
+	"edge_mini":      {Local: "edge_mini.exe", Remote: map[string]string{"amd64": "edge_mini_windows_amd64.exe", "arm": "edge_mini_windows_arm.exe", "arm64": "edge_mini_windows_arm64.exe"}},
 	"notice_desktop": {Local: "notice_desktop.exe", Key: []string{"notice_cli", "notice-cli", "notice_client"}},
 	"server":         {Local: "i_server.exe", Key: []string{"i_server"}},
 	"ModbusPoll":     {Local: "ModbusPoll.exe", Key: []string{"modbuspoll"}},
@@ -42,24 +42,16 @@ var Exclusive = map[string]*Info{
 	"fuli":           {Local: "复利计算器.exe", Key: []string{"复利", "复利工具", "复利小工具", "复利计算", "计算复利", "复利计算器"}},
 	"view":           {Local: "view.exe", Key: []string{"view.exe"}},
 
-	"youtube-dl": {
-		Key:     []string{"ytdl", "yt-dl"},
-		Local:   "youtube-dl.exe",
-		FullUrl: []Url{"https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl.exe"},
-	},
-
 	"yt-dlp": {
-		Local:       "yt-dlp.exe",
-		Remote:      "yt-dlp.exe",
-		Remote386:   "yt-dlp_x86.exe",
-		RemoteArm64: "yt-dlp_arm64.exe",
-		FullUrl:     []Url{"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{name}"},
-		Handler:     downloadYTDLP,
+		Local:   "yt-dlp.exe",
+		Remote:  map[string]string{"amd64": "yt-dlp.exe", "386": "yt-dlp_x86.exe", "arm64": "yt-dlp_arm64.exe"},
+		FullUrl: []Url{"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{name}"},
+		Handler: downloadReleaseBinary("yt-dlp.exe"),
 	},
 
 	"adb": {
 		Local:  "adb.exe",
-		Remote: "adb.zip",
+		Remote: map[string]string{"": "adb.zip"},
 		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "adb.zip")
 			if err := op.DownloadTo(zipFilename); err != nil {
@@ -84,7 +76,7 @@ var Exclusive = map[string]*Info{
 
 	"chrome104": {
 		Local:   "-",
-		Remote:  "chrome.zip",
+		Remote:  map[string]string{"": "chrome.zip"},
 		FullUrl: []Url{"https://github.com/injoyai/resource/releases/download/v0.0.0/chrome.zip"},
 		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "chrome.zip")
@@ -99,6 +91,7 @@ var Exclusive = map[string]*Info{
 	"influxdb": {
 		Key:     []string{"influx", "influxd"},
 		Local:   "influxd.exe",
+		Remote:  map[string]string{"amd64": "influxdb-1.8.10_windows_amd64.zip"},
 		FullUrl: []Url{"https://dl.influxdata.com/influxdb/releases/influxdb-1.8.10_windows_amd64.zip"},
 		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "influxdb.zip")
@@ -118,7 +111,7 @@ var Exclusive = map[string]*Info{
 
 	"ps5": {
 		Local:  "-",
-		Remote: "PhotoShop CS5.zip",
+		Remote: map[string]string{"": "PhotoShop CS5.zip"},
 		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "ps5.zip")
 			if err := op.DownloadTo(zipFilename); err != nil {
@@ -130,16 +123,15 @@ var Exclusive = map[string]*Info{
 	},
 
 	"tdl": {
-		Local:       "tdl.exe",
-		Remote:      "tdl_Windows_64bit.zip",
-		RemoteArm:   "tdl_Windows_armv5.zip",
-		RemoteArm64: "tdl_Windows_arm64.zip",
-		FullUrl:     []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
-		Handler:     downloadTDL,
+		Local:   "tdl.exe",
+		Remote:  map[string]string{"amd64": "tdl_Windows_64bit.zip", "arm": "tdl_Windows_armv5.zip", "arm64": "tdl_Windows_arm64.zip"},
+		FullUrl: []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
+		Handler: downloadReleaseBinary("tdl.exe"),
 	},
 
 	"ipinfo": {
 		Local:   "ipinfo.exe",
+		Remote:  map[string]string{"amd64": "ipinfo_3.3.1_windows_amd64.zip"},
 		FullUrl: []Url{"https://github.com/ipinfo/cli/releases/download/ipinfo-3.3.1/ipinfo_3.3.1_windows_amd64.zip"},
 		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "ipinfo.zip")
@@ -156,6 +148,7 @@ var Exclusive = map[string]*Info{
 
 	"nats": {
 		Local:   "nats.exe",
+		Remote:  map[string]string{"amd64": "nats-server-v2.12.1-RC.5-windows-amd64.zip"},
 		FullUrl: []Url{"https://github.com/nats-io/nats-server/releases/download/v2.12.1-RC.5/nats-server-v2.12.1-RC.5-windows-amd64.zip"},
 		Handler: func(op *Task) error {
 			zipFilename := filepath.Join(op.Dir, "nats.zip")

@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -24,7 +26,7 @@ type downloader interface {
 	Download(ctx context.Context, op *Task) (filename string, exist bool, err error)
 }
 
-// 匹配优先级由列表顺序决定，OSS 作为最后的兜底。
+// 匹配优先级由列表顺序决定，HTTP 和仓库资源下载作为最后的兜底。
 var downloaders = []downloader{
 	templateDownloader{Templates: Templates},
 	builtinDownloader{},
@@ -33,7 +35,6 @@ var downloaders = []downloader{
 	m3u8Downloader{},
 	ytdlpDownloader{},
 	httpDownloader{},
-	ossDownloader{},
 }
 
 // MustDownload 只重试临时网络故障，其他错误直接返回，由调用方停止后续操作。
@@ -118,4 +119,61 @@ func DownloadFile(ctx context.Context, op *Task, run func(context.Context, *Task
 		return "", false, err
 	}
 	return filename, false, nil
+}
+
+// Install 下载用于执行的程序，并修复复用文件的执行权限。
+func Install(ctx context.Context, config *Config) (string, bool, error) {
+	filename, exist, err := MustDownload(ctx, config)
+	if err != nil {
+		return "", false, err
+	}
+	if err := ensureExecutable(filename); err != nil {
+		return "", false, err
+	}
+	return filename, exist, nil
+}
+
+// ensureTool 优先查找 PATH，否则复用或安装 i 所在目录中的内置工具。
+func ensureTool(ctx context.Context, op *Task, name string) (string, error) {
+	if filename, err := exec.LookPath(name); err == nil {
+		return filename, nil
+	}
+	filename, _, err := installBuiltin(ctx, &Config{
+		Resource: name, Dir: oss.ExecDir(),
+		ProxyEnable: op.ProxyEnable, ProxyAddress: op.ProxyAddress, ProxyIgnore: op.ProxyIgnore,
+	})
+	if err != nil {
+		return "", err
+	}
+	if err := ensureExecutable(filename); err != nil {
+		return "", err
+	}
+	return filename, nil
+}
+
+// installBuiltin 保持内部依赖的单次下载语义，由外层下载任务决定重试。
+func installBuiltin(ctx context.Context, config *Config) (string, bool, error) {
+	task, err := NewTask(config)
+	if err != nil {
+		return "", false, err
+	}
+	defer task.Close()
+	return (builtinDownloader{}).Download(ctx, task)
+}
+
+func ensureExecutable(filename string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	info, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("安装目标不是普通文件: %s", filename)
+	}
+	if info.Mode().Perm()&0111 != 0111 {
+		return os.Chmod(filename, info.Mode().Perm()|0111)
+	}
+	return nil
 }

@@ -327,3 +327,16 @@ func TestDownloaderRedactsCredentials(t *testing.T) {
 		}
 	}
 }
+
+func TestTelegramDownloadReturnsFailure(t *testing.T) {
+	log := testutil.InstallDownloadHelper(t, "tdl")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	filename, exist, err := MustDownload(ctx, &Config{Resource: "https://t.me/example/1", Dir: t.TempDir()})
+	if err == nil || ctx.Err() != nil || filename != "" || exist {
+		t.Fatalf("single Telegram download did not return failure: %q, %v, %v", filename, exist, err)
+	}
+	if data, err := os.ReadFile(log); err != nil || strings.Count(string(data), "tdl ") != 1 {
+		t.Fatalf("tdl invocations: %q, %v", data, err)
+	}
+}

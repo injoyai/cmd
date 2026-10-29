@@ -17,14 +17,21 @@ import (
 
 type httpDownloader struct{}
 
+// Match 接收前面的下载器均不匹配的 URL 或资源名。
 func (httpDownloader) Match(resource string) bool {
-	u, err := url.Parse(resource)
-	return err == nil && u.Host != ""
+	return true
 }
 
 func (httpDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	return DownloadFile(ctx, op, func(ctx context.Context, op *Task) error {
-		return op.Download()
+		if u, err := url.Parse(op.Resource); err == nil && u.Host != "" {
+			return op.Download()
+		}
+		var urls []string
+		for _, u := range GetUrls() {
+			urls = append(urls, u.Format(op.Resource))
+		}
+		return DownloadURLs(op, urls, nil)
 	})
 }
 

@@ -9,30 +9,62 @@ import (
 )
 
 var Exclusive = map[string]*Info{
-	"i":         {Local: "i", Remote: "i_linux_amd64", RemoteArm: "i_linux_arm", RemoteArm64: "i_linux_arm64"},
-	"forward":   {Local: "forward", Remote: "forward_linux_amd64", RemoteArm: "forward_linux_arm", RemoteArm64: "forward_linux_arm64"},
-	"edge":      {Local: "edge", Remote: "edge_linux_amd64", RemoteArm: "edge_linux_arm", RemoteArm64: "edge_linux_arm64"},
-	"edge_mini": {Local: "edge_mini", Remote: "edge_mini_linux_amd64", RemoteArm: "edge_mini_linux_arm", RemoteArm64: "edge_mini_linux_arm64"},
-	"notice":    {Local: "notice", Remote: "notice_linux_amd64", RemoteArm: "notice_linux_arm", RemoteArm64: "notice_linux_arm64"},
-	"upx":       {Local: "upx", Remote: "upx_linux_amd64", RemoteArm: "upx_linux_arm", RemoteArm64: "upx_linux_arm64"},
-	"ffmpeg":    {Local: "ffmpeg", Remote: "ffmpeg_linux_amd64", RemoteArm: "ffmpeg_linux_arm", RemoteArm64: "ffmpeg_linux_arm64"},
+	"i":         {Local: "i", Remote: map[string]string{"amd64": "i_linux_amd64", "arm": "i_linux_arm", "arm64": "i_linux_arm64"}},
+	"forward":   {Local: "forward", Remote: map[string]string{"amd64": "forward_linux_amd64", "arm": "forward_linux_arm", "arm64": "forward_linux_arm64"}},
+	"edge":      {Local: "edge", Remote: map[string]string{"amd64": "edge_linux_amd64", "arm": "edge_linux_arm", "arm64": "edge_linux_arm64"}},
+	"edge_mini": {Local: "edge_mini", Remote: map[string]string{"amd64": "edge_mini_linux_amd64", "arm": "edge_mini_linux_arm", "arm64": "edge_mini_linux_arm64"}},
+	"notice":    {Local: "notice", Remote: map[string]string{"amd64": "notice_linux_amd64", "arm": "notice_linux_arm", "arm64": "notice_linux_arm64"}},
+	"upx":       {Local: "upx", Remote: map[string]string{"amd64": "upx_linux_amd64", "arm": "upx_linux_arm", "arm64": "upx_linux_arm64"}},
+	"ffmpeg":    {Local: "ffmpeg", Remote: map[string]string{"amd64": "ffmpeg_linux_amd64", "arm": "ffmpeg_linux_arm", "arm64": "ffmpeg_linux_arm64"}},
+
+	"swag": {
+		Local: "swag", Remote: map[string]string{"amd64": "swag_1.16.6_Linux_x86_64.tar.gz", "386": "swag_1.16.6_Linux_i386.tar.gz", "arm64": "swag_1.16.6_Linux_arm64.tar.gz"},
+		FullUrl: []Url{"https://github.com/swaggo/swag/releases/download/v1.16.6/{name}"},
+		Handler: downloadReleaseBinary("swag"),
+	},
+	"frpc": {
+		Local: "frpc", Remote: map[string]string{"amd64": "frp_0.71.1_linux_amd64.tar.gz", "arm": "frp_0.71.1_linux_arm.tar.gz", "arm64": "frp_0.71.1_linux_arm64.tar.gz"},
+		FullUrl: []Url{"https://github.com/fatedier/frp/releases/download/v0.71.1/{name}"},
+		Handler: downloadReleaseBinary("frpc"),
+	},
+	"frps": {
+		Local: "frps", Remote: map[string]string{"amd64": "frp_0.71.1_linux_amd64.tar.gz", "arm": "frp_0.71.1_linux_arm.tar.gz", "arm64": "frp_0.71.1_linux_arm64.tar.gz"},
+		FullUrl: []Url{"https://github.com/fatedier/frp/releases/download/v0.71.1/{name}"},
+		Handler: downloadReleaseBinary("frps"),
+	},
+	"nats": {
+		Local: "nats-server", Remote: map[string]string{"amd64": "nats-server-v2.15.2-linux-amd64.tar.gz", "386": "nats-server-v2.15.2-linux-386.tar.gz", "arm": "nats-server-v2.15.2-linux-arm7.tar.gz", "arm64": "nats-server-v2.15.2-linux-arm64.tar.gz"},
+		FullUrl: []Url{"https://github.com/nats-io/nats-server/releases/download/v2.15.2/{name}"},
+		Handler: downloadReleaseBinary("nats-server"),
+	},
+	"adb": {
+		Local: "adb", Remote: map[string]string{"amd64": "platform-tools-latest-linux.zip"},
+		FullUrl: []Url{"https://dl.google.com/android/repository/{name}"},
+		Handler: downloadReleaseBinary("adb"),
+	},
+	"mitmweb": {
+		Local: "mitmweb", Remote: map[string]string{"amd64": "mitmproxy-12.3.1-linux-x86_64.tar.gz", "arm64": "mitmproxy-12.3.1-linux-aarch64.tar.gz"},
+		FullUrl: []Url{"https://downloads.mitmproxy.org/12.3.1/{name}"},
+		Handler: downloadReleaseBinary("mitmweb"),
+	},
+	"ffprobe": {
+		Local: "ffprobe", Remote: map[string]string{"amd64": "ffprobe-linux-x64", "arm64": "ffprobe-linux-arm64"},
+		FullUrl: []Url{"https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/n8.1.2-1/{name}"},
+		Handler: downloadReleaseBinary("ffprobe"),
+	},
 
 	"yt-dlp": {
-		Local:       "yt-dlp",
-		Remote:      "yt-dlp",
-		RemoteAMD64: "yt-dlp_linux",
-		RemoteArm64: "yt-dlp_linux_aarch64",
-		FullUrl:     []Url{"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{name}"},
-		Handler:     downloadYTDLP,
+		Local:   "yt-dlp",
+		Remote:  map[string]string{"": "yt-dlp", "amd64": "yt-dlp_linux", "arm64": "yt-dlp_linux_aarch64"},
+		FullUrl: []Url{"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{name}"},
+		Handler: downloadReleaseBinary("yt-dlp"),
 	},
 
 	"tdl": {
-		Local:       "tdl",
-		Remote:      "tdl_Linux_64bit.tar.gz",
-		RemoteArm:   "tdl_Linux_armv7.tar.gz",
-		RemoteArm64: "tdl_Linux_arm64.tar.gz",
-		FullUrl:     []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
-		Handler:     downloadTDL,
+		Local:   "tdl",
+		Remote:  map[string]string{"amd64": "tdl_Linux_64bit.tar.gz", "arm": "tdl_Linux_armv7.tar.gz", "arm64": "tdl_Linux_arm64.tar.gz"},
+		FullUrl: []Url{"https://github.com/iyear/tdl/releases/latest/download/{name}"},
+		Handler: downloadReleaseBinary("tdl"),
 	},
 
 	"ipinfo": {

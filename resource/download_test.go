@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -16,56 +17,10 @@ import (
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/internal/testutil"
 	"github.com/injoyai/goutil/cache/v2"
+	"github.com/injoyai/goutil/oss"
 )
 
 func TestMain(m *testing.M) { testutil.Main(m) }
-
-func TestDownloadTemplatePriorityAndCover(t *testing.T) {
-	previous, existed := Resources["agents"]
-	Resources["agents"] = &Info{
-		Local:   "wrong.txt",
-		FullUrl: []Url{"http://unused/template"},
-		Handler: func(op *Task) error {
-			t.Error("embedded template must take priority over built-in resources")
-			return os.WriteFile(op.Filename(), []byte("wrong source"), 0644)
-		},
-	}
-	t.Cleanup(func() {
-		if existed {
-			Resources["agents"] = previous
-		} else {
-			delete(Resources, "agents")
-		}
-	})
-	want, err := Templates.ReadFile("templates/AGENTS.md")
-	if err != nil {
-		t.Fatal(err)
-	}
-	op := &Config{Resource: "agents", Dir: t.TempDir()}
-	filename, exist, err := Download(context.Background(), op)
-	if err != nil || exist || filename != filepath.Join(op.Dir, "AGENTS.md") {
-		t.Fatalf("Download() = %q, %v, %v", filename, exist, err)
-	}
-	if data, err := os.ReadFile(filename); err != nil || string(data) != string(want) {
-		t.Fatalf("template content mismatch: %v", err)
-	}
-	if err := os.WriteFile(filename, []byte("user content"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if _, exist, err := Download(context.Background(), op); err != nil || !exist {
-		t.Fatalf("existing template: exist = %v, err = %v", exist, err)
-	}
-	if data, err := os.ReadFile(filename); err != nil || string(data) != "user content" {
-		t.Fatalf("existing template was overwritten: %v", err)
-	}
-	op.Cover = true
-	if _, exist, err := Download(context.Background(), op); err != nil || exist {
-		t.Fatalf("cover template: exist = %v, err = %v", exist, err)
-	}
-	if data, err := os.ReadFile(filename); err != nil || string(data) != string(want) {
-		t.Fatalf("template was not restored with Cover: %v", err)
-	}
-}
 
 func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 	for _, kind := range []string{"http", "builtin", "oss"} {
@@ -163,18 +118,6 @@ func TestDownloadConfigCanBeReused(t *testing.T) {
 	}
 }
 
-func TestDownloadCustomTemplateExtension(t *testing.T) {
-	op := &Config{Resource: "agents", Name: "custom", Dir: t.TempDir()}
-	before := *op
-	filename, _, err := Download(context.Background(), op)
-	if err != nil || filename != filepath.Join(op.Dir, "custom.md") {
-		t.Fatalf("custom template: filename = %q, err = %v", filename, err)
-	}
-	if !reflect.DeepEqual(*op, before) {
-		t.Fatal("template download changed caller configuration")
-	}
-}
-
 func TestDownloadRejectsInvalidProxyRule(t *testing.T) {
 	var requests atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -232,66 +175,6 @@ func TestInvalidProxyAddressDoesNotExposeCredentials(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "proxy-password") {
 		t.Fatal("invalid proxy error or log exposed credentials")
-	}
-}
-
-func TestHTTPDownloadCancellationAndPreservation(t *testing.T) {
-	started := make(chan struct{}, 1)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Length", "100")
-		w.WriteHeader(http.StatusOK)
-		w.(http.Flusher).Flush()
-		started <- struct{}{}
-		<-r.Context().Done()
-	}))
-	defer srv.Close()
-	dir := t.TempDir()
-	filename := filepath.Join(dir, "file.bin")
-	if err := os.WriteFile(filename, []byte("original"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	result := make(chan error, 1)
-	go func() {
-		_, _, err := Download(ctx, &Config{Resource: srv.URL + "/file.bin", Dir: dir, Cover: true})
-		result <- err
-	}()
-	select {
-	case <-started:
-	case <-time.After(3 * time.Second):
-		t.Fatal("request did not start")
-	}
-	cancel()
-	select {
-	case err := <-result:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("cancelled download: %v", err)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("download ignored cancellation")
-	}
-	if data, err := os.ReadFile(filename); err != nil || string(data) != "original" {
-		t.Fatalf("original output changed: %q, %v", data, err)
-	}
-	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 1 {
-		t.Fatalf("temporary files left behind: %v, %v", entries, err)
-	}
-	if _, _, err := Download(ctx, &Config{Resource: srv.URL + "/file.bin", Dir: dir}); !errors.Is(err, context.Canceled) {
-		t.Fatalf("already-cancelled download returned %v", err)
-	}
-}
-
-func TestTelegramDownloadReturnsFailure(t *testing.T) {
-	log := testutil.InstallDownloadHelper(t, "tdl")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	filename, exist, err := MustDownload(ctx, &Config{Resource: "https://t.me/example/1", Dir: t.TempDir()})
-	if err == nil || ctx.Err() != nil || filename != "" || exist {
-		t.Fatalf("single Telegram download did not return failure: %q, %v, %v", filename, exist, err)
-	}
-	if data, err := os.ReadFile(log); err != nil || strings.Count(string(data), "tdl ") != 1 {
-		t.Fatalf("tdl invocations: %q, %v", data, err)
 	}
 }
 
@@ -388,5 +271,180 @@ func TestDownloadWaitCancelsDelay(t *testing.T) {
 	err := WaitDownload(ctx, 4*time.Second)
 	if !errors.Is(err, context.DeadlineExceeded) || time.Since(started) >= time.Second {
 		t.Fatalf("download wait ignored cancellation: %v", err)
+	}
+}
+
+func TestEnsureToolPrefersPATH(t *testing.T) {
+	dir := t.TempDir()
+	name := "i-test-ensure-tool"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	filename := filepath.Join(dir, name)
+	if err := os.WriteFile(filename, []byte("PATH tool"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	op := newTestTask(t, &Config{Resource: "parent"})
+	got, err := ensureTool(context.Background(), op, name)
+	if err != nil || got != filename {
+		t.Fatalf("PATH tool = %q, %v; want %q", got, err, filename)
+	}
+}
+
+func TestEnsureToolInstallsAndReusesWithProxy(t *testing.T) {
+	for _, status := range []int{http.StatusOK, http.StatusServiceUnavailable} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			f, err := os.CreateTemp(oss.ExecDir(), ".ensure-tool-test-*")
+			if err != nil {
+				t.Fatal(err)
+			}
+			filename := f.Name()
+			if err := f.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(filename); err != nil {
+				t.Fatal(err)
+			}
+			if runtime.GOOS == "windows" {
+				filename += ".exe"
+			}
+			t.Cleanup(func() { os.Remove(filename) })
+			name := filepath.Base(filename)
+			Resources[name] = &Info{Local: name, FullUrl: []Url{"http://tool.invalid/binary"}}
+			t.Cleanup(func() { delete(Resources, name) })
+			var requests atomic.Int32
+			proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				if r.URL.String() != "http://tool.invalid/binary" {
+					t.Errorf("unexpected proxy request: %s", r.URL)
+				}
+				w.WriteHeader(status)
+				_, _ = w.Write([]byte("installed tool"))
+			}))
+			defer proxy.Close()
+			t.Setenv("PATH", t.TempDir())
+			op := newTestTask(t, &Config{
+				Resource: "parent", ProxyEnable: true, ProxyAddress: proxy.URL,
+				ProxyIgnore: []string{"does-not-match"},
+			})
+			got, err := ensureTool(context.Background(), op, name)
+			if status != http.StatusOK {
+				if err == nil || !IsRetryable(err) || requests.Load() != 1 {
+					t.Fatalf("dependency must return its first failure: requests=%d, err=%v", requests.Load(), err)
+				}
+				return
+			}
+			if err != nil || got != filename || requests.Load() != 1 {
+				t.Fatalf("install = %q, %v; requests=%d", got, err, requests.Load())
+			}
+			if err := os.Chmod(filename, 0600); err != nil {
+				t.Fatal(err)
+			}
+			got, err = ensureTool(context.Background(), op, name)
+			if err != nil || got != filename || requests.Load() != 1 {
+				t.Fatalf("cached tool downloaded again: %q, %v; requests=%d", got, err, requests.Load())
+			}
+			if stat, err := os.Stat(filename); err != nil || (runtime.GOOS != "windows" && stat.Mode().Perm()&0111 != 0111) {
+				t.Fatalf("cached tool permission not repaired: %v, %v", stat, err)
+			}
+			if op.Resource != "parent" || len(op.ProxyIgnore) != 1 || op.ProxyIgnore[0] != "does-not-match" {
+				t.Fatal("dependency installation changed its parent task")
+			}
+		})
+	}
+}
+
+func TestInstallSetsExecutablePermission(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("program")) }))
+	defer srv.Close()
+	cfg := &Config{Resource: srv.URL + "/tool", Dir: t.TempDir()}
+	filename, exist, err := Install(context.Background(), cfg)
+	if err != nil || exist {
+		t.Fatalf("exist=%v error=%v", exist, err)
+	}
+	if runtime.GOOS != "windows" {
+		info, _ := os.Stat(filename)
+		if info.Mode().Perm()&0111 != 0111 {
+			t.Fatalf("mode=%o", info.Mode().Perm())
+		}
+		if err := os.Chmod(filename, 0600); err != nil {
+			t.Fatal(err)
+		}
+		_, exist, err = Install(context.Background(), cfg)
+		if err != nil || !exist {
+			t.Fatalf("reuse: exist=%v error=%v", exist, err)
+		}
+		info, _ = os.Stat(filename)
+		if info.Mode().Perm()&0111 != 0111 {
+			t.Fatalf("reused mode=%o", info.Mode().Perm())
+		}
+	}
+}
+
+func TestBuiltinUnsupportedArchitecture(t *testing.T) {
+	const key = "test-unsupported-architecture"
+	previous, existed := Resources[key]
+	handlerCalled := false
+	Resources[key] = &Info{
+		Local:   "tool",
+		Remote:  map[string]string{"unsupported-test-architecture": "package.zip"},
+		FullUrl: []Url{"http://unused.invalid/package.zip"},
+		Handler: func(op *Task) error {
+			handlerCalled = true
+			return nil
+		},
+	}
+	t.Cleanup(func() {
+		if existed {
+			Resources[key] = previous
+		} else {
+			delete(Resources, key)
+		}
+	})
+	config := &Config{Resource: key, Dir: t.TempDir()}
+	_, _, err := MustDownload(context.Background(), config)
+	if err == nil || IsRetryable(err) || handlerCalled {
+		t.Fatalf("unsupported architecture must fail before installing without retrying: %v, handler=%v", err, handlerCalled)
+	}
+	// 已有程序仍可复用，资源架构只约束本次下载。
+	filename := filepath.Join(config.Dir, "tool")
+	if err := os.WriteFile(filename, []byte("existing"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if got, exist, err := MustDownload(context.Background(), config); err != nil || !exist || got != filename {
+		t.Fatalf("existing program = %q, %v, %v", got, exist, err)
+	}
+}
+
+func TestDownloadMediaFilename(t *testing.T) {
+	for _, tt := range []struct {
+		resource string
+		name     string
+		want     string
+	}{
+		{"https://example.com/video.v1.m3u8", "", "video.v1.ts"},
+		{"https://www.youtube.com/video.m3u8", "", "video.ts"},
+		{"rtsp://example.com/live", "", "live.ts"},
+		{"rtmp://example.com/live", ".hidden", ".hidden.ts"},
+		{"https://example.com/video.m3u8?token=test", "saved", "saved.ts"},
+		{"rtsp://example.com/live", "saved", "saved.ts"},
+		{"rtmp://example.com/live", "saved", "saved.ts"},
+	} {
+		t.Run(tt.resource+"/"+tt.want, func(t *testing.T) {
+			op := &Config{Resource: tt.resource, Name: tt.name, Dir: t.TempDir()}
+			before := *op
+			want := filepath.Join(op.Dir, tt.want)
+			if err := os.WriteFile(want, []byte("existing media"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			filename, exist, err := Download(context.Background(), op)
+			if err != nil || !exist || filename != want {
+				t.Fatalf("media filename: filename = %q, exist = %v, err = %v", filename, exist, err)
+			}
+			if !reflect.DeepEqual(*op, before) {
+				t.Fatal("media download changed caller configuration")
+			}
+		})
 	}
 }

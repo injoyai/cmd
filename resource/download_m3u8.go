@@ -48,7 +48,7 @@ func downloadM3u8(ctx context.Context, op *Task) error {
 	if _, err := downloadSegments(ctx, op, list); err != nil {
 		return err
 	}
-	ffmpeg, err := ensureFFmpeg(ctx, op)
+	ffmpeg, err := ensureTool(ctx, op, "ffmpeg")
 	if err != nil {
 		return err
 	}

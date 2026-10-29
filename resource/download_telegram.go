@@ -49,7 +49,7 @@ func IsTelegramLink(s string) bool {
 
 // Download 使用tdl下载Telegram消息，一条消息可能产生多个文件，因此返回目录。
 func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
-	filename, err := ensureTDL(ctx, op)
+	filename, err := ensureTool(ctx, op, "tdl")
 	if err != nil {
 		return "", false, err
 	}

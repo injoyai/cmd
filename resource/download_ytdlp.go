@@ -45,11 +45,11 @@ func (ytdlpDownloader) Download(ctx context.Context, op *Task) (string, bool, er
 	if err := ctx.Err(); err != nil {
 		return "", false, err
 	}
-	filename, err := ensureYTDLP(ctx, op)
+	filename, err := ensureTool(ctx, op, "yt-dlp")
 	if err != nil {
 		return "", false, err
 	}
-	ffmpeg, err := ensureFFmpeg(ctx, op)
+	ffmpeg, err := ensureTool(ctx, op, "ffmpeg")
 	if err != nil {
 		return "", false, err
 	}
