@@ -13,7 +13,7 @@ require (
 	github.com/injoyai/base v1.2.23
 	github.com/injoyai/conv v1.2.8
 	github.com/injoyai/goutil v1.2.34
-	github.com/injoyai/ios/v2 v2.0.15
+	github.com/injoyai/ios/v2 v2.0.16
 	github.com/injoyai/logs v1.0.12
 	github.com/injoyai/lorca v0.0.0-20241219020631-030018723d82
 	github.com/injoyai/proxy v1.0.18

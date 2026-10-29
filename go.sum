@@ -623,6 +623,8 @@ github.com/injoyai/goutil v1.2.34 h1:A8Rc8zd3Lkvdzq7cWmBN2SUjFHeOrcmPpBiMwxbuefA
 github.com/injoyai/goutil v1.2.34/go.mod h1:7KIhjo6HtnpX2hOsw6T2vkY3pF7w3iTvizmPzJoSnB0=
 github.com/injoyai/ios/v2 v2.0.15 h1:slt5/WihrkP70d2S5LMJcDTDt6QS39TSlt0tqI7ldu8=
 github.com/injoyai/ios/v2 v2.0.15/go.mod h1:uZSd5u444b50kCEF9Tsv1WkyN5cDntCVHYHbuFbdKKc=
+github.com/injoyai/ios/v2 v2.0.16 h1:iMtgr9HZRlmnyeBRH3mXu77JVWUkrxnr1ATbxhO+OLs=
+github.com/injoyai/ios/v2 v2.0.16/go.mod h1:uZSd5u444b50kCEF9Tsv1WkyN5cDntCVHYHbuFbdKKc=
 github.com/injoyai/logs v1.0.12 h1:f7syIGZMTg9ZzhJhdd3tzaPdxkMhdKsncGaxljqIiYE=
 github.com/injoyai/logs v1.0.12/go.mod h1:+dKEL6GvaFqqVRatqUBiCicJbZnAgtj7hVs824Src4s=
 github.com/injoyai/lorca v0.0.0-20241219020631-030018723d82 h1:fuyn7C3rTWUciXtIFxsmZ6UzlEzldWPzwaqYgazTK+8=
