@@ -17,7 +17,6 @@ import (
 	"testing"
 
 	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/goutil/cache/v2"
 )
 
 func TestInfoRemote(t *testing.T) {
@@ -84,7 +83,7 @@ func TestIndexResources(t *testing.T) {
 
 func TestInfoURLs(t *testing.T) {
 	previous := global.File
-	global.File = cache.NewFile(filepath.Join(t.TempDir(), "global.json"), "test")
+	global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
 	t.Cleanup(func() { global.File = previous })
 	info := &Info{Local: "tool"}
 	for _, base := range []string{"https://first.invalid", "https://second.invalid"} {

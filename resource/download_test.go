@@ -16,7 +16,6 @@ import (
 
 	"github.com/injoyai/cmd/global"
 	"github.com/injoyai/cmd/internal/testutil"
-	"github.com/injoyai/goutil/cache/v2"
 	"github.com/injoyai/goutil/oss"
 )
 
@@ -32,7 +31,7 @@ func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 			}))
 			defer srv.Close()
 			previousConfig := global.File
-			global.File = cache.NewFile(filepath.Join(t.TempDir(), "global.json"), "test")
+			global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
 			global.File.Set("resource", srv.URL+"/store/{name}")
 			t.Cleanup(func() { global.File = previousConfig })
 			op := &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir()}

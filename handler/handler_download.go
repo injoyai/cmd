@@ -39,8 +39,6 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) error {
 		ProxyAddress: flags.GetString("proxy"),
 		NoticeEnable: flags.GetBool("noticeEnable"),
 		NoticeText:   flags.GetString("noticeText"),
-		VoiceEnable:  flags.GetBool("voiceEnable"),
-		VoiceText:    flags.GetString("voiceText"),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)

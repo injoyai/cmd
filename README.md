@@ -230,7 +230,6 @@ i global --set proxy=http://127.0.0.1:1081
 - 默认代理地址
 - 默认下载目录
 - 下载完成通知内容
-- 下载完成语音内容
 - MinIO 上传配置
 
 查看或修改配置：
@@ -238,6 +237,42 @@ i global --set proxy=http://127.0.0.1:1081
 ```shell
 i global
 i global --set proxy=http://127.0.0.1:1081
+i global -s downloadDir=./downloads -s downloadNoticeEnable=false
+i global -s 'resource=https://one.example/{name},https://two.example/{name}'
+i global -a 'examples=first,second' -a 'examples=a=b'
+i global -d examples -d proxy
+```
+
+`i global` 以 YAML 输出全部已保存配置，无修改参数时不写文件。`--set/-s` 和
+`--append/-a` 每次接收一个 `key=value`，可重复使用；值中的逗号、等号和空值会保留。
+原先用 `-s 'a=1,b=2'` 同时设置多项的写法改为 `-s a=1 -s b=2`。
+`--del/-d` 可重复使用，也支持逗号分隔多个键。混合操作固定按“设置 → 追加 → 删除”执行，
+参数校验失败时不修改配置。Windows 可用 `i global gui` 打开配置表单。
+
+配置使用 YAML 格式，保存在 `os.UserConfigDir()` 下的 `injoy/i/config.yaml`：
+
+| 平台 | 默认位置 |
+| --- | --- |
+| macOS | `~/Library/Application Support/injoy/i/config.yaml` |
+| Linux | `~/.config/injoy/i/config.yaml`，设置 `XDG_CONFIG_HOME` 时使用该目录 |
+| Windows | `%APPDATA%\injoy\i\config.yaml` |
+
+仅在保存时创建目录和文件，使用同目录临时文件替换；Unix 下新建目录权限为 `0700`，
+配置文件权限为 `0600`。Windows 文件访问权限由目录 ACL 控制。
+新文件不存在时兼容读取旧的 `global@dfff0a7fa1a55c8c1a4966c19f6da452`：
+macOS 为 `~/Library/Application Support/injoy/data/cache/`，Windows 为
+`~/AppData/Local/injoy/data/cache/`，Linux 为 `/var/lib/injoy/i/cache/`。
+后续保存写入新位置并保留旧文件；新文件存在时优先使用新文件，读取或解析失败时返回错误，禁止覆盖。
+不兼容过渡期的 `config.json`。可手动编辑 YAML；CLI 保存时会重新排版，不保留注释。
+
+```yaml
+proxy: http://127.0.0.1:1081
+downloadDir: ./downloads
+downloadNoticeEnable: true
+uploadMinio:
+  endpoint: localhost:9000
+  bucket: downloads
+  rename: false
 ```
 
 ---

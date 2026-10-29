@@ -1,5 +1,5 @@
 package global
 
 var (
-	Filename = "/var/lib/injoy/i/cache/cmd"
+	legacyFilename = "/var/lib/injoy/i/cache/" + legacyConfigName
 )

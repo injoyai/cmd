@@ -38,6 +38,7 @@ func newRootCommand() *cobra.Command {
 	}
 
 	addCommand(Commands()...)
+	root.AddCommand(handler.NewGlobalCommand())
 
 	addCommand(
 
@@ -535,8 +536,6 @@ func newRootCommand() *cobra.Command {
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
 				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: global.GetString("downloadNoticeEnable", "true")},
 				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("downloadNoticeText", "主人. 您的资源已下载结束")},
-				{Name: "voiceEnable", Memo: "是否启用语音", DefaultValue: global.GetString("downloadVoiceEnable", "true")},
-				{Name: "voiceText", Memo: "语音内容", DefaultValue: global.GetString("downloadVoiceText", "主人. 您的资源已下载结束")},
 			},
 			Use:     "download",
 			Short:   "下载资源",
@@ -556,8 +555,6 @@ func newRootCommand() *cobra.Command {
 				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
 				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: global.GetString("downloadNoticeEnable", "true")},
 				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("downloadNoticeText", "主人. 您的资源已下载结束")},
-				{Name: "voiceEnable", Memo: "是否启用语音", DefaultValue: global.GetString("downloadVoiceEnable", "true")},
-				{Name: "voiceText", Memo: "语音内容", DefaultValue: global.GetString("downloadVoiceText", "主人. 您的资源已下载结束")},
 			},
 			Use:     "dl",
 			Short:   "下载资源(同download)",
@@ -700,19 +697,6 @@ func newRootCommand() *cobra.Command {
 			Short:   "端口转发",
 			Example: "i forward 80->:8080",
 			Run:     handler.ForwardServer,
-		},
-
-		&Command{
-			Flag: []*Flag{
-				{Name: "set", Short: "s", Memo: "设置"},
-				{Name: "del", Short: "d", Memo: "删除"},
-				{Name: "append", Short: "a", Memo: "添加"},
-			},
-			Use:     "global",
-			Short:   "全局配置",
-			Long:    "windows 使用i global gui来打开图形化界面",
-			Example: "i global --set proxy=http://127.0.0.1:1081",
-			Run:     handler.Global,
 		},
 
 		&Command{

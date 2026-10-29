@@ -1,23 +1,29 @@
 package global
 
 import (
-	"encoding/json"
-	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 
-	"github.com/injoyai/goutil/cache/v2"
-	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/conv"
 	"github.com/injoyai/logs"
 )
 
 var (
-	File *cache.File
+	Filename string
+	File     *Config
 )
 
 func init() {
 	logs.SetFormatter(logs.TimeFormatter)
 	logs.SetShowColor(false)
-	File = cache.NewFile(Filename, "global")
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		File = &Config{Map: conv.NewMap(nil), err: err}
+		return
+	}
+	Filename = filepath.Join(dir, "injoy", "i", "config.yaml")
+	File = loadFile(Filename, legacyFilename)
 }
 
 func GetString(key string, def ...string) string {
@@ -26,14 +32,7 @@ func GetString(key string, def ...string) string {
 
 // Save 持久化配置到文件
 func Save() error {
-	return SaveFile(File)
-}
-
-// SaveFile 持久化指定缓存文件
-// conv.Map的Set/Append/Del只修改hasSet数据,必须先Refresh编码回Var,否则落盘的仍是原始数据
-func SaveFile(f *cache.File) error {
-	f.Refresh()
-	return f.Save()
+	return File.Save()
 }
 
 func GetProxy() string {
@@ -53,48 +52,24 @@ func GetProxy() string {
 	return s
 }
 
-func Struct() Template {
-	return Template{
-		Resource:    File.GetString("resource"),
-		Proxy:       File.GetString("proxy"),
-		ProxyIgnore: File.GetString("proxyIgnore"),
-		UploadMinio: Minio{
-			Endpoint:  File.GetString("uploadMinio.endpoint"),
-			AccessKey: File.GetString("uploadMinio.access"),
-			SecretKey: File.GetString("uploadMinio.secret"),
-			Bucket:    File.GetString("uploadMinio.bucket"),
-			Rename:    File.GetBool("uploadMinio.rename"),
-		},
-		DownloadDir:          File.GetString("downloadDir"),
-		DownloadNoticeEnable: File.GetBool("downloadNoticeEnable"),
-		DownloadNoticeText:   File.GetString("downloadNoticeText"),
-		DownloadVoiceEnable:  File.GetBool("downloadVoiceEnable"),
-		DownloadVoiceText:    File.GetString("downloadVoiceText"),
-		CustomOpen:           File.GetGMap("customOpen"),
-	}
-}
-
 func Natures() []Nature {
-	s := Struct()
 	return []Nature{
-		{Key: "resource", Name: "资源地址", Value: s.Resource},
-		{Key: "proxy", Name: "默认代理地址", Value: s.Proxy},
-		{Key: "proxyIgnore", Name: "忽略代理正则", Value: s.ProxyIgnore},
+		{Key: "resource", Name: "资源地址", Value: File.GetString("resource")},
+		{Key: "proxy", Name: "默认代理地址", Value: File.GetString("proxy")},
+		{Key: "proxyIgnore", Name: "忽略代理正则", Value: File.GetString("proxyIgnore")},
 		{Key: "uploadMinio", Name: "Minio上传配置", Type: "object2", Value: []Nature{
-			{Key: "endpoint", Name: "请求地址", Value: s.UploadMinio.Endpoint},
-			{Key: "access", Name: "AccessKey", Value: s.UploadMinio.AccessKey},
-			{Key: "secret", Name: "SecretKey", Value: s.UploadMinio.SecretKey},
-			{Key: "bucket", Name: "存储桶", Value: s.UploadMinio.Bucket},
-			{Key: "rename", Name: "随机名称", Type: "bool", Value: s.UploadMinio.Rename},
+			{Key: "endpoint", Name: "请求地址", Value: File.GetString("uploadMinio.endpoint")},
+			{Key: "access", Name: "AccessKey", Value: File.GetString("uploadMinio.access")},
+			{Key: "secret", Name: "SecretKey", Value: File.GetString("uploadMinio.secret")},
+			{Key: "bucket", Name: "存储桶", Value: File.GetString("uploadMinio.bucket")},
+			{Key: "rename", Name: "随机名称", Type: "bool", Value: File.GetBool("uploadMinio.rename")},
 		}},
-		{Key: "downloadDir", Name: "默认下载地址", Value: s.DownloadDir},
-		{Key: "downloadNoticeEnable", Name: "默认启用通知", Type: "bool", Value: s.DownloadNoticeEnable},
-		{Key: "downloadNoticeText", Name: "默认通知内容", Value: s.DownloadNoticeText},
-		{Key: "downloadVoiceEnable", Name: "默认启用语音", Type: "bool", Value: s.DownloadVoiceEnable},
-		{Key: "downloadVoiceText", Name: "默认语音内容", Value: s.DownloadVoiceText},
+		{Key: "downloadDir", Name: "默认下载地址", Value: File.GetString("downloadDir")},
+		{Key: "downloadNoticeEnable", Name: "默认启用通知", Type: "bool", Value: File.GetBool("downloadNoticeEnable")},
+		{Key: "downloadNoticeText", Name: "默认通知内容", Value: File.GetString("downloadNoticeText")},
 		{Key: "customOpen", Name: "自定义打开", Type: "object", Value: func() []Nature {
 			ls := []Nature{}
-			for k, v := range s.CustomOpen {
+			for k, v := range File.GetGMap("customOpen") {
 				ls = append(ls, Nature{Name: k, Key: k, Value: v})
 			}
 			return ls
@@ -103,8 +78,8 @@ func Natures() []Nature {
 }
 
 // Print 打印最新配置信息
-func Print() {
-	fmt.Println(Struct())
+func Print(w io.Writer) error {
+	return File.writeTo(w)
 }
 
 type Nature struct {
@@ -112,30 +87,4 @@ type Nature struct {
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
 	Type  string      `json:"type"`
-}
-
-type Minio struct {
-	Endpoint  string `json:"endpoint"`
-	AccessKey string `json:"access"`
-	SecretKey string `json:"secret"`
-	Bucket    string `json:"bucket"`
-	Rename    bool   `json:"rename"`
-}
-
-type Template struct {
-	Resource             string `json:"resource"`
-	Proxy                string `json:"proxy"`
-	ProxyIgnore          string `json:"proxyIgnore"`
-	UploadMinio          Minio  `json:"uploadMinio"`
-	DownloadDir          string `json:"downloadDir"`
-	DownloadNoticeEnable bool   `json:"downloadNoticeEnable"`
-	DownloadNoticeText   string `json:"downloadNoticeText"`
-	DownloadVoiceEnable  bool   `json:"downloadVoiceEnable"`
-	DownloadVoiceText    string `json:"downloadVoiceText"`
-	CustomOpen           g.Map  `json:"customOpen"`
-}
-
-func (this Template) String() string {
-	b, _ := json.MarshalIndent(this, "", "  ")
-	return string(b)
 }

@@ -13,7 +13,5 @@ type Config struct {
 	ProxyIgnore  []string //忽略代理地址
 	NoticeEnable bool     //是否使用消息通知
 	NoticeText   string   //通知消息内容
-	VoiceEnable  bool     //是否使用通知语音
-	VoiceText    string   //通知语音内容
 	Cover        bool     //是否覆盖下载
 }

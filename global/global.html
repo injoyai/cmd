@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -109,7 +109,7 @@
 </head>
 <body>
 <div class="container">
-    <form id="configForm">
+    <form id="configForm" novalidate onsubmit="event.preventDefault()">
         <!-- Configs will be dynamically generated here -->
     </form>
     <button type="button" onclick="saveConfig()">保存配置</button>
@@ -145,14 +145,14 @@
 
                 var checkboxInput = document.createElement("input");
                 checkboxInput.type = "checkbox";
-                checkboxInput.className = "checkbox-label";
+                checkboxInput.className = "checkbox-input";
                 checkboxInput.name = config.key;
                 checkboxInput.checked = config.value;
                 checkboxLabel.appendChild(checkboxInput);
                 checkboxLabel.appendChild(document.createTextNode("是"));
             } else if (config.type === "object") {
                 // 如果参数类型是对象，则生成一个子级配置表单
-                var subConfigForm = document.createElement("form");
+                var subConfigForm = document.createElement("div");
                 subConfigForm.className = "sub-config-form";
                 // 设置 data-key 属性为参数的键
                 subConfigForm.setAttribute("data-key", config.key);
@@ -161,6 +161,7 @@
                 });
 
                 var addButton = document.createElement("button");
+                addButton.type = "button";
                 addButton.className = "add-field-button";
                 addButton.textContent = "+";
                 addButton.onclick = function () {
@@ -171,7 +172,7 @@
                 inputContainer.appendChild(subConfigForm);
             } else if (config.type === "object2") {
                 // 如果参数类型是对象，则生成一个子级配置表单
-                var subConfigForm = document.createElement("form");
+                var subConfigForm = document.createElement("div");
                 subConfigForm.className = "sub-config-form";
                 // 设置 data-key 属性为参数的键
                 subConfigForm.setAttribute("data-key", config.key);
@@ -202,7 +203,7 @@
         childContainer.appendChild(childKeyContainer);
         var childKey = document.createElement("input");
         childKey.type = "text";
-        childKey.name = key;
+        childKey.name = "_child";
         childKey.value = key;
         childKeyContainer.appendChild(childKey);
 
@@ -218,6 +219,7 @@
 
         //-按钮
         var removeButton = document.createElement("button");
+        removeButton.type = "button";
         removeButton.className = "remove-field-button";
         removeButton.textContent = "-";
         removeButton.onclick = function () {
@@ -272,7 +274,7 @@
         //父级
         form.querySelectorAll("input").forEach(function (input) {
             if (input.name !== "_child") {
-                if (input.className === "checkbox-input") {
+                if (input.type === "checkbox") {
                     configObject[input.name] = input.checked
                 } else {
                     configObject[input.name] = input.value
@@ -282,9 +284,8 @@
 
         //子级 object
         form.querySelectorAll(".sub-config-form").forEach(function (subForm) {
-            key = subForm.getAttribute("data-key")
-            console.log("subForm: ", subForm)
-            childObject = {}
+            var key = subForm.getAttribute("data-key")
+            var childObject = {}
             subForm.querySelectorAll(".form-row").forEach(function (formRow) {
                 var key2 = null
                 var value2 = null
