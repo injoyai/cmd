@@ -26,8 +26,15 @@ func (m3u8Downloader) Match(resource string) bool {
 	return err == nil && u.Host != "" && path.Ext(u.Path) == ".m3u8"
 }
 
-func (m3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+func (m3u8Downloader) Dependencies(op *Task) ([]string, error) {
 	op.SetFilename("", ".ts")
+	if op.exists() {
+		return nil, nil
+	}
+	return []string{"ffmpeg"}, nil
+}
+
+func (m3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	return DownloadFile(ctx, op, downloadM3u8)
 }
 
@@ -48,11 +55,7 @@ func downloadM3u8(ctx context.Context, op *Task) error {
 	if _, err := downloadSegments(ctx, op, list); err != nil {
 		return err
 	}
-	ffmpeg, err := ensureTool(ctx, op, "ffmpeg")
-	if err != nil {
-		return err
-	}
-	return mergeTask(ctx, op, ffmpeg)
+	return mergeTask(ctx, op, op.tools["ffmpeg"])
 }
 
 // downloadSegments 等待所有工作协程结束后再返回，失败时保留已完成的分片。

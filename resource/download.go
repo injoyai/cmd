@@ -20,10 +20,12 @@ import (
 )
 
 // downloader 是一种下载方式。Match 只判断是否适用，不修改配置或执行下载。
+// Dependencies 校验参数、确定输出名称并返回依赖的资源名，不执行安装。
 // Download 返回文件或目录路径；exist 仅在跳过已存在的目标文件时为 true。
 // 失败时返回错误，由调用方决定重试，完成通知由包级 Download 统一处理。
 type downloader interface {
 	Match(resource string) bool
+	Dependencies(op *Task) ([]string, error)
 	Download(ctx context.Context, op *Task) (filename string, exist bool, err error)
 }
 
@@ -82,11 +84,7 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	}
 	task.Ctx = ctx
 	defer task.Close()
-	d, err := selectDownloader(task)
-	if err != nil {
-		return "", false, err
-	}
-	filename, exist, err = d.Download(ctx, task)
+	filename, exist, err = download(ctx, task, make(map[*Info]bool))
 	if err != nil {
 		return "", false, err
 	}
@@ -94,6 +92,77 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 		tool.PublishNotice(&notice.Message{Title: "下载完成", Content: task.NoticeText})
 	}
 	return filename, exist, nil
+}
+
+// download 共用业务下载和依赖安装流程，重试与通知由外层入口负责。
+func download(ctx context.Context, task *Task, visiting map[*Info]bool) (string, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return "", false, err
+	}
+	task.Ctx = ctx
+	if info := Resources[task.Resource]; info != nil {
+		if visiting[info] {
+			return "", false, fmt.Errorf("资源循环依赖: %s", task.Resource)
+		}
+		visiting[info] = true
+		defer delete(visiting, info)
+	}
+	d, err := selectDownloader(task)
+	if err != nil {
+		return "", false, err
+	}
+	dependencies, err := d.Dependencies(task)
+	if err != nil {
+		return "", false, err
+	}
+	if err := resolveDependencies(ctx, task, dependencies, visiting); err != nil {
+		return "", false, err
+	}
+	return d.Download(ctx, task)
+}
+
+func resolveDependencies(ctx context.Context, task *Task, names []string, visiting map[*Info]bool) error {
+	if task.tools == nil {
+		task.tools = make(map[string]string)
+	}
+	if visiting == nil {
+		visiting = make(map[*Info]bool)
+	}
+	for _, name := range names {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		info := Resources[name]
+		if info == nil {
+			return fmt.Errorf("依赖资源不存在: %s", name)
+		}
+		filename := task.tools[info.Local]
+		if filename == "" {
+			var err error
+			filename, err = exec.LookPath(info.Local)
+			if err != nil {
+				child, err := NewTask(&Config{
+					Resource: name, Dir: oss.ExecDir(),
+					ProxyAddress: task.ProxyAddress, ProxyIgnore: task.ProxyIgnore,
+				})
+				if err != nil {
+					return err
+				}
+				child.tools = task.tools
+				filename, _, err = download(ctx, child, visiting)
+				child.Close()
+				if err != nil {
+					return fmt.Errorf("安装依赖 %s 失败: %w", name, err)
+				}
+				if err := ensureExecutable(filename); err != nil {
+					return err
+				}
+			}
+			task.tools[info.Local] = filename
+		}
+		task.tools[name] = filename
+	}
+	return nil
 }
 
 func selectDownloader(op *Task) (downloader, error) {
@@ -158,7 +227,7 @@ func DownloadFile(ctx context.Context, op *Task, run func(context.Context, *Task
 	}
 	op.Ctx = ctx
 	filename := op.Filename()
-	if oss.Exists(filename) && !op.Cover {
+	if op.exists() {
 		return filename, true, nil
 	}
 	if err := run(ctx, op); err != nil {
@@ -177,34 +246,6 @@ func Install(ctx context.Context, config *Config) (string, bool, error) {
 		return "", false, err
 	}
 	return filename, exist, nil
-}
-
-// ensureTool 优先查找 PATH，否则复用或安装 i 所在目录中的内置工具。
-func ensureTool(ctx context.Context, op *Task, name string) (string, error) {
-	if filename, err := exec.LookPath(name); err == nil {
-		return filename, nil
-	}
-	filename, _, err := installBuiltin(ctx, &Config{
-		Resource: name, Dir: oss.ExecDir(),
-		ProxyAddress: op.ProxyAddress, ProxyIgnore: op.ProxyIgnore,
-	})
-	if err != nil {
-		return "", err
-	}
-	if err := ensureExecutable(filename); err != nil {
-		return "", err
-	}
-	return filename, nil
-}
-
-// installBuiltin 保持内部依赖的单次下载语义，由外层下载任务决定重试。
-func installBuiltin(ctx context.Context, config *Config) (string, bool, error) {
-	task, err := NewTask(config)
-	if err != nil {
-		return "", false, err
-	}
-	defer task.Close()
-	return (builtinDownloader{}).Download(ctx, task)
 }
 
 func ensureExecutable(filename string) error {

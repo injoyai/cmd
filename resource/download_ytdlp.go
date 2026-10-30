@@ -13,6 +13,10 @@ import (
 
 type ytdlpDownloader struct{}
 
+func (ytdlpDownloader) Dependencies(*Task) ([]string, error) {
+	return []string{"yt-dlp", "ffmpeg"}, nil
+}
+
 func (ytdlpDownloader) Match(resource string) bool {
 	u, err := url.Parse(videoURL(resource))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
@@ -45,14 +49,6 @@ func (ytdlpDownloader) Download(ctx context.Context, op *Task) (string, bool, er
 	if err := ctx.Err(); err != nil {
 		return "", false, err
 	}
-	filename, err := ensureTool(ctx, op, "yt-dlp")
-	if err != nil {
-		return "", false, err
-	}
-	ffmpeg, err := ensureTool(ctx, op, "ffmpeg")
-	if err != nil {
-		return "", false, err
-	}
 	dir := op.Dir
 	if dir == "" {
 		dir = "./"
@@ -61,7 +57,7 @@ func (ytdlpDownloader) Download(ctx context.Context, op *Task) (string, bool, er
 		return "", false, err
 	}
 	op.SetURL(videoURL(op.URL()))
-	args := []string{"--paths", dir, "--ffmpeg-location", ffmpeg, "--proxy", op.Proxy()}
+	args := []string{"--paths", dir, "--ffmpeg-location", op.tools["ffmpeg"], "--proxy", op.Proxy()}
 	if op.Cover {
 		args = append(args, "--force-overwrites")
 	} else {
@@ -77,7 +73,7 @@ func (ytdlpDownloader) Download(ctx context.Context, op *Task) (string, bool, er
 	// URL单独作为参数传递，并使用--避免被解释为yt-dlp选项。
 	args = append(args, "--", op.URL())
 	fmt.Println(op)
-	cmd := exec.CommandContext(ctx, filename, args...)
+	cmd := exec.CommandContext(ctx, op.tools["yt-dlp"], args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		return "", false, errors.Join(ctx.Err(), fmt.Errorf("yt-dlp下载失败: %w", err))

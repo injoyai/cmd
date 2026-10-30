@@ -30,26 +30,26 @@ func (galleryDownloader) Match(raw string) bool {
 	return pattern != nil && pattern.MatchString(u.Path)
 }
 
-func (galleryDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+func (galleryDownloader) Dependencies(op *Task) ([]string, error) {
 	if _, ok := downloadURL(op.URL()); !ok {
-		return "", false, errors.New("gallery-dl 需要支持站点的 HTTP(S) 地址")
+		return nil, errors.New("gallery-dl 需要支持站点的 HTTP(S) 地址")
 	}
 	if op.Coroutine != 0 || op.Retry < -1 {
-		return "", false, errors.New("gallery-dl 不支持 --coroutine；--retry 必须为非负整数")
+		return nil, errors.New("gallery-dl 不支持 --coroutine；--retry 必须为非负整数")
 	}
 	if op.Name != "" && (op.Name == "." || op.Name == ".." || filepath.VolumeName(op.Name) != "" || strings.ContainsAny(op.Name, `/\`)) {
-		return "", false, errors.New("gallery-dl --name 是输出子目录名，不能包含路径分隔符或为 .、..")
+		return nil, errors.New("gallery-dl --name 是输出子目录名，不能包含路径分隔符或为 .、..")
 	}
+	return []string{"gallery-dl"}, nil
+}
+
+func (galleryDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	dir := op.Dir
 	if dir == "" {
 		dir = "."
 	}
 	if op.Name != "" {
 		dir = filepath.Join(dir, op.Name)
-	}
-	filename, err := ensureTool(ctx, op, "gallery-dl")
-	if err != nil {
-		return "", false, err
 	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", false, err
@@ -61,5 +61,5 @@ func (galleryDownloader) Download(ctx context.Context, op *Task) (string, bool, 
 	}
 	args = append(args, "--", op.URL())
 	fmt.Println(op)
-	return dir, false, runDownloadTool(ctx, filename, "gallery-dl", args)
+	return dir, false, runDownloadTool(ctx, op.tools["gallery-dl"], "gallery-dl", args)
 }

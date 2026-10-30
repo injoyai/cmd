@@ -21,8 +21,15 @@ func (streamDownloader) Match(resource string) bool {
 	return err == nil && u.Host != "" && (u.Scheme == "rtsp" || u.Scheme == "rtmp")
 }
 
-func (streamDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+func (streamDownloader) Dependencies(op *Task) ([]string, error) {
 	op.SetFilename("", ".ts")
+	if op.exists() {
+		return nil, nil
+	}
+	return []string{"ffmpeg"}, nil
+}
+
+func (streamDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	return DownloadFile(ctx, op, downloadStream)
 }
 
@@ -30,10 +37,7 @@ func downloadStream(ctx context.Context, op *Task) error {
 	fmt.Println(op)
 	recordCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ffmpeg, err := ensureTool(recordCtx, op, "ffmpeg")
-	if err != nil {
-		return err
-	}
+	ffmpeg := op.tools["ffmpeg"]
 	release, err := prepareCache(op, "", false)
 	if err != nil {
 		return err

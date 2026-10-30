@@ -41,6 +41,10 @@ func getTemplateName(name string) string {
 
 type templateDownloader struct{ Templates fs.FS }
 
+func (templateDownloader) Dependencies(*Task) ([]string, error) {
+	return nil, nil
+}
+
 func (d templateDownloader) Match(resource string) bool {
 	info, err := fs.Stat(d.Templates, "templates/"+getTemplateName(resource))
 	return err == nil && !info.IsDir()

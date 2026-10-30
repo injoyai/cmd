@@ -3,6 +3,7 @@ package resource
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -272,7 +274,7 @@ func TestDownloadWaitCancelsDelay(t *testing.T) {
 	}
 }
 
-func TestEnsureToolPrefersPATH(t *testing.T) {
+func TestDependenciesPreferPATH(t *testing.T) {
 	dir := t.TempDir()
 	name := "i-test-ensure-tool"
 	if runtime.GOOS == "windows" {
@@ -283,14 +285,17 @@ func TestEnsureToolPrefersPATH(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir)
+	Resources[name] = &Info{Local: name}
+	t.Cleanup(func() { delete(Resources, name) })
 	op := newTestTask(t, &Config{Resource: "parent"})
-	got, err := ensureTool(context.Background(), op, name)
+	err := resolveDependencies(context.Background(), op, []string{name}, nil)
+	got := op.tools[name]
 	if err != nil || got != filename {
 		t.Fatalf("PATH tool = %q, %v; want %q", got, err, filename)
 	}
 }
 
-func TestEnsureToolInstallsAndReusesWithProxy(t *testing.T) {
+func TestDependenciesInstallAndReuseWithProxy(t *testing.T) {
 	for _, status := range []int{http.StatusOK, http.StatusServiceUnavailable} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			f, err := os.CreateTemp(oss.ExecDir(), ".ensure-tool-test-*")
@@ -326,7 +331,8 @@ func TestEnsureToolInstallsAndReusesWithProxy(t *testing.T) {
 				Resource: "parent", ProxyAddress: proxy.URL,
 				ProxyIgnore: []string{"does-not-match"},
 			})
-			got, err := ensureTool(context.Background(), op, name)
+			err = resolveDependencies(context.Background(), op, []string{name}, nil)
+			got := op.tools[name]
 			if status != http.StatusOK {
 				if err == nil || !IsRetryable(err) || requests.Load() != 1 {
 					t.Fatalf("dependency must return its first failure: requests=%d, err=%v", requests.Load(), err)
@@ -339,7 +345,9 @@ func TestEnsureToolInstallsAndReusesWithProxy(t *testing.T) {
 			if err := os.Chmod(filename, 0600); err != nil {
 				t.Fatal(err)
 			}
-			got, err = ensureTool(context.Background(), op, name)
+			op = newTestTask(t, &Config{Resource: "parent", ProxyAddress: proxy.URL, ProxyIgnore: []string{"does-not-match"}})
+			err = resolveDependencies(context.Background(), op, []string{name}, nil)
+			got = op.tools[name]
 			if err != nil || got != filename || requests.Load() != 1 {
 				t.Fatalf("cached tool downloaded again: %q, %v; requests=%d", got, err, requests.Load())
 			}
@@ -350,6 +358,134 @@ func TestEnsureToolInstallsAndReusesWithProxy(t *testing.T) {
 				t.Fatal("dependency installation changed its parent task")
 			}
 		})
+	}
+}
+
+type dependencyTestDownloader struct {
+	builtinDownloader
+	dependencies map[*Info][]string
+	tasks        map[*Info]Config
+}
+
+func (d dependencyTestDownloader) Dependencies(op *Task) ([]string, error) {
+	return d.dependencies[Resources[op.Resource]], nil
+}
+
+func (d dependencyTestDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+	for _, name := range d.dependencies[Resources[op.Resource]] {
+		if op.tools[name] == "" {
+			return "", false, fmt.Errorf("dependency path missing: %s", name)
+		}
+	}
+	d.tasks[Resources[op.Resource]] = op.Config
+	return d.builtinDownloader.Download(ctx, op)
+}
+
+func TestRecursiveDependencies(t *testing.T) {
+	for _, scenario := range []string{"shared dependency", "alias cycle", "unknown dependency"} {
+		t.Run(scenario, func(t *testing.T) {
+			t.Setenv("PATH", t.TempDir())
+			var requests []string
+			var requestMu sync.Mutex
+			proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestMu.Lock()
+				requests = append(requests, r.URL.Path)
+				requestMu.Unlock()
+				fmt.Fprint(w, "installed binary")
+			}))
+			defer proxy.Close()
+			prefix := ".dependency-" + filepath.Base(t.TempDir())
+			infos := make(map[string]*Info)
+			for _, name := range []string{"a", "b", "c", "shared"} {
+				local := prefix + "-" + name
+				if runtime.GOOS == "windows" {
+					local += ".exe"
+				}
+				key := "test-dependency-" + name
+				info := &Info{Local: local, FullUrl: []Url{Url("http://dependency.invalid/" + name)}}
+				infos[name], Resources[key] = info, info
+				t.Cleanup(func() {
+					delete(Resources, key)
+					os.Remove(filepath.Join(oss.ExecDir(), local))
+				})
+			}
+			Resources["test-dependency-a-alias"] = infos["a"]
+			Resources["test-dependency-shared-alias"] = infos["shared"]
+			t.Cleanup(func() {
+				delete(Resources, "test-dependency-a-alias")
+				delete(Resources, "test-dependency-shared-alias")
+			})
+			d := dependencyTestDownloader{
+				dependencies: map[*Info][]string{
+					infos["a"]: {"test-dependency-b", "test-dependency-c"},
+					infos["b"]: {"test-dependency-shared"},
+					infos["c"]: {"test-dependency-shared-alias"},
+				},
+				tasks: make(map[*Info]Config),
+			}
+			switch scenario {
+			case "alias cycle":
+				d.dependencies[infos["b"]] = []string{"test-dependency-a-alias"}
+			case "unknown dependency":
+				d.dependencies[infos["a"]] = []string{"test-dependency-unknown"}
+			}
+			previous := downloaders
+			downloaders = append([]downloader{d}, downloaders...)
+			t.Cleanup(func() { downloaders = previous })
+			cfg := &Config{
+				Resource: "test-dependency-a", Dir: t.TempDir(), Name: "business.bin", Cover: true,
+				ProxyAddress: proxy.URL, ProxyIgnore: []string{"does-not-match"}, Retry: 7, Coroutine: 3,
+			}
+			filename, exist, err := Download(context.Background(), cfg)
+			requestMu.Lock()
+			defer requestMu.Unlock()
+			if scenario != "shared dependency" {
+				want := "循环依赖"
+				if scenario == "unknown dependency" {
+					want = "依赖资源不存在"
+				}
+				if err == nil || IsRetryable(err) || !strings.Contains(err.Error(), want) || len(requests) != 0 {
+					t.Fatalf("dependency failure: requests=%v, err=%v", requests, err)
+				}
+				return
+			}
+			if err != nil || exist || filename != filepath.Join(cfg.Dir, cfg.Name) {
+				t.Fatalf("download: %q, %v, %v", filename, exist, err)
+			}
+			if !reflect.DeepEqual(requests, []string{"/shared", "/b", "/c", "/a"}) {
+				t.Fatalf("dependency execution order or reuse: %v", requests)
+			}
+			for _, name := range []string{"b", "c", "shared"} {
+				child := d.tasks[infos[name]]
+				if child.Dir != oss.ExecDir() || child.Name != "" || child.Cover || child.NoticeEnable || child.Retry != 0 || child.Coroutine != 0 ||
+					child.ProxyAddress != cfg.ProxyAddress || !reflect.DeepEqual(child.ProxyIgnore, cfg.ProxyIgnore) {
+					t.Fatalf("child inherited business options: %+v", child)
+				}
+				file := filepath.Join(oss.ExecDir(), infos[name].Local)
+				if info, err := os.Stat(file); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm()&0111 != 0111) {
+					t.Fatalf("dependency is not executable: %v, %v", info, err)
+				}
+			}
+		})
+	}
+}
+
+func TestExistingMediaSkipsDependencies(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	for _, tc := range []struct{ resource, output string }{
+		{"https://example.invalid/video.m3u8", "saved.ts"},
+		{"rtsp://example.invalid/live", "saved.ts"},
+		{"https://example.invalid/video.mpd", "saved.mkv"},
+	} {
+		dir := t.TempDir()
+		filename := filepath.Join(dir, tc.output)
+		if err := os.WriteFile(filename, []byte("existing media"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		got, exist, err := Download(context.Background(), &Config{Resource: tc.resource, Dir: dir, Name: "saved"})
+		if err != nil || !exist || got != filename {
+			t.Fatalf("existing media should skip tool installation: %q, %v, %v", got, exist, err)
+		}
 	}
 }
 

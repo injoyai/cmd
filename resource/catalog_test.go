@@ -121,7 +121,7 @@ printf '%s\n' "$http_proxy" "$https_proxy" "$all_proxy" "$HTTP_PROXY" "$HTTPS_PR
 				}
 				cfg.Cover = scenario == "failure"
 			}
-			filename, exist, err := installBuiltin(context.Background(), cfg)
+			filename, exist, err := Download(context.Background(), cfg)
 			if scenario == "failure" || scenario == "missing binary" {
 				if err == nil || IsRetryable(err) {
 					t.Fatalf("expected permanent installer failure: %v", err)
@@ -396,14 +396,14 @@ func TestPlatformReleaseResources(t *testing.T) {
 			info.FullUrl = []Url{Url(srv.URL + "/package.tar.gz")}
 			defer func() { info.FullUrl = previous }()
 			config := &Config{Resource: key, Dir: t.TempDir(), Name: "custom"}
-			filename, exist, err := installBuiltin(context.Background(), config)
+			filename, exist, err := Download(context.Background(), config)
 			if err != nil || exist || filename != filepath.Join(config.Dir, "custom") {
 				t.Fatalf("install = %q, %v, %v", filename, exist, err)
 			}
 			if data, err := os.ReadFile(filename); err != nil || string(data) != "new binary" {
 				t.Fatalf("installed file = %q, %v", data, err)
 			}
-			if _, exist, err := installBuiltin(context.Background(), config); err != nil || !exist {
+			if _, exist, err := Download(context.Background(), config); err != nil || !exist {
 				t.Fatalf("existing binary: exist=%v, err=%v", exist, err)
 			}
 		})
@@ -485,7 +485,7 @@ func TestDownloadYTDLPBinary(t *testing.T) {
 	info.FullUrl = []Url{Url(srv.URL + "/binary")}
 	t.Cleanup(func() { info.FullUrl = previous })
 	config := &Config{Resource: "yt-dlp", Dir: t.TempDir()}
-	filename, exist, err := installBuiltin(context.Background(), config)
+	filename, exist, err := Download(context.Background(), config)
 	if err != nil || exist || filename != filepath.Join(config.Dir, info.Local) {
 		t.Fatalf("Download = %q, %v, %v", filename, exist, err)
 	}
@@ -495,7 +495,7 @@ func TestDownloadYTDLPBinary(t *testing.T) {
 	if stat, err := os.Stat(filename); err != nil || (runtime.GOOS != "windows" && stat.Mode().Perm()&0111 == 0) {
 		t.Fatalf("binary is not executable: %v, %v", stat, err)
 	}
-	if _, exist, err := installBuiltin(context.Background(), config); err != nil || !exist {
+	if _, exist, err := Download(context.Background(), config); err != nil || !exist {
 		t.Fatalf("existing binary: exist=%v, err=%v", exist, err)
 	}
 }

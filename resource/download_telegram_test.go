@@ -304,6 +304,7 @@ func TestDownloaderRedactsCredentials(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer op.Close()
+	op.tools = map[string]string{"tdl": filepath.Join(dir, binary)}
 	output, err := os.Create(filepath.Join(dir, "stdout.log"))
 	if err != nil {
 		t.Fatal(err)

@@ -17,6 +17,10 @@ import (
 
 type httpDownloader struct{}
 
+func (httpDownloader) Dependencies(*Task) ([]string, error) {
+	return nil, nil
+}
+
 // Match 接收前面的下载器均不匹配的 URL 或资源名。
 func (httpDownloader) Match(resource string) bool {
 	return true

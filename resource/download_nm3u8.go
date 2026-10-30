@@ -22,26 +22,25 @@ func (nm3u8Downloader) Match(raw string) bool {
 	return path.Ext(p) == ".mpd" || strings.HasSuffix(p, ".ism/manifest")
 }
 
-func (nm3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, error) {
+func (nm3u8Downloader) Dependencies(op *Task) ([]string, error) {
 	if !(nm3u8Downloader{}).Match(op.URL()) {
-		return "", false, errors.New("n-m3u8dl-re 需要 HTTP(S) .mpd 或 .ism/Manifest 地址")
+		return nil, errors.New("n-m3u8dl-re 需要 HTTP(S) .mpd 或 .ism/Manifest 地址")
 	}
 	if op.Coroutine < 0 || op.Coroutine > 2147483647 || op.Retry < -1 || op.Retry > 2147483647 {
-		return "", false, errors.New("n-m3u8dl-re 并发数和重试次数超出范围")
+		return nil, errors.New("n-m3u8dl-re 并发数和重试次数超出范围")
 	}
 	if ext := filepath.Ext(op.Name); ext != "" && !strings.EqualFold(ext, ".mkv") {
-		return "", false, errors.New("n-m3u8dl-re 输出 MKV，--name 请省略扩展名或使用 .mkv")
+		return nil, errors.New("n-m3u8dl-re 输出 MKV，--name 请省略扩展名或使用 .mkv")
 	}
 	op.SetFilename("", ".mkv")
+	if op.exists() {
+		return nil, nil
+	}
+	return []string{"N_m3u8DL-RE", "ffmpeg"}, nil
+}
+
+func (nm3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	return DownloadFile(ctx, op, func(ctx context.Context, op *Task) error {
-		filename, err := ensureTool(ctx, op, "N_m3u8DL-RE")
-		if err != nil {
-			return err
-		}
-		ffmpeg, err := ensureTool(ctx, op, "ffmpeg")
-		if err != nil {
-			return err
-		}
 		release, err := prepareCache(op, "n-m3u8dl-re", true)
 		if err != nil {
 			return err
@@ -54,7 +53,7 @@ func (nm3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, er
 		args := []string{op.URL(), "--save-dir", op.CacheDir, "--save-name", "result",
 			"--tmp-dir", filepath.Join(op.CacheDir, "segments"), "--auto-select", "--no-log",
 			"--disable-update-check",
-			"--write-meta-json", "false", "--ffmpeg-binary-path", ffmpeg,
+			"--write-meta-json", "false", "--ffmpeg-binary-path", op.tools["ffmpeg"],
 			"--mux-after-done", "format=mkv:muxer=ffmpeg", "--use-system-proxy", "false"}
 		if proxy := op.Proxy(); proxy != "" {
 			args = append(args, "--custom-proxy", proxy)
@@ -66,7 +65,7 @@ func (nm3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, er
 			args = append(args, "--download-retry-count", strconv.Itoa(op.Retry))
 		}
 		fmt.Println(op)
-		if err := runDownloadTool(ctx, filename, "n-m3u8dl-re", args); err != nil {
+		if err := runDownloadTool(ctx, op.tools["N_m3u8DL-RE"], "n-m3u8dl-re", args); err != nil {
 			return err
 		}
 		info, err := os.Stat(output)

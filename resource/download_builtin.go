@@ -13,6 +13,10 @@ func (builtinDownloader) Match(resource string) bool {
 	return ok
 }
 
+func (builtinDownloader) Dependencies(*Task) ([]string, error) {
+	return nil, nil
+}
+
 func (builtinDownloader) Download(ctx context.Context, op *Task) (string, bool, error) {
 	resource, ok := Resources[op.Resource]
 	if !ok {

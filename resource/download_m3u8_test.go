@@ -165,6 +165,7 @@ func TestResolveReference(t *testing.T) {
 }
 
 func TestDownloadM3u8Failure(t *testing.T) {
+	testutil.InstallDownloadHelper(t, "ffmpeg")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("invalid playlist"))
 	}))

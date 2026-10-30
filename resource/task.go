@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/injoyai/goutil/oss"
 )
 
 // Task 是一次下载的配置快照及运行状态，通过NewTask创建。
@@ -23,6 +25,7 @@ type Task struct {
 	url        string
 	filename   string
 	proxyRules []*regexp.Regexp
+	tools      map[string]string
 }
 
 // NewTask 复制输入配置，校验代理并解析初始输出路径，不修改调用方配置。
@@ -177,6 +180,10 @@ func (this *Task) GetName() string {
 
 func (this *Task) Filename() string {
 	return filepath.Join(this.Dir, this.filename)
+}
+
+func (this *Task) exists() bool {
+	return !this.Cover && oss.Exists(this.Filename())
 }
 
 func (this *Task) TempFilename() string {

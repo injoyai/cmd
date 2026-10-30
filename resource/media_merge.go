@@ -20,11 +20,10 @@ func MergeTS(dir, output string) error {
 		return err
 	}
 	defer op.Close()
-	ffmpeg, err := ensureTool(context.Background(), op, "ffmpeg")
-	if err != nil {
+	if err := resolveDependencies(context.Background(), op, []string{"ffmpeg"}, nil); err != nil {
 		return err
 	}
-	return mergeTS(context.Background(), ffmpeg, dir, output)
+	return mergeTS(context.Background(), op.tools["ffmpeg"], dir, output)
 }
 
 // mergeTS 使用指定的ffmpeg合并TS文件，成功后才替换输出，并保留源文件。

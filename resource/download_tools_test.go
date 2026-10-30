@@ -65,7 +65,7 @@ func TestToolInvalidInputFailsBeforeInstall(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		_, _, err := MustDownload(ctx, op)
 		cancel()
-		if err == nil || IsRetryable(err) || strings.Contains(err.Error(), "自动安装") || strings.Contains(err.Error(), "内置资源不存在") {
+		if err == nil || IsRetryable(err) || strings.Contains(err.Error(), "依赖") || strings.Contains(err.Error(), "内置资源不存在") {
 			t.Errorf("invalid input did not fail before tool lookup: %+v, %v", op, err)
 		}
 	}
