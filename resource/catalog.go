@@ -4,10 +4,12 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -18,12 +20,12 @@ import (
 type Handler func(op *Task) error
 
 type Info struct {
-	Key         []string          //别名
-	Local       string            //本地资源名称
-	Remote      map[string]string //架构对应的远程文件名，空键表示通用文件；省略时使用 Local
-	FullUrl     []Url             //下载地址模板，省略时使用配置的仓库地址
-	Handler     Handler           //自定义处理，例如解压安装
-	InstallHint string            //无对应发布包时的手动安装说明
+	Key     []string          //别名
+	Local   string            //本地资源名称
+	Remote  map[string]string //架构对应的远程文件名，空键表示通用文件；省略时使用 Local
+	FullUrl []Url             //下载地址模板，省略时使用配置的仓库地址
+	Handler Handler           //自定义处理，例如解压安装
+	Install Handler           //无对应发布包时通过系统包管理器安装
 }
 
 func (this *Info) GetLocalName() string {
@@ -57,13 +59,64 @@ func (this *Info) remoteForArch(arch string) (string, error) {
 	if name := this.Remote[""]; name != "" {
 		return name, nil
 	}
-	if len(this.Remote) == 0 && this.Local != "" && this.InstallHint == "" {
+	if len(this.Remote) == 0 && this.Local != "" && this.Install == nil {
 		return this.Local, nil
 	}
-	if this.InstallHint != "" {
-		return "", fmt.Errorf("%s 暂无 %s/%s 自动安装包；%s", this.Local, runtime.GOOS, arch, this.InstallHint)
+	if this.Install != nil {
+		return "", fmt.Errorf("%s 使用系统包管理器安装，没有 %s/%s 独立发布包", this.Local, runtime.GOOS, arch)
 	}
 	return "", fmt.Errorf("%s 暂无 %s/%s 资源", this.Local, runtime.GOOS, arch)
+}
+
+// installPackage 保留包管理器维护的完整依赖，仅在目标目录创建命令链接。
+func installPackage(binary string, command ...string) Handler {
+	return func(op *Task) error {
+		if err := os.MkdirAll(filepath.Dir(op.Filename()), 0755); err != nil {
+			return err
+		}
+		temp, err := os.MkdirTemp(filepath.Dir(op.Filename()), ".i-install-*")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(temp)
+		filename, err := exec.LookPath(binary)
+		if err != nil || op.Cover {
+			fmt.Printf("执行安装: %s\n", strings.Join(command, " "))
+			cmd := exec.CommandContext(op.Ctx, command[0], command[1:]...)
+			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+			// 显式代理（包括空值）覆盖父进程的代理环境。
+			for _, value := range os.Environ() {
+				key, _, _ := strings.Cut(value, "=")
+				if !strings.HasSuffix(strings.ToLower(key), "_proxy") {
+					cmd.Env = append(cmd.Env, value)
+				}
+			}
+			for _, key := range []string{"http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"} {
+				cmd.Env = append(cmd.Env, key+"="+op.ProxyAddress)
+			}
+			cmd.Env = append(cmd.Env, "no_proxy=", "NO_PROXY=")
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("%s 安装失败: %w", binary, errors.Join(op.Ctx.Err(), err))
+			}
+			filename, err = exec.LookPath(binary)
+			if err != nil {
+				return fmt.Errorf("安装完成但找不到 %s: %w", binary, err)
+			}
+		}
+		filename, err = filepath.Abs(filename)
+		if err != nil {
+			return err
+		}
+		target, err := filepath.Abs(op.Filename())
+		if err != nil || target == filename {
+			return err
+		}
+		link := filepath.Join(temp, "binary")
+		if err := os.Symlink(filename, link); err != nil {
+			return err
+		}
+		return os.Rename(link, target)
+	}
 }
 
 var Resources = indexResources(map[string]*Info{

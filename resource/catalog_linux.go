@@ -1,7 +1,9 @@
 package resource
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -10,7 +12,7 @@ import (
 
 var Exclusive = map[string]*Info{
 	"aria2": {
-		Local: "aria2c", InstallHint: "请使用系统包管理器安装 aria2 到 PATH，例如 apt install aria2",
+		Local: "aria2c", Install: installLinuxPackage("aria2c", "aria2"),
 	},
 	"n-m3u8dl-re": {
 		Local: "N_m3u8DL-RE", Remote: map[string]string{"amd64": "N_m3u8DL-RE_v0.6.0-beta_linux-x64_20260629.tar.gz", "arm64": "N_m3u8DL-RE_v0.6.0-beta_linux-arm64_20260629.tar.gz"},
@@ -19,9 +21,9 @@ var Exclusive = map[string]*Info{
 	},
 	"gallery-dl": {
 		Local: "gallery-dl", Remote: map[string]string{"amd64": "gallery-dl.bin"},
-		FullUrl:     []Url{"https://codeberg.org/mikf/gallery-dl/releases/download/v1.32.18/{name}"},
-		Handler:     downloadReleaseBinary("gallery-dl"),
-		InstallHint: "其他架构请通过系统包管理器或 Python 环境安装 gallery-dl 到 PATH",
+		FullUrl: []Url{"https://codeberg.org/mikf/gallery-dl/releases/download/v1.32.18/{name}"},
+		Handler: downloadReleaseBinary("gallery-dl"),
+		Install: installLinuxPackage("gallery-dl", "gallery-dl"),
 	},
 
 	"i":         {Local: "i", Remote: map[string]string{"amd64": "i_linux_amd64", "arm": "i_linux_arm", "arm64": "i_linux_arm64"}},
@@ -97,4 +99,26 @@ var Exclusive = map[string]*Info{
 			return os.Rename(filepath.Join(op.Dir, strings.TrimRight(filepath.Base(op.URL()), ".tar.gz")), op.Filename())
 		},
 	},
+}
+
+func installLinuxPackage(binary, name string) Handler {
+	return func(op *Task) error {
+		command := []string{"apt-get", "install", "-y", name}
+		if _, err := exec.LookPath(binary); err != nil || op.Cover {
+			found := false
+			for _, manager := range []string{"apt-get", "dnf", "yum"} {
+				if _, err := exec.LookPath(manager); err == nil {
+					command[0], found = manager, true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("无法安装 %s: 未找到 apt-get、dnf 或 yum", binary)
+			}
+			if os.Geteuid() != 0 {
+				command = append([]string{"sudo", "--preserve-env=http_proxy,https_proxy,all_proxy,HTTP_PROXY,HTTPS_PROXY,ALL_PROXY,no_proxy,NO_PROXY", "--"}, command...)
+			}
+		}
+		return installPackage(binary, command...)(op)
+	}
 }

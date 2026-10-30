@@ -3,6 +3,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"runtime"
 )
 
 type builtinDownloader struct{}
@@ -19,6 +20,9 @@ func (builtinDownloader) Download(ctx context.Context, op *Task) (string, bool, 
 	}
 	op.SetFilename(resource.GetLocalName(), "")
 	return DownloadFile(ctx, op, func(ctx context.Context, op *Task) error {
+		if resource.Install != nil && resource.Remote[runtime.GOARCH] == "" && resource.Remote[""] == "" {
+			return resource.Install(op)
+		}
 		urls, err := resource.GetFullUrls()
 		if err != nil {
 			return err

@@ -68,9 +68,97 @@ func TestDownloadToolCatalog(t *testing.T) {
 			}
 		}
 	}
-	info := &Info{Local: "manual-tool", InstallHint: "install with your package manager"}
-	if _, err := info.GetFullUrls(); err == nil || !strings.Contains(err.Error(), info.InstallHint) {
-		t.Fatalf("manual-only tool fell back to the resource store: %v", err)
+	info := &Info{Local: "package-tool", Install: func(*Task) error { return nil }}
+	if _, err := info.GetFullUrls(); err == nil || !strings.Contains(err.Error(), "系统包管理器") {
+		t.Fatalf("package-managed tool fell back to the resource store: %v", err)
+	}
+}
+
+func TestPackageInstallation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix package managers")
+	}
+	for _, scenario := range []string{"install", "PATH reuse", "cached", "failure", "missing binary", "proxy"} {
+		t.Run(scenario, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("PATH", binDir)
+			t.Setenv("PACKAGE_TEST_DIR", binDir)
+			for _, key := range []string{"http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "no_proxy", "NO_PROXY"} {
+				t.Setenv(key, "inherited-value")
+			}
+			body := `#!/bin/sh
+printf '%s\n' "$@" > "$PACKAGE_TEST_DIR/args"
+printf '%s\n' "$http_proxy" "$https_proxy" "$all_proxy" "$HTTP_PROXY" "$HTTPS_PROXY" "$ALL_PROXY" "$no_proxy" "$NO_PROXY" > "$PACKAGE_TEST_DIR/proxy"
+`
+			switch scenario {
+			case "failure":
+				body += "exit 7\n"
+			case "missing binary":
+			default:
+				body += "printf '#!/bin/sh\\nexit 0\\n' > \"$PACKAGE_TEST_DIR/package-tool\"\n/bin/chmod 755 \"$PACKAGE_TEST_DIR/package-tool\"\n"
+			}
+			if err := os.WriteFile(filepath.Join(binDir, "package-manager"), []byte(body), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if scenario == "PATH reuse" {
+				if err := os.WriteFile(filepath.Join(binDir, "package-tool"), []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			const key = "package-tool-test"
+			Resources[key] = &Info{Local: "package-tool", Install: installPackage("package-tool", "package-manager", "install", "package")}
+			t.Cleanup(func() { delete(Resources, key) })
+			cfg := &Config{Resource: key, Dir: filepath.Join(t.TempDir(), "目标 '目录'"), Name: "custom-tool"}
+			if scenario == "proxy" {
+				cfg.ProxyAddress = "http://127.0.0.1:1234"
+			}
+			if scenario == "cached" || scenario == "failure" {
+				if err := os.MkdirAll(cfg.Dir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(cfg.Dir, cfg.Name), []byte("old binary"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				cfg.Cover = scenario == "failure"
+			}
+			filename, exist, err := installBuiltin(context.Background(), cfg)
+			if scenario == "failure" || scenario == "missing binary" {
+				if err == nil || IsRetryable(err) {
+					t.Fatalf("expected permanent installer failure: %v", err)
+				}
+				if scenario == "failure" {
+					data, readErr := os.ReadFile(filepath.Join(cfg.Dir, cfg.Name))
+					if readErr != nil || string(data) != "old binary" {
+						t.Fatalf("failed installation replaced original: %q, %v", data, readErr)
+					}
+				}
+				return
+			}
+			if err != nil || exist != (scenario == "cached") {
+				t.Fatalf("installation = %q, %v, %v", filename, exist, err)
+			}
+			args, readErr := os.ReadFile(filepath.Join(binDir, "args"))
+			if scenario == "PATH reuse" || scenario == "cached" {
+				if !os.IsNotExist(readErr) {
+					t.Fatalf("reused program ran installer: %q, %v", args, readErr)
+				}
+			} else {
+				if readErr != nil || string(args) != "install\npackage\n" {
+					t.Fatalf("installer arguments: %q, %v", args, readErr)
+				}
+				data, readErr := os.ReadFile(filepath.Join(binDir, "proxy"))
+				want := strings.Repeat(cfg.ProxyAddress+"\n", 6) + "\n\n"
+				if readErr != nil || string(data) != want {
+					t.Fatalf("installer proxy: %q, %v; want %q", data, readErr, want)
+				}
+			}
+			if scenario != "cached" {
+				link, err := os.Readlink(filename)
+				if err != nil || link != filepath.Join(binDir, "package-tool") {
+					t.Fatalf("installed command link: %q, %v", link, err)
+				}
+			}
+		})
 	}
 }
 

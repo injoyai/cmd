@@ -13,7 +13,7 @@ import (
 
 var Exclusive = map[string]*Info{
 	"aria2": {
-		Local: "aria2c", InstallHint: "请先安装到 PATH，例如 brew install aria2",
+		Local: "aria2c", Install: installPackage("aria2c", "brew", "install", "aria2"),
 	},
 	"n-m3u8dl-re": {
 		Local: "N_m3u8DL-RE", Remote: map[string]string{"amd64": "N_m3u8DL-RE_v0.6.0-beta_osx-x64_20260629.tar.gz", "arm64": "N_m3u8DL-RE_v0.6.0-beta_osx-arm64_20260629.tar.gz"},
@@ -21,7 +21,7 @@ var Exclusive = map[string]*Info{
 		Handler: downloadReleaseBinary("N_m3u8DL-RE"),
 	},
 	"gallery-dl": {
-		Local: "gallery-dl", InstallHint: "请先安装到 PATH，例如 brew install gallery-dl",
+		Local: "gallery-dl", Install: installPackage("gallery-dl", "brew", "install", "gallery-dl"),
 	},
 
 	"i":         {Local: "i", Remote: map[string]string{"amd64": "i_darwin_amd64", "arm64": "i_darwin_arm64"}},

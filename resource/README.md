@@ -77,15 +77,21 @@ aria2 种子任务使用直连，按种子原始目录和文件名保存；不�
 
 ### 安装下载工具
 
-优先使用 PATH 中已安装的命令。支持自动安装的平台可运行 `i install <工具名>`；缺少工具时下载命令也会自动安装到 `i` 所在目录。
+优先使用 PATH 中已安装的命令。可运行 `i install <工具名>` 主动安装；缺少工具时下载命令也会自动安装，然后继续原任务。
 
 | 工具 | macOS | Linux | Windows |
 | --- | --- | --- | --- |
-| aria2 | 先安装到 PATH，例如 `brew install aria2` | 先安装到 PATH，例如 `apt install aria2` | 自动安装：amd64、386 |
+| aria2 | 自动执行 `brew install aria2` | 自动执行系统包管理器安装 | 自动安装：amd64、386 |
 | N_m3u8DL-RE | 自动安装：amd64、arm64 | 自动安装：amd64、arm64 | 自动安装：amd64、arm64、386 |
-| gallery-dl | 先安装到 PATH，例如 `brew install gallery-dl` | 自动安装：amd64；其他架构自行安装到 PATH | 自动安装：amd64、386 |
+| gallery-dl | 自动执行 `brew install gallery-dl` | amd64 使用发布包；其他架构自动执行系统包管理器安装 | 自动安装：amd64、386 |
 
-N_m3u8DL-RE 还需要 ffmpeg，缺少时会尝试自动安装。Linux 的独立程序需要满足上游运行库要求；Windows gallery-dl 需要相应的 Visual C++ 运行库。不支持自动安装的平台和架构会给出安装提示。
+macOS 需要已有 Homebrew；Linux 按顺序使用已有的 apt-get、dnf 或 yum，非 root 用户自动通过 sudo 执行，可在当前终端输入密码。安装失败会停止原任务并返回错误。
+
+发布包安装到指定目录；包管理器将程序及依赖安装到其标准位置，并在指定目录创建命令链接，支持 `--dir` 和 `--name`。已有目标默认复用，`-d=true` 重新执行包管理器安装并更新链接，具体版本由包管理器决定。`i uninstall` 只删除该命令链接；卸载系统包仍使用相应包管理器。
+
+包管理器安装继承 `--proxy`，`--proxy=""` 清除代理环境变量；`proxy.ignore` 正则不作用于包管理器内部请求，其自身配置仍有效。
+
+N_m3u8DL-RE 还需要 ffmpeg，缺少时会尝试自动安装。Linux 的独立程序需要满足上游运行库要求；Windows gallery-dl 需要相应的 Visual C++ 运行库。不支持的平台和架构会直接报错。
 
 N_m3u8DL-RE 当前使用 0.6.0-beta；已发现该版本在部分输出重定向环境会异常退出，建议在终端中运行。内置 `.m3u8` 下载不受此限制影响。
 
