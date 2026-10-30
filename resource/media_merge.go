@@ -91,7 +91,9 @@ func mergeTask(ctx context.Context, this *Task, ffmpeg string) error {
 		return err
 	}
 	if this.CacheDir != "" {
-		return os.RemoveAll(this.CacheDir)
+		if err := os.RemoveAll(this.CacheDir); err != nil {
+			fmt.Fprintf(os.Stderr, "警告: 视频已合并，临时目录清理失败: %v\n", err)
+		}
 	}
 	return nil
 }

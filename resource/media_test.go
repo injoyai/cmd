@@ -72,3 +72,30 @@ func TestMergeFailurePreservesOutputAndCache(t *testing.T) {
 		t.Fatalf("failed merge removed cached segment: %v", err)
 	}
 }
+
+func TestMergeCleanupFailureDoesNotFailDownload(t *testing.T) {
+	testutil.InstallDownloadHelper(t, "ffmpeg")
+	op := newTestTask(t, &Config{Resource: "video.m3u8", Dir: t.TempDir()})
+	op.SetFilename("", ".ts")
+	cacheDir := t.TempDir()
+	op.CacheDir = cacheDir + string(os.PathSeparator) + "."
+	if err := os.WriteFile(filepath.Join(cacheDir, "000000000.ts"), []byte("segment"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filename, exist, err := DownloadFile(context.Background(), op, func(ctx context.Context, task *Task) error {
+		return mergeTask(ctx, task, ffmpeg)
+	})
+	if err != nil || exist || filename != op.Filename() {
+		t.Fatalf("successful merge reported failure: filename=%q, exist=%v, err=%v", filename, exist, err)
+	}
+	if data, err := os.ReadFile(filename); err != nil || string(data) != "segment" {
+		t.Fatalf("merged output: %q, %v", data, err)
+	}
+	if _, err := os.Stat(cacheDir); err != nil {
+		t.Fatalf("expected cache directory to remain after cleanup failure: %v", err)
+	}
+}
