@@ -12,28 +12,22 @@ import (
 	"time"
 
 	"github.com/injoyai/bar"
-	"github.com/injoyai/cmd/global"
-	"github.com/injoyai/conv"
 	"github.com/injoyai/goutil/oss"
 	"github.com/spf13/cobra"
 )
 
+const (
+	testDownloadURL = "https://node-113-215-235-172.speedtest.cn:51090/download?size=25000000&r=0.3373401822935955"
+	testUploadURL   = "https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583"
+)
+
 func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 
-	/*
-		https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583
-	*/
-
-	//size := 25_000_000
-	//默认测速节点可通过全局配置test.downloadUrl覆盖
-	defaultUrl := global.GetString("test.downloadUrl", global.DefaultTestDownloadURL)
-
-	downloadUrl := conv.Default(defaultUrl, args...)
 	goroutines := flags.GetInt("goroutines", 8)
 	seconds := flags.GetDuration("seconds", 10)
 	_proxy := flags.GetString("proxy")
 
-	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", downloadUrl, _proxy, goroutines, seconds)
+	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", testDownloadURL, _proxy, goroutines, seconds)
 
 	var failure error
 	var mu sync.Mutex
@@ -79,7 +73,7 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	for i := 0; i < goroutines; i++ {
 		b.Go(func() {
-			resp, err := client.Get(downloadUrl)
+			resp, err := client.Get(testDownloadURL)
 			if err != nil {
 				if ctx.Err() == nil {
 					recordError(err)
@@ -120,15 +114,11 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func TestUpload(cmd *cobra.Command, args []string, flags *Flags) error {
 
-	//默认测速节点可通过全局配置test.uploadUrl覆盖
-	defaultUrl := global.GetString("test.uploadUrl", global.DefaultTestUploadURL)
-
-	uploadUrl := conv.Default(defaultUrl, args...)
 	goroutines := flags.GetInt("goroutines", 8)
 	seconds := flags.GetDuration("seconds", 10)
 	_proxy := flags.GetString("proxy")
 
-	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", uploadUrl, _proxy, goroutines, seconds)
+	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", testUploadURL, _proxy, goroutines, seconds)
 
 	var failure error
 	var mu sync.Mutex
@@ -181,7 +171,7 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) error {
 		b.Go(func() {
 			pr, pw := io.Pipe()
 
-			req, err := http.NewRequest("POST", uploadUrl, pr)
+			req, err := http.NewRequest("POST", testUploadURL, pr)
 			if err != nil {
 				if ctx.Err() == nil {
 					recordError(err)

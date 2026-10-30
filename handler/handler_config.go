@@ -13,16 +13,16 @@ func IsWindows() bool {
 	return runtime.GOOS == "windows"
 }
 
-func NewGlobalCommand() *cobra.Command {
+func NewConfigCommand() *cobra.Command {
 	var set, appendValues, del []string
 	cmd := &cobra.Command{
-		Use:   "global",
+		Use:   "config",
 		Short: "全局配置",
 		Long: "查看全部配置；无修改参数时不写文件。\n" +
 			"--set、--append 可重复使用，值中的逗号和等号会保留。\n" +
-			"混合操作固定按设置、追加、删除的顺序执行。Windows 使用 i global gui 打开图形界面。",
-		Example: "i global -s proxy.addr=http://127.0.0.1:1081 -s download.dir=./downloads\n" +
-			"i global -a 'resource.urls=https://one.example/{name}' -a 'resource.urls=https://two.example/{name}'",
+			"混合操作固定按设置、追加、删除的顺序执行。Windows 使用 i config gui 打开图形界面。",
+		Example: "i config -s proxy.addr=http://127.0.0.1:1081 -s download.dir=./downloads\n" +
+			"i config -a 'resource.urls=https://one.example/{name}' -a 'resource.urls=https://two.example/{name}'",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if IsWindows() && len(args) == 1 && args[0] == "gui" {
 				return nil
@@ -33,11 +33,11 @@ func NewGlobalCommand() *cobra.Command {
 			if len(args) > 0 {
 				return global.RunGUI()
 			}
-			sets, err := parseGlobalAssignments("set", set)
+			sets, err := parseConfigAssignments("set", set)
 			if err != nil {
 				return err
 			}
-			appends, err := parseGlobalAssignments("append", appendValues)
+			appends, err := parseConfigAssignments("append", appendValues)
 			if err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func NewGlobalCommand() *cobra.Command {
 				return fmt.Errorf("--del 的配置键不能为空")
 			}
 			for _, key := range del {
-				if !validGlobalKey(key) {
+				if !validConfigKey(key) {
 					return fmt.Errorf("--del 的配置键不能为空")
 				}
 			}
@@ -80,11 +80,11 @@ func NewGlobalCommand() *cobra.Command {
 	return cmd
 }
 
-func parseGlobalAssignments(flag string, values []string) ([][2]string, error) {
+func parseConfigAssignments(flag string, values []string) ([][2]string, error) {
 	var pairs [][2]string
 	for _, value := range values {
 		key, value, ok := strings.Cut(value, "=")
-		if !ok || !validGlobalKey(key) {
+		if !ok || !validConfigKey(key) {
 			return nil, fmt.Errorf("--%s 需要 key=value，配置键不能为空", flag)
 		}
 		pairs = append(pairs, [2]string{key, value})
@@ -92,7 +92,7 @@ func parseGlobalAssignments(flag string, values []string) ([][2]string, error) {
 	return pairs, nil
 }
 
-func validGlobalKey(key string) bool {
+func validConfigKey(key string) bool {
 	// conv.Map 把空路径（包括仅含点的路径）视为根对象。
 	return strings.Trim(strings.TrimSpace(key), ".") != ""
 }

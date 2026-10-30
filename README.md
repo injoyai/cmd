@@ -25,7 +25,7 @@
 - 资源下载与安装升级：`download`、`dl`、`install`、`upgrade`
 - 文本与目录处理：`text`、`dir`、`base64`、`len`
 - 开发辅助：`http`、`build`、`crud`、`swag`
-- 本地桌面工具：`push`、`speak`、`global`、`wake`、`gui`
+- 本地桌面工具：`push`、`speak`、`config`、`wake`、`gui`
 
 ---
 
@@ -73,7 +73,7 @@ i --help
 | 文本处理 | `text` | 替换、切割、编解码、结构化数据处理 |
 | 目录处理 | `dir` | 查找、替换、统计、批量处理文件 |
 | 资源查看 | `resources` | 查看内置资源列表 |
-| 系统工具 | `push` / `speak` / `global` / `wake` / `gui` | 通知、语音、配置、唤醒、GUI 打开网页 |
+| 系统工具 | `push` / `speak` / `config` / `wake` / `gui` | 通知、语音、配置、唤醒、GUI 打开网页 |
 
 ---
 
@@ -153,7 +153,7 @@ crud       生成增删改查代码
 swag       生成 Swagger 文档
 push       推送通知 / 语音 / 弹窗
 speak      文字转语音
-global     管理全局配置
+config     管理全局配置
 wake       局域网唤醒
 gui        用 GUI 打开网页
 ```
@@ -220,7 +220,7 @@ i swag -g ./main.go
 i push notice 下载完成
 i push voice 任务结束
 i speak 你好
-i global --set proxy.addr=http://127.0.0.1:1081
+i config --set proxy.addr=http://127.0.0.1:1081
 ```
 
 ---
@@ -237,19 +237,20 @@ i global --set proxy.addr=http://127.0.0.1:1081
 查看或修改配置：
 
 ```shell
-i global
-i global --set proxy.addr=http://127.0.0.1:1081
-i global -s download.dir=./downloads -s download.noticeEnable=false
-i global -a 'resource.urls=https://one.example/{name}' -a 'resource.urls=https://two.example/{name}'
-i global -a 'examples=first,second' -a 'examples=a=b'
-i global -d examples -d proxy.addr
+i config
+i config --set proxy.addr=http://127.0.0.1:1081
+i config -s download.dir=./downloads -s download.noticeEnable=false
+i config -a 'resource.urls=https://one.example/{name}' -a 'resource.urls=https://two.example/{name}'
+i config -a 'examples=first,second' -a 'examples=a=b'
+i config -d examples -d proxy.addr
 ```
 
-`i global` 以 YAML 输出全部已保存配置，无修改参数时不写文件。`--set/-s` 和
+`i config` 以 YAML 输出全部已保存配置，无修改参数时不写文件。`--set/-s` 和
 `--append/-a` 每次接收一个 `key=value`，可重复使用；值中的逗号、等号和空值会保留。
 原先用 `-s 'a=1,b=2'` 同时设置多项的写法改为 `-s a=1 -s b=2`。
 `--del/-d` 可重复使用，也支持逗号分隔多个键。混合操作固定按“设置 → 追加 → 删除”执行，
-参数校验失败时不修改配置。Windows 可用 `i global gui` 打开配置表单。
+参数校验失败时不修改配置。Windows 可用 `i config gui` 打开配置表单，按功能分组编辑，
+资源地址每行一项，密钥默认隐藏。
 
 配置使用 YAML 格式，保存在 `os.UserConfigDir()` 下的 `injoy/i/config.yaml`：
 
@@ -267,7 +268,7 @@ macOS 为 `~/Library/Application Support/injoy/data/cache/`，Windows 为
 后续保存写入新位置并保留旧文件；新文件存在时优先使用新文件，读取或解析失败时返回错误，禁止覆盖。
 不兼容过渡期的 `config.json`。可手动编辑 YAML；CLI 保存时会重新排版，不保留注释。
 
-配置按 `proxy`、`download`、`resource`、`upload`、`open`、`test` 分组，CLI 使用点路径访问：
+配置按 `proxy`、`download`、`resource`、`upload`、`open` 分组，CLI 使用点路径访问：
 
 ```yaml
 proxy:
@@ -291,9 +292,6 @@ upload:
 open:
   custom:
     docs: /path/to/docs
-test:
-  downloadUrl: https://example.com/download
-  uploadUrl: https://example.com/upload
 ```
 
 示例地址需替换为实际服务地址。`open.custom` 的键作为 `i open <键>` 的快捷名称。
@@ -302,22 +300,25 @@ test:
 
 ```shell
 # 替换资源列表为一个地址；使用 -a 逐项追加
-i global -s 'resource.urls=https://one.example/{name}'
-i global -a 'resource.urls=https://two.example/{name}'
+i config -s 'resource.urls=https://one.example/{name}'
+i config -a 'resource.urls=https://two.example/{name}'
 # 删除第一个地址，或清空列表
-i global -d 'resource.urls[0]'
-i global -s resource.urls=
+i config -d 'resource.urls[0]'
+i config -s resource.urls=
 ```
 
 已有文件中的 `downloadDir`、`downloadNoticeEnable`、`downloadNoticeText` 分别迁移为
 `download.dir`、`download.noticeEnable`、`download.noticeText`；`proxy` 字符串迁移为
 `proxy.addr`，`proxyIgnore` 迁移为 `proxy.ignore`；原 `resource` 字符串按逗号拆为
-`resource.urls` 数组。`uploadMinio`、`customOpen` 分别迁移为 `upload.minio`、`open.custom`；
-`testDownloadUrl`、`testUploadUrl` 分别迁移为 `test.downloadUrl`、`test.uploadUrl`。
+`resource.urls` 数组。`uploadMinio`、`customOpen` 分别迁移为 `upload.minio`、`open.custom`。
 
 迁移只在内存中进行，查询不会写盘；下次修改保存时，完整配置写回原来的 `config.yaml`，
 移除已迁移旧键，保留其他值、类型和自定义项。新旧键并存时新键优先，对象逐项合并；
 目标分组被非对象配置占用时返回错误，禁止覆盖原文件。后续 CLI 修改请使用新键名。
+
+配置命令已由 `i global` 改为 `i config`，旧命令不再保留。配置文件位置不变。
+测速地址固定在代码中，不读取全局测速地址，也不接受自定义地址参数；
+已有的旧测速配置保留在文件中，但不再生效。
 
 ---
 

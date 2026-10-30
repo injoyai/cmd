@@ -38,7 +38,7 @@ func newRootCommand() *cobra.Command {
 	}
 
 	addCommand(Commands()...)
-	root.AddCommand(handler.NewGlobalCommand())
+	root.AddCommand(handler.NewConfigCommand())
 
 	addCommand(
 
@@ -661,18 +661,21 @@ func newRootCommand() *cobra.Command {
 			Example: `i test download`,
 			Child: []*Command{
 				{
+					Command: &cobra.Command{Args: cobra.NoArgs},
 					Use:     "download",
 					Short:   "测试下载网速",
 					Example: "i test download",
 					Run:     handler.TestDownload,
 				},
 				{
+					Command: &cobra.Command{Args: cobra.NoArgs},
 					Use:     "upload",
 					Short:   "测试上传网速",
 					Example: "i test upload",
 					Run:     handler.TestUpload,
 				},
 				{
+					Command: &cobra.Command{Args: cobra.NoArgs},
 					Use:     "speed",
 					Short:   "测试网速",
 					Example: "i test speed",

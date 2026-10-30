@@ -30,8 +30,6 @@ func migrateConfig(values map[string]any) error {
 		{"downloadNoticeText", "download.noticeText"},
 		{"uploadMinio", "upload.minio"},
 		{"customOpen", "open.custom"},
-		{"testDownloadUrl", "test.downloadUrl"},
-		{"testUploadUrl", "test.uploadUrl"},
 	} {
 		if value, exists := values[pair[0]]; exists {
 			if err := mergeConfigValue(values, strings.Split(pair[1], "."), value); err != nil {

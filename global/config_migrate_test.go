@@ -94,9 +94,8 @@ open:
   custom:
     .md: OtherEditor
     key.with.dots: keep
-test:
-  downloadUrl: https://test.example/download
-  uploadUrl: https://test.example/upload
+testDownloadUrl: https://test.example/download
+testUploadUrl: https://test.example/upload
 custom:
   values: [true, false, null, "00123"]
 `
@@ -133,7 +132,6 @@ func TestMigrationConflictDoesNotOverwrite(t *testing.T) {
 		"upload: custom-value\nuploadMinio: {bucket: old}\n",
 		"upload: {minio: custom-value}\nuploadMinio: {bucket: old}\n",
 		"open: {custom: custom-value}\ncustomOpen: {.md: TextEdit}\n",
-		"test: custom-value\ntestDownloadUrl: https://example.com\n",
 	} {
 		t.Run(original, func(t *testing.T) {
 			filename := filepath.Join(t.TempDir(), "config.yaml")
@@ -165,8 +163,6 @@ downloadNoticeText: old-text
 download: {dir: "", noticeEnable: false, noticeText: ""}
 resource:
   urls: ["https://example.com/{name}?a=1,b=2"]
-testDownloadUrl: old-url
-test: {downloadUrl: ""}
 `), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +170,7 @@ test: {downloadUrl: ""}
 	if f.err != nil {
 		t.Fatal(f.err)
 	}
-	for _, key := range []string{"proxy.addr", "proxy.ignore", "download.dir", "download.noticeText", "test.downloadUrl"} {
+	for _, key := range []string{"proxy.addr", "proxy.ignore", "download.dir", "download.noticeText"} {
 		if got := f.GetString(key, "missing"); got != "" {
 			t.Fatalf("new empty value at %s was replaced: %q", key, got)
 		}

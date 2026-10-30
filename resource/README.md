@@ -44,8 +44,8 @@ i install tdl -d=true
 可通过全局配置设置默认下载目录和代理：
 
 ```shell
-i global --set download.dir=./downloads
-i global --set proxy.addr=http://127.0.0.1:1081
+i config --set download.dir=./downloads
+i config --set proxy.addr=http://127.0.0.1:1081
 ```
 
 ## Telegram 下载

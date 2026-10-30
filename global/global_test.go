@@ -45,12 +45,19 @@ func TestGroupedProxyAndNatures(t *testing.T) {
 	for _, field := range Natures() {
 		fields[field.Key] = field
 	}
-	if fields["resource.urls"].Type != "list" || fields["download.noticeEnable"].Value != false || fields["test.downloadUrl"].Value != DefaultTestDownloadURL || fields["test.uploadUrl"].Value != DefaultTestUploadURL {
-		t.Fatal("GUI fields lost types, explicit false, or defaults")
+	if fields["resource.urls"].Type != "list" || fields["download.noticeEnable"].Value != false {
+		t.Fatal("GUI fields lost types or explicit false")
 	}
-	// 固定子表单提交完整点路径，不能替换整个分组而丢失未展示的字段。
-	File.Set("upload.minio.endpoint", "localhost:9000")
-	if err := Save(); err != nil {
+	for _, key := range []string{"test.downloadUrl", "test.uploadUrl", "testDownloadUrl", "testUploadUrl"} {
+		if _, exists := fields[key]; exists {
+			t.Fatalf("retired speed field is still visible: %s", key)
+		}
+	}
+	if fields["upload.minio.access"].Type != "secret" || fields["upload.minio.secret"].Type != "secret" {
+		t.Fatal("credentials must be masked by the GUI")
+	}
+	// 表单逐项保存，不能替换整个分组而丢失未展示的字段。
+	if err := saveGUIConfig(map[string]any{"upload.minio.endpoint": "localhost:9000", "download.noticeEnable": false, "resource.urls": []string{"https://example.com/{name}?a=1,b=2"}}); err != nil {
 		t.Fatal(err)
 	}
 	if got := Open(File.Filename()).GetString("upload.minio.extra"); got != "keep" {
@@ -98,6 +105,23 @@ func TestFileSetSave(t *testing.T) {
 	bs = assertFileContains(t, f, "world")
 	if strings.Contains(string(bs), "b:") {
 		t.Error("Del后key仍存在")
+	}
+}
+
+func TestGUIConfigSaveFailure(t *testing.T) {
+	previous := File
+	filename := filepath.Join(t.TempDir(), "invalid.yaml")
+	original := []byte("broken: [")
+	if err := os.WriteFile(filename, original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	File = Open(filename)
+	t.Cleanup(func() { File = previous })
+	if err := saveGUIConfig(map[string]any{"download.dir": "./changed"}); err == nil {
+		t.Fatal("GUI bridge must return persistence errors")
+	}
+	if data, err := os.ReadFile(filename); err != nil || !bytes.Equal(data, original) {
+		t.Fatalf("failed GUI save overwrote the file: %v", err)
 	}
 }
 

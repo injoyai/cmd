@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func isolatedGlobal(t *testing.T) *global.Config {
+func isolatedConfig(t *testing.T) *global.Config {
 	t.Helper()
 	previous := global.File
 	global.File = global.Open(filepath.Join(t.TempDir(), "config"))
@@ -22,13 +22,13 @@ func isolatedGlobal(t *testing.T) *global.Config {
 	return global.File
 }
 
-func runGlobal(t *testing.T, args ...string) (map[string]any, error) {
+func runConfig(t *testing.T, args ...string) (map[string]any, error) {
 	t.Helper()
 	cmd := newRootCommand()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs(append([]string{"global"}, args...))
+	cmd.SetArgs(append([]string{"config"}, args...))
 	if err := cmd.Execute(); err != nil {
 		return nil, err
 	}
@@ -39,9 +39,36 @@ func runGlobal(t *testing.T, args ...string) (map[string]any, error) {
 	return values, nil
 }
 
-func TestGlobalQueryDoesNotWrite(t *testing.T) {
-	f := isolatedGlobal(t)
-	if _, err := runGlobal(t); err != nil {
+func TestConfigCommandRenamed(t *testing.T) {
+	isolatedConfig(t)
+	root := newRootCommand()
+	if cmd, _, err := root.Find([]string{"config"}); err != nil || cmd.Name() != "config" {
+		t.Fatalf("config command not registered: %v", err)
+	}
+	root.SetArgs([]string{"global"})
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	if err := root.Execute(); err == nil {
+		t.Fatal("old global command is still accepted")
+	}
+}
+
+func TestSpeedCommandsRejectURLOverrides(t *testing.T) {
+	isolatedConfig(t)
+	for _, name := range []string{"download", "upload", "speed"} {
+		root := newRootCommand()
+		root.SetOut(io.Discard)
+		root.SetErr(io.Discard)
+		root.SetArgs([]string{"test", name, "https://custom.example"})
+		if err := root.Execute(); err == nil {
+			t.Fatalf("test %s accepted a custom speed URL", name)
+		}
+	}
+}
+
+func TestConfigQueryDoesNotWrite(t *testing.T) {
+	f := isolatedConfig(t)
+	if _, err := runConfig(t); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(f.Filename()); !os.IsNotExist(err) {
@@ -55,7 +82,7 @@ func TestGlobalQueryDoesNotWrite(t *testing.T) {
 	if err := os.Chtimes(f.Filename(), oldTime, oldTime); err != nil {
 		t.Fatal(err)
 	}
-	values, err := runGlobal(t)
+	values, err := runConfig(t)
 	if err != nil || values["custom"] != "visible" {
 		t.Fatalf("query: values=%v error=%v", values, err)
 	}
@@ -68,17 +95,17 @@ func TestGlobalQueryDoesNotWrite(t *testing.T) {
 	}
 }
 
-func TestGlobalRepeatedFlagsPreserveValues(t *testing.T) {
-	f := isolatedGlobal(t)
+func TestConfigRepeatedFlagsPreserveValues(t *testing.T) {
+	f := isolatedConfig(t)
 	resource := "https://one.example/{name},https://two.example/{name}"
-	values, err := runGlobal(t,
-		"-s", "resource.urls="+resource, "--set", "test.uploadUrl=a=b=c", "-s", "empty=",
+	values, err := runConfig(t,
+		"-s", "resource.urls="+resource, "--set", "custom.url=a=b=c", "-s", "empty=",
 		"-s", "upload.minio.endpoint=localhost:9000",
 		"-a", "items=first,second", "--append", "items=a=b")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.GetStrings("resource.urls")[0] != resource || f.GetString("test.uploadUrl") != "a=b=c" || values["empty"] != "" {
+	if f.GetStrings("resource.urls")[0] != resource || f.GetString("custom.url") != "a=b=c" || values["empty"] != "" {
 		t.Fatalf("values were lost: %v", values)
 	}
 	if !reflect.DeepEqual(values["items"], []any{"first,second", "a=b"}) {
@@ -90,8 +117,8 @@ func TestGlobalRepeatedFlagsPreserveValues(t *testing.T) {
 	}
 }
 
-func TestGlobalResourceURLList(t *testing.T) {
-	f := isolatedGlobal(t)
+func TestConfigResourceURLList(t *testing.T) {
+	f := isolatedConfig(t)
 	first := "https://one.example/{name}?a=1,b=2"
 	second := "https://two.example/{name}"
 	for _, step := range []struct {
@@ -103,7 +130,7 @@ func TestGlobalResourceURLList(t *testing.T) {
 		{[]string{"-s", "resource.urls=" + first, "-a", "resource.urls=" + second}, []string{first, second}},
 		{[]string{"-s", "resource.urls="}, nil},
 	} {
-		values, err := runGlobal(t, step.args...)
+		values, err := runConfig(t, step.args...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -118,7 +145,7 @@ func TestGlobalResourceURLList(t *testing.T) {
 }
 
 func TestGroupedConfigCommandDefaults(t *testing.T) {
-	f := isolatedGlobal(t)
+	f := isolatedConfig(t)
 	f.Set("download.dir", "./configured")
 	f.Set("download.noticeEnable", false)
 	f.Set("download.noticeText", "")
@@ -148,7 +175,7 @@ func TestGroupedConfigCommandDefaults(t *testing.T) {
 	}
 }
 
-func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
+func TestConfigInvalidArgsKeepConfig(t *testing.T) {
 	for _, args := range [][]string{
 		{"-s", "=clobber"}, {"-s", "..=clobber"}, {"-s", " =clobber"},
 		{"-s", "broken"}, {"-s", ""}, {"-d", ""}, {"-d", "setting,"},
@@ -156,7 +183,7 @@ func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
 		{"-s", "setting=changed", "-d", ".."}, {"unknown"},
 	} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
-			f := isolatedGlobal(t)
+			f := isolatedConfig(t)
 			f.Set("setting", "original")
 			if err := global.Save(); err != nil {
 				t.Fatal(err)
@@ -165,7 +192,7 @@ func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := runGlobal(t, args...); err == nil {
+			if _, err := runConfig(t, args...); err == nil {
 				t.Fatalf("accepted invalid args %q", args)
 			}
 			after, err := os.ReadFile(f.Filename())
@@ -179,10 +206,10 @@ func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
 	}
 }
 
-func TestGlobalOperationOrder(t *testing.T) {
-	isolatedGlobal(t)
+func TestConfigOperationOrder(t *testing.T) {
+	isolatedConfig(t)
 	for i := 0; i < 20; i++ {
-		values, err := runGlobal(t, "-d", "setting,items", "-a", "items=extra", "-s", "setting=x", "-s", "items=initial")
+		values, err := runConfig(t, "-d", "setting,items", "-a", "items=extra", "-s", "setting=x", "-s", "items=initial")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -193,24 +220,24 @@ func TestGlobalOperationOrder(t *testing.T) {
 			t.Fatal("append ran after delete")
 		}
 	}
-	values, err := runGlobal(t, "-s", "setting=x", "-s", "temporary=y", "-d", "setting", "-d", "temporary")
+	values, err := runConfig(t, "-s", "setting=x", "-s", "temporary=y", "-d", "setting", "-d", "temporary")
 	if err != nil || len(values) != 0 {
 		t.Fatalf("repeated delete: values=%v error=%v", values, err)
 	}
 }
 
-func TestGlobalSaveFailure(t *testing.T) {
-	f := isolatedGlobal(t)
+func TestConfigSaveFailure(t *testing.T) {
+	f := isolatedConfig(t)
 	if err := os.WriteFile(f.Filename(), []byte("block directory creation"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	global.File = global.Open(filepath.Join(f.Filename(), "child"))
-	if _, err := runGlobal(t, "-s", "setting=x"); err == nil {
+	if _, err := runConfig(t, "-s", "setting=x"); err == nil {
 		t.Fatal("save failure was ignored")
 	}
 }
 
-func TestGlobalUserConfigPath(t *testing.T) {
+func TestConfigUserConfigPath(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("APPDATA", filepath.Join(dir, "appdata"))
@@ -228,7 +255,7 @@ func TestGlobalUserConfigPath(t *testing.T) {
 	if err := os.WriteFile(jsonFilename, jsonData, 0600); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := cliProcess("global").CombinedOutput(); err != nil {
+	if out, err := cliProcess("config").CombinedOutput(); err != nil {
 		t.Fatalf("query: %v %s", err, out)
 	} else if strings.Contains(string(out), "ignored") {
 		t.Fatal("query loaded config.json")
@@ -236,7 +263,7 @@ func TestGlobalUserConfigPath(t *testing.T) {
 	if _, err := os.Stat(filename); !os.IsNotExist(err) {
 		t.Fatalf("query created default config: %v", err)
 	}
-	if out, err := cliProcess("global", "-s", "custom=preserved").CombinedOutput(); err != nil {
+	if out, err := cliProcess("config", "-s", "custom=preserved").CombinedOutput(); err != nil {
 		t.Fatalf("save: %v %s", err, out)
 	}
 	data, err := os.ReadFile(filename)
