@@ -17,17 +17,12 @@ func prepareCache(op *Task, identity string, resume bool) (func(), error) {
 	}
 	prefix := ".i-download-" + id[:16] + "-"
 	claim := func(dir string) (func(), error) {
-		lock := filepath.Join(dir, ".lock")
-		f, err := os.OpenFile(lock, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		release, err := lockCache(filepath.Join(dir, ".lock"))
 		if err != nil {
 			return nil, err
 		}
-		if err := f.Close(); err != nil {
-			os.Remove(lock)
-			return nil, err
-		}
 		op.CacheDir = dir
-		return func() { os.Remove(lock) }, nil
+		return release, nil
 	}
 	if resume {
 		entries, err := os.ReadDir(parent)
@@ -57,6 +52,7 @@ func prepareCache(op *Task, identity string, resume bool) (func(), error) {
 		return nil, err
 	}
 	if err := os.WriteFile(filepath.Join(dir, ".source"), []byte(id), 0600); err != nil {
+		release()
 		os.RemoveAll(dir)
 		return nil, err
 	}

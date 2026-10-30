@@ -44,6 +44,7 @@ var downloaders = []downloader{
 }
 
 // MustDownload 只重试临时网络故障，其他错误直接返回，由调用方停止后续操作。
+// CLI 允许无限重试，等待间隔最多 30 秒；用户可通过信号或 context 取消。
 func MustDownload(ctx context.Context, op *Config) (string, bool, error) {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -60,7 +61,7 @@ func MustDownload(ctx context.Context, op *Config) (string, bool, error) {
 		if err == nil || !IsRetryable(err) {
 			return filename, exist, err
 		}
-		wait += time.Second * 2
+		wait = min(wait+2*time.Second, 30*time.Second)
 		fmt.Printf("下载失败，%s后重试: %v\n", wait, err)
 		if err := WaitDownload(ctx, wait); err != nil {
 			return "", false, err

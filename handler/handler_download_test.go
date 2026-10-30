@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/goutil/oss"
 )
 
@@ -17,10 +19,14 @@ func TestDownloadReportsFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 	err := Download(nil, []string{srv.URL + "/missing"}, NewFlags([]*Flag{{Name: "dir", Value: t.TempDir()}}))
-	if err == nil || !strings.Contains(err.Error(), "404") {
+	want := "下载失败: HTTP 404 Not Found " + srv.URL + "/missing"
+	if err == nil || err.Error() != want {
 		t.Fatalf("Download() error = %v", err)
 	}
-
+	var status *resource.HTTPError
+	if !errors.As(err, &status) || status.StatusCode != http.StatusNotFound || resource.IsRetryable(err) {
+		t.Fatalf("Download() lost HTTP error classification: %v", err)
+	}
 }
 
 func TestDownloadRejectsInvalidNumericOptions(t *testing.T) {

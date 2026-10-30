@@ -119,22 +119,88 @@ func TestDownloadURLsPermanentErrorsAndRetryableMirror(t *testing.T) {
 	}
 }
 
-func TestHTTPReplacementPreservesMode(t *testing.T) {
+func TestHTTPDownloadFileMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Unix file permissions")
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("new")) }))
 	defer srv.Close()
-	filename := filepath.Join(t.TempDir(), "tool")
-	if err := os.WriteFile(filename, []byte("old"), 0750); err != nil {
-		t.Fatal(err)
+	for _, tc := range []struct {
+		name     string
+		existing os.FileMode
+		want     os.FileMode
+	}{
+		{name: "new file", want: 0644},
+		{name: "private file", existing: 0600, want: 0600},
+		{name: "executable file", existing: 0750, want: 0750},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			filename := filepath.Join(t.TempDir(), "file")
+			if tc.existing != 0 {
+				if err := os.WriteFile(filename, []byte("old"), tc.existing); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(filename, tc.existing); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err := DownloadHTTPFile(context.Background(), srv.Client(), srv.URL, filename, false); err != nil {
+				t.Fatal(err)
+			}
+			info, err := os.Stat(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm() != tc.want {
+				t.Fatalf("mode=%o, want=%o", info.Mode().Perm(), tc.want)
+			}
+		})
 	}
-	if _, err := DownloadHTTPFile(context.Background(), srv.Client(), srv.URL, filename, false); err != nil {
-		t.Fatal(err)
-	}
-	info, _ := os.Stat(filename)
-	if info.Mode().Perm() != 0750 {
-		t.Fatalf("mode=%o", info.Mode().Perm())
+}
+
+func TestHTTPResponseHeaderTimeout(t *testing.T) {
+	for _, slowBody := range []bool{false, true} {
+		t.Run(fmt.Sprintf("slow_body=%v", slowBody), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if !slowBody {
+					<-r.Context().Done()
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				w.(http.Flusher).Flush()
+				time.Sleep(300 * time.Millisecond)
+				_, _ = w.Write([]byte("downloaded"))
+			}))
+			defer srv.Close()
+			op := newTestTask(t, &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir()})
+			transport := op.Client.Transport.(*http.Transport)
+			if transport.ResponseHeaderTimeout != 30*time.Second || op.Client.Timeout != 0 {
+				t.Fatalf("timeouts: header=%v, total=%v", transport.ResponseHeaderTimeout, op.Client.Timeout)
+			}
+			transport.ResponseHeaderTimeout = 100 * time.Millisecond
+			if err := os.WriteFile(op.Filename(), []byte("original"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			op.Ctx = ctx
+			err := op.Download()
+			want := "original"
+			if slowBody {
+				want = "downloaded"
+				if err != nil {
+					t.Fatalf("response header timeout interrupted body: %v", err)
+				}
+			} else {
+				var timeout interface{ Timeout() bool }
+				if !errors.As(err, &timeout) || !timeout.Timeout() || !IsRetryable(err) || ctx.Err() != nil {
+					t.Fatalf("expected retryable header timeout before context expires: %v", err)
+				}
+			}
+			if data, err := os.ReadFile(op.Filename()); err != nil || string(data) != want {
+				t.Fatalf("download content = %q, want %q, err = %v", data, want, err)
+			}
+		})
 	}
 }
 

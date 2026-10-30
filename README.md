@@ -197,7 +197,23 @@ i install go 1.20
 i upgrade
 ```
 
+`download`/`dl` 和普通工具的 `install` 默认复用已存在的目标文件。需要重新下载并覆盖时，可使用 `-d1`、`--download=true`，或在资源名/URL 后添加第二个位置参数 `upgrade`（区分大小写）：
+
+```shell
+i dl https://example.com/demo.tar.gz upgrade  # 等同于末尾添加 -d1
+i download frp upgrade
+i install hfs upgrade
+```
+
+`upgrade` 在这里表示强制重新下载，不是版本号；其他第二个位置参数不会触发覆盖。Go 安装也支持 `i install go 1.20 upgrade`，用于重新下载安装脚本。
+
 下载和安装使用 `--proxy` 指定代理；未指定时读取全局 `proxy.addr` 或代理环境变量。需要本次直连时使用 `--proxy=""`，例如 `i dl https://example.com/file.zip --proxy=""`。
+
+作为 CLI 工具，下载和安装遇到临时网络故障会持续重试，不限制次数；等待间隔从 4 秒开始，每次增加 2 秒，最多 30 秒，可按 Ctrl+C 取消。404、权限错误等永久错误会直接返回。
+
+内置 HTTP/HTTPS 下载等待响应头最多 30 秒，超时后按临时故障处理并重试；文件传输不设总时长限制，以支持大文件和慢速下载。该超时不检测正文传输中途停滞，外部下载工具使用各自的超时策略。
+
+macOS/Linux 上，内置 m3u8 下载被强制终止后，再次下载相同地址、输出路径和分片列表时可复用已完成的分片；残留锁文件不会阻止续传。Windows 暂不支持强制终止后的缓存锁自动恢复。
 
 ### 文本与目录处理
 
@@ -333,6 +349,7 @@ i download --help
 
 ## 脚本调用与文件处理
 
+- `download`、`noticeEnable`、`debug` 等布尔语义选项需要显式传值：`1`/`true` 表示开启，`0`/`false` 表示关闭。例如 `i dl <url> -d1` 等同于 `i dl <url> --download=true`，`--debug=0` 等同于 `--debug=false`；单独的 `-d` 不受支持。帮助中的 `string` 表示参数接收形式，实际由命令按布尔值转换。
 - 命令成功退出码为 `0`；参数、下载、安装、上传、构建等执行错误写入标准错误，并以非零状态退出，可配合 `set -e`、`&&` 使用。
 - `dir -r old=new` 替换文件内容并保留权限；单个文件失败会停止，已成功处理的其他文件不回滚。
-- `install` 以及下载后启动程序的命令会设置执行权限；普通下载覆盖已有文件时保留其权限。`init go` 生成的构建脚本可直接执行。
+- `install` 以及下载后启动程序的命令会设置执行权限；macOS/Linux 上普通 HTTP/HTTPS 下载的新文件权限为 `0644`，覆盖已有文件时保留其权限。`init go` 生成的构建脚本可直接执行。

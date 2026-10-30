@@ -70,6 +70,7 @@ func (this *Command) Deal(flags ...*Flag) *cobra.Command {
 	if this.Command == nil {
 		this.Command = &cobra.Command{}
 	}
+	// 自定义参数统一接收字符串，布尔语义由 GetBool 转换，支持 -d1、-d0 等显式写法。
 	for _, v := range this.Flag {
 		this.Command.PersistentFlags().StringVarP(&v.Value, v.Name, v.Short, v.DefaultValue, v.Memo)
 	}

@@ -19,7 +19,7 @@ type HTTPError struct {
 }
 
 func (e *HTTPError) Error() string {
-	return fmt.Sprintf("下载失败: HTTP %d %s %s", e.StatusCode, http.StatusText(e.StatusCode), RedactURL(e.URL))
+	return fmt.Sprintf("HTTP %d %s %s", e.StatusCode, http.StatusText(e.StatusCode), RedactURL(e.URL))
 }
 
 func (e *HTTPError) Retryable() bool {

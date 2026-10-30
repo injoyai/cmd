@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/injoyai/cmd/config"
@@ -196,6 +198,38 @@ func TestMustDownloadRetriesThenSucceeds(t *testing.T) {
 	if data, err := os.ReadFile(filename); err != nil || string(data) != "retry succeeded" {
 		t.Fatalf("retry output: %q, err=%v", data, err)
 	}
+}
+
+func TestMustDownloadRetryWaitCap(t *testing.T) {
+	// 在虚拟时钟外初始化进程级信号处理。
+	_, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	synctest.Test(t, func(t *testing.T) {
+		waits := []time.Duration{4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 30, 30}
+		calls := 0
+		last := time.Now()
+		const name = "test-retry-wait-cap"
+		Resources[name] = &Info{Local: "asset.bin", Install: func(op *Task) error {
+			if calls > 0 {
+				if got, want := time.Since(last), waits[calls-1]*time.Second; got != want {
+					t.Fatalf("retry %d wait = %v, want %v", calls, got, want)
+				}
+			}
+			last = time.Now()
+			calls++
+			if calls > len(waits) {
+				return os.WriteFile(op.Filename(), []byte("downloaded"), 0644)
+			}
+			return &HTTPError{StatusCode: http.StatusServiceUnavailable}
+		}}
+		t.Cleanup(func() { delete(Resources, name) })
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+		filename, exist, err := MustDownload(ctx, &Config{Resource: name, Dir: t.TempDir()})
+		if err != nil || exist || filepath.Base(filename) != "asset.bin" || calls != len(waits)+1 {
+			t.Fatalf("retry result: file=%q, exist=%v, calls=%d, err=%v", filename, exist, calls, err)
+		}
+	})
 }
 
 func TestMustDownloadStopsForPermanentHTTPError(t *testing.T) {

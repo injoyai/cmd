@@ -54,6 +54,8 @@ func NewTask(config *Config) (*Task, error) {
 	task.proxyRules = rules
 	task.SetFilename("", "")
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// 限制等待响应头的时间，正文传输不设总时限，避免中断大文件下载。
+	transport.ResponseHeaderTimeout = 30 * time.Second
 	transport.Proxy = func(req *http.Request) (*url.URL, error) {
 		address := task.proxyFor(req.URL.String())
 		if address == "" {
