@@ -31,8 +31,13 @@ var Exclusive = map[string]*Info{
 	"edge":      {Local: "edge", Remote: map[string]string{"amd64": "edge_linux_amd64", "arm": "edge_linux_arm", "arm64": "edge_linux_arm64"}},
 	"edge_mini": {Local: "edge_mini", Remote: map[string]string{"amd64": "edge_mini_linux_amd64", "arm": "edge_mini_linux_arm", "arm64": "edge_mini_linux_arm64"}},
 	"notice":    {Local: "notice", Remote: map[string]string{"amd64": "notice_linux_amd64", "arm": "notice_linux_arm", "arm64": "notice_linux_arm64"}},
-	"upx":       {Local: "upx", Remote: map[string]string{"amd64": "upx_linux_amd64", "arm": "upx_linux_arm", "arm64": "upx_linux_arm64"}},
 	"ffmpeg":    {Local: "ffmpeg", Remote: map[string]string{"amd64": "ffmpeg_linux_amd64", "arm": "ffmpeg_linux_arm", "arm64": "ffmpeg_linux_arm64"}},
+
+	"upx": {
+		Local: "upx", Remote: map[string]string{"amd64": "upx-5.3.0-amd64_linux.tar.xz", "arm": "upx-5.3.0-arm_linux.tar.xz", "arm64": "upx-5.3.0-arm64_linux.tar.xz"},
+		FullUrl: []Url{"https://github.com/upx/upx/releases/download/v5.3.0/{name}"},
+		Handler: downloadReleaseBinary("upx"),
+	},
 
 	"swag": {
 		Local: "swag", Remote: map[string]string{"amd64": "swag_1.16.6_Linux_x86_64.tar.gz", "386": "swag_1.16.6_Linux_i386.tar.gz", "arm64": "swag_1.16.6_Linux_arm64.tar.gz"},

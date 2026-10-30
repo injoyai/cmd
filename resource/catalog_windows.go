@@ -32,20 +32,15 @@ var Exclusive = map[string]*Info{
 	"win_active":    {Local: "win_active.exe"},
 	"rsrc":          {Local: "rsrc.exe"},
 	"nac":           {Local: "nac.syso"},
-	"upx":           {Local: "upx.exe"},
 	"npc":           {Local: "npc.exe"},
 	"ffmpeg":        {Local: "ffmpeg.exe"},
 	"ffplay":        {Local: "ffplay.exe"},
 	"ffprobe":       {Local: "ffprobe.exe"},
-	"livego":        {Local: "livego.exe"},
 	"motrix":        {Local: "motrix.exe"},
-	"frpc":          {Local: "frpc.exe"},
-	"frps":          {Local: "frps.exe"},
 	"i":             {Local: "i.exe", Remote: map[string]string{"amd64": "i_windows_amd64.exe", "arm": "i_windows_arm.exe", "arm64": "i_windows_arm64.exe"}},
 	"forward":       {Local: "forward.exe"},
 	"gomobile":      {Local: "gomobile.exe"},
 	"monitor-price": {Local: "monitor-price.exe"},
-	"mitmweb":       {Local: "mitmweb.exe"},
 
 	"proxy":          {Local: "proxy.exe"},
 	"listen":         {Local: "listen.exe"},
@@ -60,6 +55,33 @@ var Exclusive = map[string]*Info{
 	"fuli":           {Local: "复利计算器.exe", Key: []string{"复利", "复利工具", "复利小工具", "复利计算", "计算复利", "复利计算器"}},
 	"view":           {Local: "view.exe", Key: []string{"view.exe"}},
 
+	"frpc": {
+		Local: "frpc.exe", Remote: map[string]string{"amd64": "frp_0.71.1_windows_amd64.zip", "arm64": "frp_0.71.1_windows_arm64.zip"},
+		FullUrl: []Url{"https://github.com/fatedier/frp/releases/download/v0.71.1/{name}"},
+		Handler: downloadReleaseBinary("frpc.exe"),
+	},
+	"frps": {
+		Local: "frps.exe", Remote: map[string]string{"amd64": "frp_0.71.1_windows_amd64.zip", "arm64": "frp_0.71.1_windows_arm64.zip"},
+		FullUrl: []Url{"https://github.com/fatedier/frp/releases/download/v0.71.1/{name}"},
+		Handler: downloadReleaseBinary("frps.exe"),
+	},
+	"livego": {
+		Local: "livego.exe", Remote: map[string]string{"amd64": "livego_0.0.20_windows_amd64.tar.gz", "386": "livego_0.0.20_windows_386.tar.gz", "arm": "livego_0.0.20_windows_armv6.tar.gz"},
+		FullUrl: []Url{"https://github.com/gwuhaolin/livego/releases/download/0.0.20/{name}"},
+		Handler: downloadReleaseBinary("livego.exe"),
+	},
+	"mitmweb": {
+		Local: "mitmweb.exe", Remote: map[string]string{"amd64": "mitmproxy-12.3.1-windows-x86_64.zip"},
+		FullUrl: []Url{"https://downloads.mitmproxy.org/12.3.1/{name}"},
+		Handler: downloadReleaseBinary("mitmweb.exe"),
+	},
+
+	"upx": {
+		Local: "upx.exe", Remote: map[string]string{"amd64": "upx-5.3.0-win64.zip", "386": "upx-5.3.0-win32.zip"},
+		FullUrl: []Url{"https://github.com/upx/upx/releases/download/v5.3.0/{name}"},
+		Handler: downloadReleaseBinary("upx.exe"),
+	},
+
 	"yt-dlp": {
 		Local:   "yt-dlp.exe",
 		Remote:  map[string]string{"amd64": "yt-dlp.exe", "386": "yt-dlp_x86.exe", "arm64": "yt-dlp_arm64.exe"},
@@ -68,28 +90,9 @@ var Exclusive = map[string]*Info{
 	},
 
 	"adb": {
-		Local:  "adb.exe",
-		Remote: map[string]string{"": "adb.zip"},
-		Handler: func(op *Task) error {
-			zipFilename := filepath.Join(op.Dir, "adb.zip")
-			if err := op.DownloadTo(zipFilename); err != nil {
-				return err
-			}
-			defer os.Remove(zipFilename)
-			err := zip.Decode(zipFilename, op.Dir)
-			if err != nil {
-				return err
-			}
-			err = os.Rename(filepath.Join(op.Dir, "/adb/adb.exe"), filepath.Join(op.Dir, "/adb.exe"))
-			if err != nil {
-				return err
-			}
-			err = os.Rename(filepath.Join(op.Dir, "/adb/AdbWinApi.dll"), filepath.Join(op.Dir, "/AdbWinApi.dll"))
-			if err != nil {
-				return err
-			}
-			return os.Remove(zipFilename)
-		},
+		Local: "adb.exe", Remote: map[string]string{"amd64": "platform-tools-latest-windows.zip", "386": "platform-tools-latest-windows.zip"},
+		FullUrl: []Url{"https://dl.google.com/android/repository/{name}"},
+		Handler: downloadReleaseBinary("adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll"),
 	},
 
 	"chrome104": {
