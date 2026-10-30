@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -272,8 +273,11 @@ func TestDarwinFFmpegResource(t *testing.T) {
 }
 
 func TestDownloadReleaseBinary(t *testing.T) {
-	for _, ext := range []string{".zip", ".tar.gz", ""} {
-		for _, scenario := range []string{"success", "missing", "duplicate", "invalid", "http-error", "corrupt"} {
+	for _, ext := range []string{".zip", ".tar.gz", ".tar.xz", ""} {
+		for _, scenario := range []string{"success", "missing", "duplicate", "invalid", "http-error", "corrupt", "missing-xz"} {
+			if scenario == "missing-xz" && ext != ".tar.xz" {
+				continue
+			}
 			if ext == "" && scenario != "success" && scenario != "http-error" {
 				continue
 			}
@@ -298,6 +302,9 @@ func TestDownloadReleaseBinary(t *testing.T) {
 							body = body[:len(body)/2]
 						}
 					}
+				}
+				if scenario == "missing-xz" {
+					t.Setenv("PATH", t.TempDir())
 				}
 				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if scenario == "http-error" {
@@ -346,10 +353,110 @@ func TestDownloadReleaseBinary(t *testing.T) {
 	}
 }
 
-func TestPlatformReleaseResources(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("new resource definitions target macOS and Linux")
+func TestDownloadReleaseCompanions(t *testing.T) {
+	for _, scenario := range []string{"fresh", "upgrade", "missing", "duplicate", "corrupt", "rollback", "rollback-fresh", "name-conflict"} {
+		t.Run(scenario, func(t *testing.T) {
+			names := []string{"platform-tools/adb.exe", "platform-tools/AdbWinApi.dll", "platform-tools/AdbWinUsbApi.dll", "../keep"}
+			if scenario == "missing" {
+				names = names[:2]
+			}
+			if scenario == "duplicate" {
+				names = append(names, "other/AdbWinUsbApi.dll")
+			}
+			body := releaseArchive(t, ".zip", names...)
+			if scenario == "corrupt" {
+				body = body[:len(body)/2]
+			}
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write(body)
+			}))
+			defer srv.Close()
+			dir := t.TempDir()
+			old := map[string]string{"keep": "unrelated"}
+			if scenario != "fresh" && scenario != "rollback-fresh" {
+				old["AdbWinApi.dll"], old["AdbWinUsbApi.dll"] = "old api", "old usb"
+				if scenario != "rollback" {
+					old["custom adb.exe"] = "old program"
+				}
+			}
+			for name, content := range old {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if strings.HasPrefix(scenario, "rollback") {
+				if err := os.Mkdir(filepath.Join(dir, "custom adb.exe"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			name := "custom adb.exe"
+			if scenario == "name-conflict" {
+				name = "AdbWinApi.dll"
+			}
+			op, err := NewTask(&Config{Resource: "adb", Dir: dir, Name: name})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer op.Close()
+			op.SetURL(srv.URL + "/platform-tools.zip")
+			err = downloadReleaseBinary("adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll")(op)
+			success := scenario == "fresh" || scenario == "upgrade"
+			if (err == nil) != success {
+				t.Fatalf("install error = %v, success = %v", err, success)
+			}
+			if success {
+				for _, name := range []string{"custom adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll"} {
+					old[name] = "new binary"
+				}
+			}
+			for name, want := range old {
+				if data, err := os.ReadFile(filepath.Join(dir, name)); err != nil || string(data) != want {
+					t.Fatalf("%s = %q, %v; want %q", name, data, err, want)
+				}
+			}
+			count := len(old)
+			if strings.HasPrefix(scenario, "rollback") {
+				count++
+				if stat, err := os.Stat(op.Filename()); err != nil || !stat.IsDir() {
+					t.Fatalf("existing directory changed: %v, %v", stat, err)
+				}
+			}
+			if entries, err := os.ReadDir(dir); err != nil || len(entries) != count {
+				t.Fatalf("unexpected files left behind: %v, %v", entries, err)
+			}
+		})
 	}
+}
+
+func TestUPXResource(t *testing.T) {
+	info := Resources["upx"]
+	if info == nil || Resources[info.Local] != info {
+		t.Fatal("UPX resource or local-name alias missing")
+	}
+	if runtime.GOOS == "darwin" {
+		if info.Install == nil || len(info.Remote) != 0 {
+			t.Fatal("macOS must use the package manager instead of unavailable standalone binaries")
+		}
+		return
+	}
+	assets := map[string]map[string]string{
+		"linux":   {"amd64": "upx-5.3.0-amd64_linux.tar.xz", "arm": "upx-5.3.0-arm_linux.tar.xz", "arm64": "upx-5.3.0-arm64_linux.tar.xz"},
+		"windows": {"amd64": "upx-5.3.0-win64.zip", "386": "upx-5.3.0-win32.zip"},
+	}[runtime.GOOS]
+	for _, arch := range []string{"amd64", "arm", "arm64", "386", "unsupported"} {
+		got, err := info.remoteForArch(arch)
+		want := assets[arch]
+		if got != want || (err == nil) != (want != "") {
+			t.Fatalf("UPX/%s: got %q, %v; want %q", arch, got, err, want)
+		}
+	}
+	if info.Handler == nil || !reflect.DeepEqual(info.FullUrl, []Url{"https://github.com/upx/upx/releases/download/v5.3.0/{name}"}) {
+		t.Fatal("UPX must install the binary from the official release archive")
+	}
+}
+
+func TestPlatformReleaseResources(t *testing.T) {
+	keys := []string{"swag", "frpc", "frps", "nats", "adb", "mitmweb", "ffprobe"}
 	architectures := map[string][]string{
 		"swag": {"amd64", "arm64"}, "frpc": {"amd64", "arm64"}, "frps": {"amd64", "arm64"},
 		"nats": {"amd64", "arm64"}, "adb": {"amd64", "arm64"},
@@ -362,7 +469,13 @@ func TestPlatformReleaseResources(t *testing.T) {
 		architectures["nats"] = append(architectures["nats"], "386", "arm")
 		architectures["adb"] = []string{"amd64"}
 	}
-	for _, key := range []string{"swag", "frpc", "frps", "nats", "adb", "mitmweb", "ffprobe"} {
+	if runtime.GOOS == "windows" {
+		keys = []string{"frpc", "frps", "livego", "adb", "mitmweb"}
+		architectures["livego"] = []string{"amd64", "386", "arm"}
+		architectures["adb"] = []string{"amd64", "386"}
+		architectures["mitmweb"] = []string{"amd64"}
+	}
+	for _, key := range keys {
 		t.Run(key, func(t *testing.T) {
 			info := Resources[key]
 			if info == nil || info.Handler == nil || Resources[info.Local] != info {
@@ -387,13 +500,24 @@ func TestPlatformReleaseResources(t *testing.T) {
 			if runtime.GOOS == "darwin" && key == "mitmweb" {
 				return // macOS app bundle 的安装由专属测试覆盖。
 			}
-			body := releaseArchive(t, ".tar.gz", "package/"+info.Local)
+			ext := ".tar.gz"
+			names := []string{"package/" + info.Local}
+			if runtime.GOOS == "windows" {
+				remote, _ := info.GetRemote()
+				if strings.HasSuffix(remote, ".zip") {
+					ext = ".zip"
+				}
+				if key == "adb" {
+					names = append(names, "platform-tools/AdbWinApi.dll", "platform-tools/AdbWinUsbApi.dll")
+				}
+			}
+			body := releaseArchive(t, ext, names...)
 			previous := info.FullUrl
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				_, _ = w.Write(body)
 			}))
 			defer srv.Close()
-			info.FullUrl = []Url{Url(srv.URL + "/package.tar.gz")}
+			info.FullUrl = []Url{Url(srv.URL + "/package" + ext)}
 			defer func() { info.FullUrl = previous }()
 			config := &Config{Resource: key, Dir: t.TempDir(), Name: "custom"}
 			filename, exist, err := Download(context.Background(), config)
@@ -502,6 +626,23 @@ func TestDownloadYTDLPBinary(t *testing.T) {
 
 func releaseArchive(t *testing.T, ext string, names ...string) []byte {
 	t.Helper()
+	if ext == ".tar.xz" {
+		if _, err := exec.LookPath("xz"); err != nil {
+			t.Skip(".tar.xz installation requires xz")
+		}
+		gz, err := gzip.NewReader(bytes.NewReader(releaseArchive(t, ".tar.gz", names...)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer gz.Close()
+		cmd := exec.Command("xz", "-c")
+		cmd.Stdin = gz
+		data, err := cmd.Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return data
+	}
 	var b bytes.Buffer
 	if ext == ".zip" {
 		w := zip.NewWriter(&b)

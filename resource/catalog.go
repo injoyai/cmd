@@ -119,14 +119,7 @@ func installPackage(binary string, command ...string) Handler {
 	}
 }
 
-var Resources = indexResources(map[string]*Info{
-	"build_win.sh":       {Local: "build_win.sh", Key: []string{"build_win"}},
-	"service.service":    {Local: "service.service", Key: []string{"service"}},
-	"install_minio.sh":   {Local: "install_minio.sh", Key: []string{"install_minio"}},
-	"install_nodered.sh": {Local: "install_nodered.sh", Key: []string{"install_nodered"}},
-	"install_v2raya.sh":  {Local: "install_v2raya.sh", Key: []string{"install_v2raya"}},
-	"golang.md":          {Local: "GOLANG.md", Key: []string{"go.md", "GOLANG.md"}},
-}, Exclusive)
+var Resources = indexResources(map[string]*Info{}, Exclusive)
 
 // indexResources 先合并定义、补齐名称，再建立独立索引；后面的清单覆盖同名定义。
 func indexResources(groups ...map[string]*Info) map[string]*Info {
@@ -157,9 +150,9 @@ func indexResources(groups ...map[string]*Info) map[string]*Info {
 	return index
 }
 
-// downloadReleaseBinary 只安装发布包中的指定程序，成功后再替换目标。
-func downloadReleaseBinary(name string) Handler {
-	return func(op *Task) error {
+// downloadReleaseBinary 安装指定程序及配套文件，全部解压成功后再替换目标。
+func downloadReleaseBinary(name string, companions ...string) Handler {
+	return func(op *Task) (result error) {
 		dir := filepath.Dir(op.Filename())
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
@@ -168,7 +161,12 @@ func downloadReleaseBinary(name string) Handler {
 		if err != nil {
 			return err
 		}
-		defer os.RemoveAll(temp)
+		cleanup := true
+		defer func() {
+			if cleanup {
+				os.RemoveAll(temp)
+			}
+		}()
 		u, err := url.Parse(op.URL())
 		if err != nil {
 			return err
@@ -179,8 +177,29 @@ func downloadReleaseBinary(name string) Handler {
 			return err
 		}
 		ext := strings.ToLower(u.Path)
-		if strings.HasSuffix(ext, ".zip") || strings.HasSuffix(ext, ".tar.gz") {
-			if err := extractReleaseBinary(archive, binary, name, strings.HasSuffix(ext, ".zip")); err != nil {
+		if strings.HasSuffix(ext, ".tar.xz") {
+			unpacked := filepath.Join(temp, "package.tar")
+			out, err := os.Create(unpacked)
+			if err != nil {
+				return err
+			}
+			cmd := exec.CommandContext(op.Ctx, "xz", "-dc", archive)
+			cmd.Stdout = out
+			runErr := cmd.Run()
+			if err := errors.Join(runErr, out.Close()); err != nil {
+				return fmt.Errorf("解压 .tar.xz 发布包（需要安装 xz）: %w", err)
+			}
+			archive, ext = unpacked, ".tar"
+		}
+		format := ""
+		for _, suffix := range []string{".zip", ".tar.gz", ".tar"} {
+			if strings.HasSuffix(ext, suffix) {
+				format = suffix
+				break
+			}
+		}
+		if format != "" {
+			if err := extractReleaseBinary(archive, binary, name, format); err != nil {
 				return err
 			}
 		} else {
@@ -189,11 +208,73 @@ func downloadReleaseBinary(name string) Handler {
 		if err := ensureExecutable(binary); err != nil {
 			return err
 		}
-		return os.Rename(binary, op.Filename())
+		if len(companions) == 0 {
+			return os.Rename(binary, op.Filename())
+		}
+		if format == "" {
+			return fmt.Errorf("配套文件必须从发布归档中提取")
+		}
+		type installFile struct {
+			source, target, backup string
+			installed              bool
+		}
+		files := make([]installFile, 0, len(companions)+1)
+		for _, companion := range companions {
+			target := filepath.Join(dir, companion)
+			if strings.EqualFold(target, op.Filename()) {
+				return fmt.Errorf("程序文件名与配套文件冲突: %s", companion)
+			}
+			filename := filepath.Join(temp, companion)
+			if err := extractReleaseBinary(archive, filename, companion, format); err != nil {
+				return err
+			}
+			files = append(files, installFile{source: filename, target: target})
+		}
+		files = append(files, installFile{source: binary, target: op.Filename()})
+		defer func() {
+			if result == nil {
+				return
+			}
+			var restoreErr error
+			for i := len(files) - 1; i >= 0; i-- {
+				file := &files[i]
+				if file.installed {
+					restoreErr = errors.Join(restoreErr, os.Remove(file.target))
+				}
+				if file.backup != "" {
+					restoreErr = errors.Join(restoreErr, os.Rename(file.backup, file.target))
+				}
+			}
+			if restoreErr != nil {
+				cleanup = false
+				result = errors.Join(result, fmt.Errorf("恢复旧文件失败，备份保留在 %s: %w", temp, restoreErr))
+			}
+		}()
+		// 配套文件先到位，最后替换主程序；失败时按相反顺序恢复。
+		for i := range files {
+			file := &files[i]
+			if stat, err := os.Lstat(file.target); err == nil {
+				if stat.IsDir() {
+					return fmt.Errorf("安装目标是目录: %s", file.target)
+				}
+				backup := filepath.Join(temp, fmt.Sprintf("previous-%d", i))
+				if err := os.Rename(file.target, backup); err != nil {
+					return err
+				}
+				file.backup = backup
+			} else if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			if err := os.Rename(file.source, file.target); err != nil {
+				return err
+			}
+			file.installed = true
+		}
+		return nil
 	}
 }
 
-func extractReleaseBinary(archive, filename, name string, isZip bool) error {
+func extractReleaseBinary(archive, filename, name, format string) error {
 	out, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -208,7 +289,7 @@ func extractReleaseBinary(archive, filename, name string, isZip bool) error {
 		_, err := io.Copy(out, r)
 		return err
 	}
-	if isZip {
+	if format == ".zip" {
 		z, err := zip.OpenReader(archive)
 		if err != nil {
 			return err
@@ -237,12 +318,16 @@ func extractReleaseBinary(archive, filename, name string, isZip bool) error {
 			return err
 		}
 		defer f.Close()
-		gz, err := gzip.NewReader(f)
-		if err != nil {
-			return err
+		var reader io.Reader = f
+		if format == ".tar.gz" {
+			gz, err := gzip.NewReader(f)
+			if err != nil {
+				return err
+			}
+			defer gz.Close()
+			reader = gz
 		}
-		defer gz.Close()
-		tr := tar.NewReader(gz)
+		tr := tar.NewReader(reader)
 		for {
 			h, err := tr.Next()
 			if err == io.EOF {
@@ -258,7 +343,7 @@ func extractReleaseBinary(archive, filename, name string, isZip bool) error {
 			}
 		}
 		// tar 的结束标记可能早于 gzip 尾部，读完以校验压缩流。
-		if _, err := io.Copy(io.Discard, gz); err != nil {
+		if _, err := io.Copy(io.Discard, reader); err != nil {
 			return err
 		}
 	}

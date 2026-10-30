@@ -29,7 +29,7 @@ var Exclusive = map[string]*Info{
 	"edge":      {Local: "edge", Remote: map[string]string{"amd64": "edge_darwin_amd64", "arm64": "edge_darwin_arm64"}},
 	"edge_mini": {Local: "edge_mini", Remote: map[string]string{"amd64": "edge_mini_darwin_amd64", "arm64": "edge_mini_darwin_arm64"}},
 	"notice":    {Local: "notice", Remote: map[string]string{"amd64": "notice_darwin_amd64", "arm64": "notice_darwin_arm64"}},
-	"upx":       {Local: "upx", Remote: map[string]string{"amd64": "upx_darwin_amd64", "arm64": "upx_darwin_arm64"}},
+	"upx":       {Local: "upx", Install: installPackage("upx", "brew", "install", "upx")},
 	"ffmpeg": {
 		Local: "ffmpeg", Remote: map[string]string{"amd64": "ffmpeg-osx-x64", "arm64": "ffmpeg-osx-arm64"},
 		FullUrl: []Url{"https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/n8.1.2-1/{name}"},
