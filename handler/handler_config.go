@@ -16,8 +16,9 @@ func IsWindows() bool {
 func NewConfigCommand() *cobra.Command {
 	var set, appendValues, del []string
 	cmd := &cobra.Command{
-		Use:   "config",
-		Short: "全局配置",
+		Use:     "config",
+		Aliases: []string{"cfg"},
+		Short:   "全局配置",
 		Long: "查看全部配置；无修改参数时不写文件。\n" +
 			"--set、--append 可重复使用，值中的逗号和等号会保留。\n" +
 			"混合操作固定按设置、追加、删除的顺序执行。Windows 使用 i config gui 打开图形界面。",

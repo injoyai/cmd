@@ -1,416 +1,293 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>配置 · i</title>
-    <style>
-        :root {
-            color-scheme: light;
-            --bg: #f5f6f8;
-            --surface: #ffffff;
-            --text: #172033;
-            --muted: #5c687b;
-            --border: #dce2e8;
-            --accent: #0c6b62;
-            --accent-hover: #09574f;
-            --accent-soft: #eaf5f2;
-            --danger: #b42318;
-            --radius: 6px;
-            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            --mono: "SFMono-Regular", Consolas, monospace;
-        }
-        * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
-        html { scroll-padding-top: 90px; scrollbar-gutter: stable; }
-        body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 var(--font); }
-        button, input, textarea { font: inherit; }
-        button, a { -webkit-tap-highlight-color: transparent; }
-        button { cursor: pointer; }
-        button:disabled { cursor: default; opacity: .55; }
-        button:active:not(:disabled) { transform: translateY(1px); }
-        :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-        [hidden] { display: none !important; }
-        ::-webkit-scrollbar { width: 9px; height: 9px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border: 2px solid var(--bg); border-radius: 6px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-        .toolbar { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--border); }
-        .toolbar-inner { max-width: 1120px; min-height: 72px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .title { display: flex; align-items: center; gap: 12px; }
-        .brand { display: grid; place-items: center; width: 30px; height: 30px; color: var(--surface); background: var(--accent); border-radius: var(--radius); font: 600 22px var(--mono); }
-        h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: .02em; }
-        .primary { min-width: 112px; height: 38px; padding: 0 18px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: var(--surface); font-weight: 600; }
-        .primary:hover:not(:disabled) { background: var(--accent-hover); }
-        .layout { display: grid; grid-template-columns: 144px minmax(0, 1fr); gap: 28px; max-width: 1120px; margin: 0 auto; padding: 20px 28px 40px; }
-        .sidebar { align-self: start; position: sticky; top: 96px; padding-top: 35px; }
-        .sidebar a { display: block; padding: 9px 12px; margin-bottom: 4px; border-radius: var(--radius); color: var(--muted); text-decoration: none; }
-        .sidebar a:hover, .sidebar a[aria-current] { color: var(--accent); background: var(--accent-soft); }
-        main { min-width: 0; }
-        .save-status { min-height: 26px; margin: 0 0 10px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-        .save-status[data-tone="error"] { color: var(--danger); }
-        .save-status[data-tone="success"] { color: var(--accent); }
-        form, fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
-        .section { margin: 0 0 18px; padding: 20px 24px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); scroll-margin-top: 92px; }
-        h2 { margin: 0 0 18px; font-size: 15px; font-weight: 600; }
-        .field { display: grid; grid-template-columns: 138px minmax(0, 1fr); gap: 16px; align-items: start; margin: 0 0 18px; }
-        .field-label { padding-top: 7px; min-width: 0; }
-        .field-label label { font-weight: 500; cursor: pointer; }
-        .field-key { display: block; margin-top: 3px; color: var(--muted); font: 10px/1.5 var(--mono); overflow-wrap: anywhere; }
-        .editor { min-width: 0; }
-        .text-input, textarea { width: 100%; min-width: 0; padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
-        .text-input { height: 38px; }
-        .text-input:hover, textarea:hover { border-color: var(--muted); }
-        .text-input:focus, textarea:focus { outline: 2px solid var(--accent-soft); outline-offset: 1px; border-color: var(--accent); }
-        .text-input[aria-invalid="true"] { border-color: var(--danger); }
-        input::placeholder, textarea::placeholder { color: var(--muted); opacity: .85; }
-        textarea { display: block; min-height: 112px; resize: none; line-height: 1.7; font-family: var(--mono); font-size: 12px; }
-        .hint { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
-        .toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 38px; cursor: pointer; }
-        .toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-        .toggle-track { width: 34px; height: 20px; border-radius: 12px; background: var(--muted); border: 1px solid transparent; }
-        .toggle-track::after { content: ""; display: block; width: 14px; height: 14px; margin: 2px; background: var(--surface); border-radius: 50%; transition: transform .15s; }
-        .toggle input:checked + .toggle-track { background: var(--accent); }
-        .toggle input:checked + .toggle-track::after { transform: translateX(14px); }
-        .toggle input:focus-visible + .toggle-track { outline: 3px solid var(--accent); outline-offset: 3px; }
-        .toggle-text { font-size: 12px; color: var(--muted); }
-        .secret { display: flex; gap: 8px; }
-        .secondary, .text-button { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); padding: 6px 11px; min-height: 34px; font-size: 12px; white-space: nowrap; }
-        .secondary:hover:not(:disabled) { background: var(--bg); border-color: var(--muted); }
-        .secret .secondary { min-width: 54px; }
-        .object-tools { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-        .shortcut-row { display: grid; grid-template-columns: minmax(90px, .7fr) minmax(0, 1.3fr) auto; gap: 8px; align-items: start; margin-bottom: 10px; }
-        .shortcut-row > div { min-width: 0; }
-        .shortcut-row .text-input { font-size: 12px; }
-        .text-button { height: 38px; border-color: transparent; color: var(--muted); }
-        .text-button:hover { color: var(--danger); background: var(--bg); }
-        .field-error { margin: 4px 0 0; color: var(--danger); font-size: 12px; }
-        .empty { margin: 0; padding: 12px; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--muted); font-size: 12px; }
-        @media (max-width: 760px) {
-            .toolbar-inner { padding: 12px 20px; }
-            .layout { grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding: 16px 20px 30px; }
-            .field { grid-template-columns: minmax(0, 1fr); gap: 7px; }
-            .field-label { padding-top: 0; }
-            .field-key { display: inline; margin-left: 8px; }
-            .section { padding: 18px 20px 2px; }
-        }
-        @media (max-width: 540px) {
-            .toolbar-inner { min-height: 64px; padding: 10px 16px; }
-            .layout { display: block; padding: 0 16px 24px; }
-            .sidebar { position: sticky; top: 64px; z-index: 2; display: flex; gap: 3px; padding: 10px 0; overflow-x: auto; background: var(--bg); }
-            .sidebar a { flex: 0 0 auto; margin: 0; padding: 7px 10px; font-size: 12px; }
-            .save-status { margin-top: 8px; }
-            .section { padding: 16px 16px 0; scroll-margin-top: 130px; }
-            .field-key { display: block; margin-left: 0; }
-            .shortcut-row { grid-template-columns: minmax(0, 1fr) auto; }
-            .shortcut-row .shortcut-target { grid-column: 1; }
-            .shortcut-row .text-button { grid-column: 2; grid-row: 1 / 3; }
-        }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
-        @media (forced-colors: active) { .toggle-track { border-color: ButtonText; } .toggle input:checked + .toggle-track { background: Highlight; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配置 · i</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f5f6f8; --surface: #ffffff; --text: #172033; --muted: #5c687b;
+  --border: #dce2e8; --accent: #0c6b62; --accent-hover: #09574f;
+  --accent-soft: #eaf5f2; --danger: #b42318; --radius: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+* { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 var(--font); }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .55; }
+button:active:not(:disabled) { transform: translateY(1px); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+header { position: sticky; top: 0; z-index: 1; background: var(--surface); border-bottom: 1px solid var(--border); }
+.toolbar, main { max-width: 820px; margin: auto; padding: 16px 24px; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+h1 { margin: 0; font-size: 19px; }
+h2 { margin: 0 0 16px; font-size: 15px; }
+button { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+button:hover:not(:disabled) { background: var(--bg); }
+.primary { width: 112px; background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.primary:hover:not(:disabled) { background: var(--accent-hover); }
+.save-status { min-height: 24px; margin: 0 0 12px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+[data-tone="error"], .field-error { color: var(--danger); }
+[data-tone="success"] { color: var(--accent); }
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.section { margin-bottom: 16px; padding: 20px 24px 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.field { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+.field-label { padding-top: 7px; }
+.editor, .shortcut-row > div { min-width: 0; }
+.text-input { width: 100%; min-width: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); background: var(--surface); }
+.text-input:focus { border-color: var(--accent); outline-color: var(--accent-soft); }
+.text-input[aria-invalid="true"] { border-color: var(--danger); }
+textarea { display: block; min-height: 100px; resize: none; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; cursor: pointer; }
+.toggle input { accent-color: var(--accent); }
+.secret { display: flex; gap: 8px; }
+.icon-button { display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; flex-shrink: 0; }
+.icon-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hint, .empty, .field-error { margin: 6px 0 0; font-size: 12px; }
+.hint, .empty { color: var(--muted); }
+.object-tools { margin-bottom: 10px; }
+.shortcut-row { display: grid; grid-template-columns: minmax(80px, .7fr) minmax(0, 1.3fr) auto; gap: 8px; margin-bottom: 10px; }
+.text-button { color: var(--muted); }
+.text-button:hover { color: var(--danger); }
+@media (max-width: 580px) {
+  .toolbar, main { padding: 12px 16px; }
+  .section { padding: 16px 16px 0; }
+  .field { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .field-label { padding: 0; }
+  .shortcut-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .shortcut-target { grid-column: 1; }
+  .shortcut-row button { grid-column: 2; grid-row: 1 / 3; }
+}
+</style>
 </head>
 <body>
-    <header class="toolbar">
-        <div class="toolbar-inner">
-            <div class="title"><span class="brand" aria-hidden="true">i</span><h1>配置</h1></div>
-            <button id="saveButton" class="primary" type="submit" form="configForm" disabled>保存配置</button>
-        </div>
-    </header>
-    <div class="layout">
-        <nav id="configNav" class="sidebar" aria-label="配置分组"></nav>
-        <main>
-            <p id="saveStatus" class="save-status" role="status" aria-live="polite">正在读取配置…</p>
-            <form id="configForm" novalidate>
-                <fieldset id="configFields" disabled aria-label="配置项"></fieldset>
-            </form>
-        </main>
-    </div>
+<header><div class="toolbar">
+  <h1>配置</h1>
+  <button id="saveButton" class="primary" type="submit" form="configForm" disabled>保存配置</button>
+</div></header>
+<main>
+  <p id="saveStatus" class="save-status" role="status" aria-live="polite">正在读取配置…</p>
+  <form id="configForm" novalidate><fieldset id="configFields" disabled aria-label="配置项"></fieldset></form>
+</main>
 <script>
-    const groups = [
-        { key: "download", title: "下载" },
-        { key: "proxy", title: "代理" },
-        { key: "resource", title: "资源地址" },
-        { key: "upload", title: "MinIO 上传" },
-        { key: "open", title: "快捷打开" }
-    ];
-    const hints = {
-        "proxy.addr": "留空时使用系统代理环境变量。",
-        "proxy.ignore": "逗号分隔的正则规则；匹配的资源不使用代理。",
-        "resource.urls": "每行一个地址，按顺序尝试。留空时使用内置资源地址。"
-    };
-    const form = document.getElementById("configForm");
-    const fieldset = document.getElementById("configFields");
-    const saveButton = document.getElementById("saveButton");
-    const status = document.getElementById("saveStatus");
-    let configs = [];
-    let controls = new Map();
-    let loaded = false;
-    let dirty = false;
-    let saving = false;
-    let rowID = 0;
+const form = document.getElementById("configForm");
+const fieldset = document.getElementById("configFields");
+const saveButton = document.getElementById("saveButton");
+const status = document.getElementById("saveStatus");
+const groups = { download: "下载", proxy: "代理", resource: "资源地址", upload: "MinIO 上传", open: "快捷打开" };
+const hints = { "proxy.addr": "留空时使用系统代理环境变量。", "proxy.ignore": "逗号分隔的正则规则；匹配的资源不使用代理。", "resource.urls": "每行一个地址，按顺序尝试。留空时使用内置资源地址。" };
+let configs = [], controls = new Map(), loaded = false, dirty = false, saving = false, rowID = 0;
 
-    function showStatus(message, tone) {
-        status.textContent = message;
-        status.dataset.tone = tone || "";
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  node.className = className || "";
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function setIcon(button, name, label) {
+  const paths = {
+    eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
+    hidden: "m3 3 18 18M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z",
+    plus: "M12 5v14M5 12h14",
+    trash: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"
+  };
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const path = document.createElementNS(svg.namespaceURI, "path");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  path.setAttribute("d", paths[name]);
+  svg.appendChild(path);
+  button.replaceChildren(svg);
+  button.setAttribute("aria-label", label);
+  button.setAttribute("title", label);
+}
+function action(icon, label, className, run) {
+  const button = el("button", "icon-button " + className);
+  button.type = "button";
+  setIcon(button, icon, label);
+  button.addEventListener("click", run);
+  return button;
+}
+function showStatus(message, tone) {
+  status.textContent = message;
+  status.dataset.tone = tone || "";
+}
+function markDirty() {
+  if (!loaded || saving) return;
+  dirty = true;
+  saveButton.disabled = false;
+  showStatus("有未保存的修改");
+}
+function inputField(id, value, type) {
+  const input = el("input", "text-input");
+  input.id = id;
+  input.type = type || "text";
+  input.value = value == null ? "" : value;
+  input.spellcheck = false;
+  input.autocomplete = type === "password" ? "new-password" : "off";
+  return input;
+}
+function addShortcut(container, key, value, focus) {
+  const row = el("div", "shortcut-row"), nameBox = el("div"), targetBox = el("div", "shortcut-target");
+  const name = inputField("shortcut-name-" + (++rowID), key);
+  name.classList.add("shortcut-name");
+  name.placeholder = "快捷名称";
+  name.setAttribute("aria-label", "快捷名称");
+  const error = el("p", "field-error");
+  error.id = name.id + "-error";
+  error.hidden = true;
+  name.setAttribute("aria-describedby", error.id);
+  name.addEventListener("input", () => { name.removeAttribute("aria-invalid"); error.hidden = true; });
+  nameBox.append(name, error);
+  const target = inputField("shortcut-target-" + rowID, value);
+  target.classList.add("shortcut-value");
+  target.placeholder = "文件、目录或程序路径";
+  target.setAttribute("aria-label", "打开目标");
+  targetBox.appendChild(target);
+  const remove = action("trash", "移除此快捷方式", "text-button", () => {
+    const next = row.nextElementSibling || row.previousElementSibling;
+    row.remove();
+    container.querySelector(".empty").hidden = container.querySelectorAll(".shortcut-row").length > 0;
+    (next ? next.querySelector("input") : container.querySelector(".add-shortcut")).focus();
+    markDirty();
+  });
+  row.append(nameBox, targetBox, remove);
+  container.querySelector(".shortcut-rows").appendChild(row);
+  container.querySelector(".empty").hidden = true;
+  if (focus) name.focus();
+}
+function renderField(config) {
+  const row = el("div", "field"), caption = el("div", "field-label"), editor = el("div", "editor");
+  const label = el("label", "", config.name);
+  label.id = "label-" + config.key;
+  label.htmlFor = config.key;
+  caption.appendChild(label);
+  let control;
+  if (config.type === "object") {
+    control = el("div");
+    const tools = el("div", "object-tools");
+    const add = action("plus", "添加快捷方式", "add-shortcut", () => { addShortcut(control, "", "", true); markDirty(); });
+    add.id = config.key;
+    tools.appendChild(add);
+    control.append(tools, el("div", "shortcut-rows"), el("p", "empty", "还没有快捷方式。"));
+    (config.value || []).forEach(item => addShortcut(control, item.key, item.value, false));
+  } else if (config.type === "bool") {
+    control = el("input");
+    control.id = config.key;
+    control.type = "checkbox";
+    control.checked = !!config.value;
+    control.setAttribute("aria-labelledby", label.id);
+    const toggle = el("label", "toggle");
+    toggle.append(control, el("span", "", "启用"));
+    editor.appendChild(toggle);
+  } else if (config.type === "list") {
+    control = el("textarea", "text-input");
+    control.id = config.key;
+    control.value = (config.value || []).join("\n");
+    control.spellcheck = false;
+    control.addEventListener("input", () => { control.style.height = "auto"; control.style.height = Math.max(100, control.scrollHeight) + "px"; });
+  } else {
+    control = inputField(config.key, config.value, config.type === "secret" ? "password" : "text");
+    if (config.type === "secret") {
+      const secret = el("div", "secret");
+      const reveal = action("eye", "显示 " + config.name, "secondary", () => {
+        const visible = control.type === "password";
+        control.type = visible ? "text" : "password";
+        setIcon(reveal, visible ? "hidden" : "eye", (visible ? "隐藏 " : "显示 ") + config.name);
+        reveal.setAttribute("aria-pressed", String(visible));
+      });
+      reveal.setAttribute("aria-pressed", "false");
+      secret.append(control, reveal);
+      editor.appendChild(secret);
     }
-
-    function markDirty() {
-        if (!loaded || saving) return;
-        dirty = true;
-        saveButton.disabled = false;
-        showStatus("有未保存的修改");
-    }
-
-    function inputField(id, value, type) {
-        const input = document.createElement("input");
-        input.id = id;
-        input.name = id;
-        input.type = type || "text";
-        input.className = "text-input";
-        input.value = value == null ? "" : value;
-        input.spellcheck = false;
-        input.autocomplete = type === "password" ? "new-password" : "off";
-        return input;
-    }
-
-    function addShortcut(container, key, value, focus) {
-        const row = document.createElement("div");
-        row.className = "shortcut-row";
-        const nameBox = document.createElement("div");
-        const name = inputField("shortcut-name-" + (++rowID), key);
-        name.classList.add("shortcut-name");
-        name.placeholder = "快捷名称";
-        name.setAttribute("aria-label", "快捷名称");
-        const error = document.createElement("p");
-        error.id = name.id + "-error";
-        error.className = "field-error";
+  }
+  if (!editor.children.length) editor.appendChild(control);
+  if (hints[config.key]) {
+    const hint = el("p", "hint", hints[config.key]);
+    hint.id = "hint-" + config.key;
+    control.setAttribute("aria-describedby", hint.id);
+    editor.appendChild(hint);
+  }
+  controls.set(config.key, control);
+  row.append(caption, editor);
+  return row;
+}
+function loadConfig(values) {
+  configs = values;
+  controls = new Map();
+  fieldset.replaceChildren();
+  for (const [key, title] of Object.entries(groups)) {
+    const section = el("section", "section");
+    const heading = el("h2", "", title);
+    heading.id = "heading-" + key;
+    section.setAttribute("aria-labelledby", heading.id);
+    section.appendChild(heading);
+    configs.filter(config => config.key.split(".")[0] === key).forEach(config => section.appendChild(renderField(config)));
+    fieldset.appendChild(section);
+  }
+  loaded = true;
+  dirty = saving = false;
+  fieldset.disabled = false;
+  saveButton.disabled = true;
+  showStatus("已载入配置");
+}
+function collectConfig() {
+  const result = Object.create(null);
+  for (const config of configs) {
+    const control = controls.get(config.key);
+    if (config.type === "object") {
+      const values = Object.create(null);
+      for (const row of control.querySelectorAll(".shortcut-row")) {
+        const name = row.querySelector(".shortcut-name"), value = row.querySelector(".shortcut-value").value;
+        const error = row.querySelector(".field-error");
+        name.removeAttribute("aria-invalid");
         error.hidden = true;
-        name.setAttribute("aria-describedby", error.id);
-        name.addEventListener("input", function () {
-            name.removeAttribute("aria-invalid");
-            error.hidden = true;
-        });
-        nameBox.append(name, error);
-        const targetBox = document.createElement("div");
-        targetBox.className = "shortcut-target";
-        const target = inputField("shortcut-target-" + rowID, value);
-        target.classList.add("shortcut-value");
-        target.placeholder = "文件、目录或程序路径";
-        target.setAttribute("aria-label", "打开目标");
-        targetBox.appendChild(target);
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "text-button";
-        remove.textContent = "移除";
-        remove.setAttribute("aria-label", "移除此快捷方式");
-        remove.addEventListener("click", function () {
-            const next = row.nextElementSibling || row.previousElementSibling;
-            row.remove();
-            container.querySelector(".empty").hidden = container.querySelectorAll(".shortcut-row").length > 0;
-            (next ? next.querySelector("input") : container.querySelector(".add-shortcut")).focus();
-            markDirty();
-        });
-        row.append(nameBox, targetBox, remove);
-        container.querySelector(".shortcut-rows").appendChild(row);
-        container.querySelector(".empty").hidden = true;
-        if (focus) name.focus();
-    }
-
-    function renderField(config) {
-        const row = document.createElement("div");
-        row.className = "field";
-        const labelBox = document.createElement("div");
-        labelBox.className = "field-label";
-        const label = document.createElement("label");
-        label.id = "label-" + config.key;
-        label.htmlFor = config.key;
-        label.textContent = config.name;
-        const key = document.createElement("span");
-        key.className = "field-key";
-        key.textContent = config.key;
-        labelBox.append(label, key);
-        const editor = document.createElement("div");
-        editor.className = "editor";
-        let control;
-        if (config.type === "object") {
-            control = document.createElement("div");
-            const tools = document.createElement("div");
-            tools.className = "object-tools";
-            const add = document.createElement("button");
-            add.id = config.key;
-            add.type = "button";
-            add.className = "secondary add-shortcut";
-            add.textContent = "添加快捷方式";
-            add.addEventListener("click", function () { addShortcut(control, "", "", true); markDirty(); });
-            tools.appendChild(add);
-            const rows = document.createElement("div");
-            rows.className = "shortcut-rows";
-            const empty = document.createElement("p");
-            empty.className = "empty";
-            empty.textContent = "还没有快捷方式，可添加常用文件或目录。";
-            control.append(tools, rows, empty);
-            (config.value || []).forEach(function (item) { addShortcut(control, item.key, item.value, false); });
-        } else if (config.type === "bool") {
-            const toggle = document.createElement("label");
-            toggle.className = "toggle";
-            toggle.htmlFor = config.key;
-            control = document.createElement("input");
-            control.type = "checkbox";
-            control.id = config.key;
-            control.checked = !!config.value;
-            control.setAttribute("role", "switch");
-            control.setAttribute("aria-labelledby", label.id);
-            const track = document.createElement("span");
-            track.className = "toggle-track";
-            track.setAttribute("aria-hidden", "true");
-            const state = document.createElement("span");
-            state.className = "toggle-text";
-            state.textContent = control.checked ? "已启用" : "已关闭";
-            control.addEventListener("change", function () { state.textContent = control.checked ? "已启用" : "已关闭"; });
-            toggle.append(control, track, state);
-            editor.appendChild(toggle);
-        } else if (config.type === "list") {
-            control = document.createElement("textarea");
-            control.id = config.key;
-            control.value = (config.value || []).join("\n");
-            control.spellcheck = false;
-            control.addEventListener("input", function () {
-                control.style.height = "auto";
-                control.style.height = Math.max(112, control.scrollHeight) + "px";
-            });
-        } else {
-            control = inputField(config.key, config.value, config.type === "secret" ? "password" : "text");
-            if (config.type === "secret") {
-                const secret = document.createElement("div");
-                secret.className = "secret";
-                const reveal = document.createElement("button");
-                reveal.type = "button";
-                reveal.className = "secondary";
-                reveal.textContent = "显示";
-                reveal.setAttribute("aria-label", "显示 " + config.name);
-                reveal.setAttribute("aria-pressed", "false");
-                reveal.addEventListener("click", function () {
-                    const visible = control.type === "password";
-                    control.type = visible ? "text" : "password";
-                    reveal.textContent = visible ? "隐藏" : "显示";
-                    reveal.setAttribute("aria-label", (visible ? "隐藏 " : "显示 ") + config.name);
-                    reveal.setAttribute("aria-pressed", String(visible));
-                });
-                secret.append(control, reveal);
-                editor.appendChild(secret);
-            }
+        if (name.value === "" && value === "") continue;
+        if (!name.value.trim() || Object.prototype.hasOwnProperty.call(values, name.value)) {
+          error.textContent = !name.value.trim() ? "请填写快捷名称。" : "名称重复，请使用不同名称。";
+          error.hidden = false;
+          name.setAttribute("aria-invalid", "true");
+          name.focus();
+          return null;
         }
-        if (!editor.children.length) editor.appendChild(control);
-        if (hints[config.key]) {
-            const hint = document.createElement("p");
-            hint.className = "hint";
-            hint.id = "hint-" + config.key;
-            hint.textContent = hints[config.key];
-            control.setAttribute("aria-describedby", hint.id);
-            editor.appendChild(hint);
-        }
-        controls.set(config.key, control);
-        row.append(labelBox, editor);
-        return row;
-    }
-
-    function loadConfig(values) {
-        configs = values;
-        controls = new Map();
-        fieldset.replaceChildren();
-        const nav = document.getElementById("configNav");
-        nav.replaceChildren();
-        groups.forEach(function (group) {
-            const fields = configs.filter(function (config) { return config.key.split(".")[0] === group.key; });
-            if (!fields.length) return;
-            const section = document.createElement("section");
-            section.id = group.key;
-            section.className = "section";
-            section.setAttribute("aria-labelledby", "heading-" + group.key);
-            const heading = document.createElement("h2");
-            heading.id = "heading-" + group.key;
-            heading.textContent = group.title;
-            section.appendChild(heading);
-            fields.forEach(function (config) { section.appendChild(renderField(config)); });
-            fieldset.appendChild(section);
-            const link = document.createElement("a");
-            link.href = `#${section.id}`;
-            link.textContent = group.title;
-            nav.appendChild(link);
-        });
-        loaded = true;
-        dirty = false;
-        saving = false;
-        fieldset.disabled = false;
-        saveButton.disabled = true;
-        showStatus("已载入配置");
-    }
-
-    function collectConfig() {
-        const result = Object.create(null);
-        for (const config of configs) {
-            const control = controls.get(config.key);
-            if (config.type === "object") {
-                const values = Object.create(null);
-                for (const row of control.querySelectorAll(".shortcut-row")) {
-                    const name = row.querySelector(".shortcut-name");
-                    const value = row.querySelector(".shortcut-value").value;
-                    const error = row.querySelector(".field-error");
-                    name.removeAttribute("aria-invalid");
-                    error.hidden = true;
-                    if (name.value === "" && value === "") continue;
-                    if (name.value.trim() === "" || Object.prototype.hasOwnProperty.call(values, name.value)) {
-                        error.textContent = name.value.trim() === "" ? "请填写快捷名称。" : "名称重复，请使用不同名称。";
-                        error.hidden = false;
-                        name.setAttribute("aria-invalid", "true");
-                        name.focus();
-                        return null;
-                    }
-                    values[name.value] = value;
-                }
-                result[config.key] = values;
-            } else if (config.type === "bool") {
-                result[config.key] = control.checked;
-            } else if (config.type === "list") {
-                result[config.key] = control.value.split(/\r?\n/).filter(function (line) { return line.trim() !== ""; });
-            } else {
-                result[config.key] = control.value;
-            }
-        }
-        return result;
-    }
-
-    async function saveConfig() {
-        if (!loaded || !dirty || saving) return;
-        const values = collectConfig();
-        if (!values) { showStatus("请检查快捷方式的名称。", "error"); return; }
-        saving = true;
-        fieldset.disabled = true;
-        saveButton.disabled = true;
-        saveButton.textContent = "保存中…";
-        form.setAttribute("aria-busy", "true");
-        showStatus("正在保存配置…");
-        try {
-            await window.saveToFile(values);
-            dirty = false;
-            showStatus("已保存", "success");
-        } catch (error) {
-            showStatus("保存失败：" + (error && error.message ? error.message : String(error)), "error");
-        } finally {
-            saving = false;
-            fieldset.disabled = false;
-            saveButton.disabled = !dirty;
-            saveButton.textContent = "保存配置";
-            form.removeAttribute("aria-busy");
-        }
-    }
-
-    form.addEventListener("input", markDirty);
-    form.addEventListener("change", markDirty);
-    form.addEventListener("submit", function (event) { event.preventDefault(); saveConfig(); });
-    window.addEventListener("beforeunload", function (event) {
-        if (dirty || saving) { event.preventDefault(); event.returnValue = ""; }
-    });
+        values[name.value] = value;
+      }
+      result[config.key] = values;
+    } else if (config.type === "bool") result[config.key] = control.checked;
+    else if (config.type === "list") result[config.key] = control.value.split(/\r?\n/).filter(line => line.trim());
+    else result[config.key] = control.value;
+  }
+  return result;
+}
+async function saveConfig() {
+  if (!loaded || !dirty || saving) return;
+  const values = collectConfig();
+  if (!values) { showStatus("请检查快捷方式的名称。", "error"); return; }
+  saving = true;
+  fieldset.disabled = saveButton.disabled = true;
+  saveButton.textContent = "保存中…";
+  form.setAttribute("aria-busy", "true");
+  showStatus("正在保存配置…");
+  try {
+    await window.saveToFile(values);
+    dirty = false;
+    showStatus("已保存", "success");
+  } catch (error) {
+    showStatus("保存失败：" + (error && error.message ? error.message : String(error)), "error");
+  } finally {
+    saving = false;
+    fieldset.disabled = false;
+    saveButton.disabled = !dirty;
+    saveButton.textContent = "保存配置";
+    form.removeAttribute("aria-busy");
+  }
+}
+form.addEventListener("input", markDirty);
+form.addEventListener("change", markDirty);
+form.addEventListener("submit", event => { event.preventDefault(); saveConfig(); });
 </script>
 </body>
 </html>

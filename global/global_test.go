@@ -2,11 +2,23 @@ package global
 
 import (
 	"bytes"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestConfigGUIWindowsCommandLineBudget(t *testing.T) {
+	// lorca 把完整页面编码到 --app 参数；为程序路径、临时配置目录及其他参数留出余量。
+	const windowsCommandLineLimit = 32767
+	const chromeOtherArgsBudget = 8192
+	pageArg := "--app=data:text/html," + url.PathEscape(html)
+	t.Logf("HTML %d 字节，Chrome 页面参数 %d 字符", len(html), len(pageArg))
+	if len(pageArg)+chromeOtherArgsBudget >= windowsCommandLineLimit {
+		t.Fatalf("配置页启动参数 %d 字符，预留其他参数后超过 Windows 命令行上限", len(pageArg))
+	}
+}
 
 func TestPrintAllConfig(t *testing.T) {
 	previous := File

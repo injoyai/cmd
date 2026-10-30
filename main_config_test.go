@@ -42,8 +42,10 @@ func runConfig(t *testing.T, args ...string) (map[string]any, error) {
 func TestConfigCommandRenamed(t *testing.T) {
 	isolatedConfig(t)
 	root := newRootCommand()
-	if cmd, _, err := root.Find([]string{"config"}); err != nil || cmd.Name() != "config" {
-		t.Fatalf("config command not registered: %v", err)
+	for _, name := range []string{"config", "cfg"} {
+		if cmd, _, err := root.Find([]string{name}); err != nil || cmd.Name() != "config" {
+			t.Fatalf("%s command not registered: %v", name, err)
+		}
 	}
 	root.SetArgs([]string{"global"})
 	root.SetOut(io.Discard)

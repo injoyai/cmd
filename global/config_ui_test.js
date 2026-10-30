@@ -21,7 +21,7 @@ function setup() {
         }
         append(...children) { children.forEach(child => this.appendChild(child)); }
         appendChild(child) { child.parentElement = this; this.children.push(child); return child; }
-        replaceChildren() { this.children = []; }
+        replaceChildren(...children) { this.children = []; this.append(...children); }
         remove() { this.parentElement.children.splice(this.parentElement.children.indexOf(this), 1); }
         get nextElementSibling() { return this.parentElement.children[this.parentElement.children.indexOf(this) + 1]; }
         get previousElementSibling() { return this.parentElement.children[this.parentElement.children.indexOf(this) - 1]; }
@@ -46,15 +46,16 @@ function setup() {
     }
     const root = new Element('body');
     const nodes = {};
-    for (const [id, tag] of Object.entries({configForm:'form',configFields:'fieldset',saveButton:'button',saveStatus:'p',configNav:'nav'})) {
+    for (const [id, tag] of Object.entries({configForm:'form',configFields:'fieldset',saveButton:'button',saveStatus:'p'})) {
         nodes[id] = new Element(tag);
         nodes[id].id = id;
     }
     nodes.configForm.appendChild(nodes.configFields);
-    root.append(nodes.configForm, nodes.saveButton, nodes.saveStatus, nodes.configNav);
+    root.append(nodes.configForm, nodes.saveButton, nodes.saveStatus);
     document = {
         createElement: tag => new Element(tag),
-        getElementById: id => root.querySelectorAll('input,textarea,button,label,section,h2,fieldset,form,p,nav').find(node => node.id === id),
+        createElementNS: (namespace, tag) => Object.assign(new Element(tag), {namespaceURI:namespace}),
+        getElementById: id => root.querySelectorAll('input,textarea,button,label,section,h2,fieldset,form,p').find(node => node.id === id),
         activeElement: null
     };
     const window = new Element('window');
@@ -82,23 +83,33 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const click = element => element.dispatchEvent({type:'click'});
 const edit = element => element.dispatchEvent({type:'input', bubbles:true});
 
-test('five groups, labels, masked credentials and visibility without dirtying form', () => {
+test('five groups, native checkboxes, labels and masked credentials', () => {
     const ui = setup();
     assert.equal(ui.nodes.configFields.querySelectorAll('section').length, 5);
-    assert.equal(ui.nodes.configNav.querySelectorAll('a').length, 5);
-    for (const link of ui.nodes.configNav.querySelectorAll('a')) {
-        assert.ok(ui.document.getElementById(link.href.slice(1)), 'every navigation link must target a rendered section');
-    }
+    assert.equal(ui.field('download.noticeEnable').type, 'checkbox');
     assert.equal(ui.nodes.saveButton.disabled, true);
     const secret = ui.field('upload.minio.secret');
     assert.equal(secret.type, 'password');
     assert.equal(ui.field('label-upload.minio.secret').htmlFor, secret.id);
     const reveal = secret.parentElement.querySelector('button');
+    assert.equal(reveal.getAttribute('aria-label'), '显示 Secret Key');
+    assert.equal(reveal.getAttribute('title'), '显示 Secret Key');
+    assert.equal(reveal.querySelector('svg').getAttribute('aria-hidden'), 'true');
+    const hiddenPath = reveal.querySelector('path').getAttribute('d');
     click(reveal);
     assert.equal(secret.type, 'text');
     assert.equal(reveal.getAttribute('aria-pressed'), 'true');
+    assert.equal(reveal.getAttribute('title'), '隐藏 Secret Key');
+    assert.notEqual(reveal.querySelector('path').getAttribute('d'), hiddenPath);
     click(reveal);
     assert.equal(secret.type, 'password');
+    assert.equal(reveal.querySelector('path').getAttribute('d'), hiddenPath);
+    for (const [selector, label] of [['.add-shortcut', '添加快捷方式'], ['.text-button', '移除此快捷方式']]) {
+        const button = ui.nodes.configFields.querySelector(selector);
+        assert.ok(button.querySelector('svg'));
+        assert.equal(button.getAttribute('aria-label'), label);
+        assert.equal(button.getAttribute('title'), label);
+    }
     assert.equal(ui.nodes.saveButton.disabled, true);
 });
 
@@ -193,6 +204,8 @@ test('removing the last shortcut shows empty state and preserves keyboard focus'
     assert.equal(object.querySelector('.empty').hidden, false);
     assert.equal(ui.document.activeElement, object.querySelector('.add-shortcut'));
     let prevented = false;
-    ui.window.dispatchEvent({type:'beforeunload', preventDefault:() => { prevented = true; }});
-    assert.equal(prevented, true);
+    const closing = {type:'beforeunload', preventDefault:() => { prevented = true; }};
+    ui.window.dispatchEvent(closing);
+    assert.equal(prevented, false);
+    assert.equal(closing.returnValue, undefined);
 });

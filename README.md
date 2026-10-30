@@ -236,6 +236,8 @@ i config --set proxy.addr=http://127.0.0.1:1081
 
 查看或修改配置：
 
+`i cfg` 是 `i config` 的别名，支持相同参数；Windows 下也可使用 `i cfg gui`。
+
 ```shell
 i config
 i config --set proxy.addr=http://127.0.0.1:1081
