@@ -25,6 +25,39 @@ func TestPrintAllConfig(t *testing.T) {
 	}
 }
 
+func TestGroupedProxyAndNatures(t *testing.T) {
+	previous := File
+	File = Open(filepath.Join(t.TempDir(), "config.yaml"))
+	t.Cleanup(func() { File = previous })
+	t.Setenv("http_proxy", "http://lower.example:1081")
+	t.Setenv("HTTP_PROXY", "http://upper.example:1081")
+	File.Set("proxy.addr", "http://configured.example:1081")
+	if got := GetProxy(); got != "http://configured.example:1081" {
+		t.Fatalf("configured proxy was not preferred: %q", got)
+	}
+	File.Set("proxy.addr", "")
+	if got := GetProxy(); got != "http://lower.example:1081" {
+		t.Fatalf("environment fallback changed: %q", got)
+	}
+	File.Set("download.noticeEnable", false)
+	File.Set("upload.minio.extra", "keep")
+	fields := make(map[string]Nature)
+	for _, field := range Natures() {
+		fields[field.Key] = field
+	}
+	if fields["resource.urls"].Type != "list" || fields["download.noticeEnable"].Value != false || fields["test.downloadUrl"].Value != DefaultTestDownloadURL || fields["test.uploadUrl"].Value != DefaultTestUploadURL {
+		t.Fatal("GUI fields lost types, explicit false, or defaults")
+	}
+	// 固定子表单提交完整点路径，不能替换整个分组而丢失未展示的字段。
+	File.Set("upload.minio.endpoint", "localhost:9000")
+	if err := Save(); err != nil {
+		t.Fatal(err)
+	}
+	if got := Open(File.Filename()).GetString("upload.minio.extra"); got != "keep" {
+		t.Fatalf("saving a GUI field removed custom sibling: %q", got)
+	}
+}
+
 // TestFileSetSave Set/Del后必须能正确落盘
 // 回归背景:conv.Map的Set/Del只修改hasSet数据,Save前必须Refresh编码回Var,否则落盘的是原始数据
 func TestFileSetSave(t *testing.T) {

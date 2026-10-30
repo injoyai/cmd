@@ -37,7 +37,7 @@ func TestHTTPRepositoryMirrorsAndDirectFailure(t *testing.T) {
 			defer srv.Close()
 			previous := global.File
 			global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
-			global.File.Set("resource", srv.URL+"/first/{name},"+srv.URL+"/second/{name}")
+			global.File.Set("resource.urls", []string{srv.URL + "/first/{name}", srv.URL + "/second/{name}"})
 			t.Cleanup(func() { global.File = previous })
 			config := &Config{Resource: "asset.bin", Dir: t.TempDir(), Name: "saved"}
 			if tc.direct {

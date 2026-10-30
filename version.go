@@ -17,6 +17,7 @@ type VersionInfo struct {
 // 已核对并排除早期版本号笔误；提交日期不代表正式发布日期。
 var (
 	versions = []VersionInfo{
+		{Version: "v1.6.3", Date: "2026-10-30", Details: "全局配置按功能分组,资源地址支持数组,自动迁移旧配置并保留自定义项,同步配置表单和文档"},
 		{Version: "v1.6.2", Date: "2026-10-29", Details: "全局配置改用用户目录YAML并兼容旧缓存迁移,修复配置读写和GUI保存,移除下载语音提醒"},
 		{Version: "v1.6.1", Date: "2026-10-29", Details: "增加macOS/Linux工具资源,完善资源架构匹配和程序安装,优化下载流程"},
 		{Version: "v1.6.0", Date: "2026-10-28", Details: "修复CLI错误退出码、文件替换保护、WSS和WebSocket握手,优化下载执行权限、升级路径和脚本权限"},

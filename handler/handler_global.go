@@ -21,8 +21,8 @@ func NewGlobalCommand() *cobra.Command {
 		Long: "查看全部配置；无修改参数时不写文件。\n" +
 			"--set、--append 可重复使用，值中的逗号和等号会保留。\n" +
 			"混合操作固定按设置、追加、删除的顺序执行。Windows 使用 i global gui 打开图形界面。",
-		Example: "i global -s proxy=http://127.0.0.1:1081 -s downloadDir=./downloads\n" +
-			"i global -s 'resource=https://one.example/{name},https://two.example/{name}'",
+		Example: "i global -s proxy.addr=http://127.0.0.1:1081 -s download.dir=./downloads\n" +
+			"i global -a 'resource.urls=https://one.example/{name}' -a 'resource.urls=https://two.example/{name}'",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if IsWindows() && len(args) == 1 && args[0] == "gui" {
 				return nil
@@ -51,7 +51,14 @@ func NewGlobalCommand() *cobra.Command {
 			}
 
 			for _, pair := range sets {
-				global.File.Set(pair[0], pair[1])
+				var value any = pair[1]
+				if pair[0] == "resource.urls" {
+					value = []string{}
+					if pair[1] != "" {
+						value = []string{pair[1]}
+					}
+				}
+				global.File.Set(pair[0], value)
 			}
 			for _, pair := range appends {
 				global.File.Append(pair[0], pair[1])

@@ -43,7 +43,7 @@ func MustDownload(ctx context.Context, op *Config) (string, bool, error) {
 	defer stop()
 
 	//忽略正则的资源地址
-	ignore := global.GetString("proxyIgnore")
+	ignore := global.GetString("proxy.ignore")
 	if op != nil && len(ignore) > 0 {
 		op.ProxyIgnore = strings.Split(ignore, ",")
 	}

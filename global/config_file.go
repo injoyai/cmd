@@ -50,6 +50,9 @@ func loadFile(filename, legacy string) *Config {
 			}
 		}
 		if err == nil {
+			err = migrateConfig(object)
+		}
+		if err == nil {
 			f.Map = conv.NewMap(object)
 		}
 	}

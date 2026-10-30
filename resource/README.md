@@ -29,7 +29,7 @@ i install tdl -d=true
 
 | 参数 | 说明 |
 | --- | --- |
-| `--dir` | 保存目录，默认使用全局 `downloadDir`，未配置时为当前目录 |
+| `--dir` | 保存目录，默认使用全局 `download.dir`，未配置时为当前目录 |
 | `-n` / `--name` | 自定义保存名称；没有扩展名时补默认名称的最后一层后缀 |
 | `-d` / `--download` | 重新下载并覆盖已有目标，例如 `-d=true` |
 | `--proxy` | 代理地址，支持 HTTP、HTTPS、SOCKS5/SOCKS5H |
@@ -44,8 +44,8 @@ i install tdl -d=true
 可通过全局配置设置默认下载目录和代理：
 
 ```shell
-i global --set downloadDir=./downloads
-i global --set proxy=http://127.0.0.1:1081
+i global --set download.dir=./downloads
+i global --set proxy.addr=http://127.0.0.1:1081
 ```
 
 ## Telegram 下载

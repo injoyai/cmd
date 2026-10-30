@@ -32,7 +32,7 @@ func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 			defer srv.Close()
 			previousConfig := global.File
 			global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
-			global.File.Set("resource", srv.URL+"/store/{name}")
+			global.File.Set("resource.urls", []string{srv.URL + "/store/{name}"})
 			t.Cleanup(func() { global.File = previousConfig })
 			op := &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir()}
 			wantName, wantPath := "file.bin", "/file.bin"

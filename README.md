@@ -220,7 +220,7 @@ i swag -g ./main.go
 i push notice 下载完成
 i push voice 任务结束
 i speak 你好
-i global --set proxy=http://127.0.0.1:1081
+i global --set proxy.addr=http://127.0.0.1:1081
 ```
 
 ---
@@ -238,11 +238,11 @@ i global --set proxy=http://127.0.0.1:1081
 
 ```shell
 i global
-i global --set proxy=http://127.0.0.1:1081
-i global -s downloadDir=./downloads -s downloadNoticeEnable=false
-i global -s 'resource=https://one.example/{name},https://two.example/{name}'
+i global --set proxy.addr=http://127.0.0.1:1081
+i global -s download.dir=./downloads -s download.noticeEnable=false
+i global -a 'resource.urls=https://one.example/{name}' -a 'resource.urls=https://two.example/{name}'
 i global -a 'examples=first,second' -a 'examples=a=b'
-i global -d examples -d proxy
+i global -d examples -d proxy.addr
 ```
 
 `i global` 以 YAML 输出全部已保存配置，无修改参数时不写文件。`--set/-s` 和
@@ -267,15 +267,57 @@ macOS 为 `~/Library/Application Support/injoy/data/cache/`，Windows 为
 后续保存写入新位置并保留旧文件；新文件存在时优先使用新文件，读取或解析失败时返回错误，禁止覆盖。
 不兼容过渡期的 `config.json`。可手动编辑 YAML；CLI 保存时会重新排版，不保留注释。
 
+配置按 `proxy`、`download`、`resource`、`upload`、`open`、`test` 分组，CLI 使用点路径访问：
+
 ```yaml
-proxy: http://127.0.0.1:1081
-downloadDir: ./downloads
-downloadNoticeEnable: true
-uploadMinio:
-  endpoint: localhost:9000
-  bucket: downloads
-  rename: false
+proxy:
+  addr: http://127.0.0.1:1081
+  ignore: "localhost,127.0.0.1"
+download:
+  dir: ./downloads
+  noticeEnable: true
+  noticeText: 主人. 您的资源已下载结束
+resource:
+  urls:
+    - https://one.example/{name}
+    - https://two.example/{name}
+upload:
+  minio:
+    endpoint: localhost:9000
+    access: ""
+    secret: ""
+    bucket: downloads
+    rename: false
+open:
+  custom:
+    docs: /path/to/docs
+test:
+  downloadUrl: https://example.com/download
+  uploadUrl: https://example.com/upload
 ```
+
+示例地址需替换为实际服务地址。`open.custom` 的键作为 `i open <键>` 的快捷名称。
+`proxy.ignore` 继续使用逗号分隔的正则规则；`resource.urls` 使用数组，按列表顺序尝试，
+最后仍会追加内置默认资源地址。数组每个元素中的逗号、等号都会保留。
+
+```shell
+# 替换资源列表为一个地址；使用 -a 逐项追加
+i global -s 'resource.urls=https://one.example/{name}'
+i global -a 'resource.urls=https://two.example/{name}'
+# 删除第一个地址，或清空列表
+i global -d 'resource.urls[0]'
+i global -s resource.urls=
+```
+
+已有文件中的 `downloadDir`、`downloadNoticeEnable`、`downloadNoticeText` 分别迁移为
+`download.dir`、`download.noticeEnable`、`download.noticeText`；`proxy` 字符串迁移为
+`proxy.addr`，`proxyIgnore` 迁移为 `proxy.ignore`；原 `resource` 字符串按逗号拆为
+`resource.urls` 数组。`uploadMinio`、`customOpen` 分别迁移为 `upload.minio`、`open.custom`；
+`testDownloadUrl`、`testUploadUrl` 分别迁移为 `test.downloadUrl`、`test.uploadUrl`。
+
+迁移只在内存中进行，查询不会写盘；下次修改保存时，完整配置写回原来的 `config.yaml`，
+移除已迁移旧键，保留其他值、类型和自定义项。新旧键并存时新键优先，对象逐项合并；
+目标分组被非对象配置占用时返回错误，禁止覆盖原文件。后续 CLI 修改请使用新键名。
 
 ---
 

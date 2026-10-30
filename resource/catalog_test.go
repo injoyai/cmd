@@ -87,7 +87,7 @@ func TestInfoURLs(t *testing.T) {
 	t.Cleanup(func() { global.File = previous })
 	info := &Info{Local: "tool"}
 	for _, base := range []string{"https://first.invalid", "https://second.invalid"} {
-		global.File.Set("resource", base+"/{os}/{arch}/{name}")
+		global.File.Set("resource.urls", []string{base + "/{os}/{arch}/{name}"})
 		urls, err := info.GetFullUrls()
 		want := []string{base + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/tool", Url(DefaultUrl).Format("tool")}
 		if err != nil || !reflect.DeepEqual(urls, want) {

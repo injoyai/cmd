@@ -21,13 +21,13 @@ func TestLegacyConfigMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := loadFile(filename, legacy)
-	if f.err != nil || f.GetString("proxy") != "old" || f.GetString("custom.value") != "keep" {
+	if f.err != nil || f.GetString("proxy.addr") != "old" || f.GetString("custom.value") != "keep" {
 		t.Fatalf("legacy load: error=%v", f.err)
 	}
 	if _, err := os.Stat(filepath.Dir(filename)); !os.IsNotExist(err) {
 		t.Fatalf("load created config directory: %v", err)
 	}
-	f.Set("proxy", "new")
+	f.Set("proxy.addr", "new")
 	if err := f.Save(); err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestLegacyConfigMigration(t *testing.T) {
 		t.Fatalf("legacy file changed: %v", err)
 	}
 	f = loadFile(filename, legacy)
-	if f.err != nil || f.GetString("proxy") != "new" || f.GetString("custom.value") != "keep" {
+	if f.err != nil || f.GetString("proxy.addr") != "new" || f.GetString("custom.value") != "keep" {
 		t.Fatalf("new config was not preferred: error=%v", f.err)
 	}
 	if runtime.GOOS != "windows" {
@@ -71,7 +71,7 @@ func TestInvalidConfigIsNotOverwritten(t *testing.T) {
 			if f.err == nil {
 				t.Fatal("invalid config accepted")
 			}
-			f.Set("proxy", "replacement")
+			f.Set("proxy.addr", "replacement")
 			if err := f.Save(); err == nil {
 				t.Fatal("save succeeded after failed read")
 			}
@@ -86,17 +86,20 @@ func TestInvalidConfigIsNotOverwritten(t *testing.T) {
 func TestYAMLConfigRoundTrip(t *testing.T) {
 	filename := filepath.Join(t.TempDir(), "config.yaml")
 	original := `# 手动配置
-proxy: http://localhost:1081
+proxy:
+  addr: http://localhost:1081
 enabled: false
 literalBool: "true"
 numericText: "00123"
 empty: ""
 id: 9007199254740993
-uploadMinio:
-  endpoint: localhost:9000
-  rename: false
-customOpen:
-  .md: TextEdit
+upload:
+  minio:
+    endpoint: localhost:9000
+    rename: false
+open:
+  custom:
+    .md: TextEdit
 items:
   - one
   - a,b=c
@@ -108,10 +111,10 @@ message: |
 		t.Fatal(err)
 	}
 	f := Open(filename)
-	if f.err != nil || f.GetString("uploadMinio.endpoint") != "localhost:9000" || f.GetBool("enabled") {
+	if f.err != nil || f.GetString("upload.minio.endpoint") != "localhost:9000" || f.GetBool("enabled") {
 		t.Fatalf("YAML load: error=%v", f.err)
 	}
-	f.Set("proxy", "http://localhost:1082")
+	f.Set("proxy.addr", "http://localhost:1082")
 	if err := f.Save(); err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +122,7 @@ message: |
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "uploadMinio:\n  endpoint:") {
+	if !strings.Contains(string(data), "upload:\n  minio:\n    endpoint:") {
 		t.Fatalf("expected readable indented YAML, got %s", data)
 	}
 	var before, after map[string]any
@@ -129,7 +132,7 @@ message: |
 	if err := yaml.Unmarshal(data, &after); err != nil {
 		t.Fatal(err)
 	}
-	before["proxy"] = "http://localhost:1082"
+	before["proxy"].(map[string]any)["addr"] = "http://localhost:1082"
 	if !reflect.DeepEqual(before, after) {
 		t.Fatalf("values or types changed: before=%v after=%v", before, after)
 	}
@@ -142,7 +145,7 @@ func TestConfigReadErrorDoesNotFallBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := loadFile(dir, legacy)
-	if f.err == nil || f.GetString("proxy") != "" {
+	if f.err == nil || f.GetString("proxy.addr") != "" {
 		t.Fatal("read error silently fell back to legacy config")
 	}
 }
@@ -154,11 +157,11 @@ func TestSaveReplacesExistingConfigPrivately(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := Open(filename)
-	f.Set("proxy", "new")
+	f.Set("proxy.addr", "new")
 	if err := f.Save(); err != nil {
 		t.Fatal(err)
 	}
-	if got := Open(filename).GetString("proxy"); got != "new" {
+	if got := Open(filename).GetString("proxy.addr"); got != "new" {
 		t.Fatalf("saved proxy=%q", got)
 	}
 	info, err := os.Stat(filename)

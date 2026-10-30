@@ -22,7 +22,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 	}
 
 	//尝试在自定义中查找
-	if v, ok := global.File.GetSMap("customOpen")[args[0]]; ok {
+	if v, ok := global.File.GetSMap("open.custom")[args[0]]; ok {
 		fmt.Print("自定义")
 		return tool.ShellStart(v)
 	}

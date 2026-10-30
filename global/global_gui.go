@@ -2,6 +2,7 @@ package global
 
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 
 	"github.com/injoyai/conv"
@@ -30,7 +31,8 @@ func RunGUI() error {
 			}
 			err := Save()
 			if err != nil {
-				app.Eval(fmt.Sprintf(`notice("%v");`, err))
+				message, _ := json.Marshal(err.Error())
+				app.Eval(fmt.Sprintf(`notice(%s);`, message))
 				return
 			}
 			app.Eval(`notice("保存成功");`)

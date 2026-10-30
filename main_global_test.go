@@ -72,34 +72,92 @@ func TestGlobalRepeatedFlagsPreserveValues(t *testing.T) {
 	f := isolatedGlobal(t)
 	resource := "https://one.example/{name},https://two.example/{name}"
 	values, err := runGlobal(t,
-		"-s", "resource="+resource, "--set", "testUploadUrl=a=b=c", "-s", "empty=",
-		"-s", "uploadMinio.endpoint=localhost:9000",
+		"-s", "resource.urls="+resource, "--set", "test.uploadUrl=a=b=c", "-s", "empty=",
+		"-s", "upload.minio.endpoint=localhost:9000",
 		"-a", "items=first,second", "--append", "items=a=b")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if values["resource"] != resource || values["testUploadUrl"] != "a=b=c" || values["empty"] != "" {
+	if f.GetStrings("resource.urls")[0] != resource || f.GetString("test.uploadUrl") != "a=b=c" || values["empty"] != "" {
 		t.Fatalf("values were lost: %v", values)
 	}
 	if !reflect.DeepEqual(values["items"], []any{"first,second", "a=b"}) {
 		t.Fatalf("items=%v", values["items"])
 	}
 	reloaded := global.Open(f.Filename())
-	if reloaded.GetString("uploadMinio.endpoint") != "localhost:9000" || reloaded.GetString("resource") != resource {
+	if reloaded.GetString("upload.minio.endpoint") != "localhost:9000" || !reflect.DeepEqual(reloaded.GetStrings("resource.urls"), []string{resource}) {
 		t.Fatal("saved values differ after reloading")
+	}
+}
+
+func TestGlobalResourceURLList(t *testing.T) {
+	f := isolatedGlobal(t)
+	first := "https://one.example/{name}?a=1,b=2"
+	second := "https://two.example/{name}"
+	for _, step := range []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"-a", "resource.urls=" + first, "-a", "resource.urls=" + second}, []string{first, second}},
+		{[]string{"-d", "resource.urls[0]"}, []string{second}},
+		{[]string{"-s", "resource.urls=" + first, "-a", "resource.urls=" + second}, []string{first, second}},
+		{[]string{"-s", "resource.urls="}, nil},
+	} {
+		values, err := runGlobal(t, step.args...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := values["resource"].(map[string]any)["urls"].([]any); !ok {
+			t.Fatalf("resource.urls is not a YAML array: %v", values)
+		}
+		reloaded := global.Open(f.Filename())
+		if got := reloaded.GetStrings("resource.urls"); !reflect.DeepEqual(got, step.want) {
+			t.Fatalf("%v: got %q, want %q", step.args, got, step.want)
+		}
+	}
+}
+
+func TestGroupedConfigCommandDefaults(t *testing.T) {
+	f := isolatedGlobal(t)
+	f.Set("download.dir", "./configured")
+	f.Set("download.noticeEnable", false)
+	f.Set("download.noticeText", "")
+	f.Set("proxy.addr", "http://proxy.example:1081")
+	f.Set("upload.minio.endpoint", "localhost:9000")
+	f.Set("upload.minio.rename", false)
+	root := newRootCommand()
+	for _, name := range []string{"download", "dl"} {
+		cmd, _, err := root.Find([]string{name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for key, want := range map[string]string{"dir": "./configured", "noticeEnable": "false", "noticeText": "", "proxy": "http://proxy.example:1081"} {
+			if flag := cmd.Flag(key); flag == nil || flag.DefValue != want {
+				t.Fatalf("%s --%s default = %v, want %q", name, key, flag, want)
+			}
+		}
+	}
+	cmd, _, err := root.Find([]string{"upload", "minio"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]string{"endpoint": "localhost:9000", "rename": "false"} {
+		if flag := cmd.Flag(key); flag == nil || flag.DefValue != want {
+			t.Fatalf("upload minio --%s default = %v, want %q", key, flag, want)
+		}
 	}
 }
 
 func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
 	for _, args := range [][]string{
 		{"-s", "=clobber"}, {"-s", "..=clobber"}, {"-s", " =clobber"},
-		{"-s", "broken"}, {"-s", ""}, {"-d", ""}, {"-d", "proxy,"},
-		{"-s", "proxy=changed", "-a", "broken"},
-		{"-s", "proxy=changed", "-d", ".."}, {"unknown"},
+		{"-s", "broken"}, {"-s", ""}, {"-d", ""}, {"-d", "setting,"},
+		{"-s", "setting=changed", "-a", "broken"},
+		{"-s", "setting=changed", "-d", ".."}, {"unknown"},
 	} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			f := isolatedGlobal(t)
-			f.Set("proxy", "original")
+			f.Set("setting", "original")
 			if err := global.Save(); err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +172,7 @@ func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(before, after) || f.GetString("proxy") != "original" {
+			if !bytes.Equal(before, after) || f.GetString("setting") != "original" {
 				t.Fatal("invalid input changed config")
 			}
 		})
@@ -124,18 +182,18 @@ func TestGlobalInvalidArgsKeepConfig(t *testing.T) {
 func TestGlobalOperationOrder(t *testing.T) {
 	isolatedGlobal(t)
 	for i := 0; i < 20; i++ {
-		values, err := runGlobal(t, "-d", "proxy,items", "-a", "items=extra", "-s", "proxy=x", "-s", "items=initial")
+		values, err := runGlobal(t, "-d", "setting,items", "-a", "items=extra", "-s", "setting=x", "-s", "items=initial")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, ok := values["proxy"]; ok {
+		if _, ok := values["setting"]; ok {
 			t.Fatal("set ran after delete")
 		}
 		if _, ok := values["items"]; ok {
 			t.Fatal("append ran after delete")
 		}
 	}
-	values, err := runGlobal(t, "-s", "proxy=x", "-s", "temporary=y", "-d", "proxy", "-d", "temporary")
+	values, err := runGlobal(t, "-s", "setting=x", "-s", "temporary=y", "-d", "setting", "-d", "temporary")
 	if err != nil || len(values) != 0 {
 		t.Fatalf("repeated delete: values=%v error=%v", values, err)
 	}
@@ -147,7 +205,7 @@ func TestGlobalSaveFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	global.File = global.Open(filepath.Join(f.Filename(), "child"))
-	if _, err := runGlobal(t, "-s", "proxy=x"); err == nil {
+	if _, err := runGlobal(t, "-s", "setting=x"); err == nil {
 		t.Fatal("save failure was ignored")
 	}
 }

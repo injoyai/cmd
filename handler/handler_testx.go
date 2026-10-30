@@ -25,8 +25,8 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 	*/
 
 	//size := 25_000_000
-	//默认测速节点可通过全局配置testDownloadUrl覆盖
-	defaultUrl := global.GetString("testDownloadUrl", "https://node-113-215-235-172.speedtest.cn:51090/download?size=25000000&r=0.3373401822935955")
+	//默认测速节点可通过全局配置test.downloadUrl覆盖
+	defaultUrl := global.GetString("test.downloadUrl", global.DefaultTestDownloadURL)
 
 	downloadUrl := conv.Default(defaultUrl, args...)
 	goroutines := flags.GetInt("goroutines", 8)
@@ -120,8 +120,8 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func TestUpload(cmd *cobra.Command, args []string, flags *Flags) error {
 
-	//默认测速节点可通过全局配置testUploadUrl覆盖
-	defaultUrl := global.GetString("testUploadUrl", "https://node-113-215-235-172.speedtest.cn:51090/upload?r=0.5740078588120583")
+	//默认测速节点可通过全局配置test.uploadUrl覆盖
+	defaultUrl := global.GetString("test.uploadUrl", global.DefaultTestUploadURL)
 
 	uploadUrl := conv.Default(defaultUrl, args...)
 	goroutines := flags.GetInt("goroutines", 8)

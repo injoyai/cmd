@@ -36,12 +36,19 @@
             margin-left: 20px; /* 增加输入框与参数名称之间的距离 */
         }
 
-        input[type="text"] {
+        input[type="text"], textarea {
             width: calc(100% - 20px); /* 调整输入框的宽度 */
             padding: 10px;
             border-radius: 4px;
             border: 1px solid #ccc;
             margin: 5px 0; /* 上下间距 */
+        }
+
+        textarea {
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 100px;
+            resize: none;
         }
 
         .checkbox-label {
@@ -138,7 +145,19 @@
             formRow.appendChild(inputContainer);
 
             var input;
-            if (config.type === "bool") {
+            if (config.type === "list") {
+                input = document.createElement("textarea");
+                input.name = config.key;
+                input.id = config.key;
+                input.setAttribute("data-type", "list");
+                input.value = (config.value || []).join("\n");
+                input.oninput = function () {
+                    this.style.height = "auto";
+                    this.style.height = Math.max(100, this.scrollHeight) + "px";
+                };
+                inputContainer.appendChild(input);
+                label.htmlFor = input.id;
+            } else if (config.type === "bool") {
                 var checkboxLabel = document.createElement("label");
                 checkboxLabel.className = "checkbox-label";
                 inputContainer.appendChild(checkboxLabel);
@@ -147,6 +166,8 @@
                 checkboxInput.type = "checkbox";
                 checkboxInput.className = "checkbox-input";
                 checkboxInput.name = config.key;
+                checkboxInput.id = config.key;
+                label.htmlFor = checkboxInput.id;
                 checkboxInput.checked = config.value;
                 checkboxLabel.appendChild(checkboxInput);
                 checkboxLabel.appendChild(document.createTextNode("是"));
@@ -176,6 +197,7 @@
                 subConfigForm.className = "sub-config-form";
                 // 设置 data-key 属性为参数的键
                 subConfigForm.setAttribute("data-key", config.key);
+                subConfigForm.setAttribute("data-fixed", "true");
                 config.value.forEach(function (subConfig) {
                     addObjectNature2(subConfigForm, subConfig)
                 });
@@ -184,6 +206,8 @@
                 input = document.createElement("input");
                 input.type = "text";
                 input.name = config.key;
+                input.id = config.key;
+                label.htmlFor = input.id;
                 input.value = config.value;
                 inputContainer.appendChild(input);
             }
@@ -249,18 +273,22 @@
         var childValueContainer = document.createElement("div");
         childValueContainer.className = "input-container";
         childContainer.appendChild(childValueContainer);
+        var fieldName = parent.getAttribute("data-key") + "." + nature.key;
+        childKey.htmlFor = fieldName;
         if (nature.type==="bool"){
             var childValue = document.createElement("input");
             childValue.type = "checkbox";
             childValue.className = "checkbox-label";
-            childValue.name = "_child";
+            childValue.name = fieldName;
+            childValue.id = fieldName;
             childValue.checked = nature.value;
             childValueContainer.appendChild(childValue);
             childValueContainer.appendChild(document.createTextNode("是"));
         }else {
             var childValue = document.createElement("input");
             childValue.type = "text";
-            childValue.name = "_child";
+            childValue.name = fieldName;
+            childValue.id = fieldName;
             childValue.value = nature.value;
             childValueContainer.appendChild(childValue);
         }
@@ -272,9 +300,13 @@
 
 
         //父级
-        form.querySelectorAll("input").forEach(function (input) {
+        form.querySelectorAll("input,textarea").forEach(function (input) {
             if (input.name !== "_child") {
-                if (input.type === "checkbox") {
+                if (input.getAttribute("data-type") === "list") {
+                    configObject[input.name] = input.value.split(/\r?\n/).filter(function (line) {
+                        return line.trim() !== "";
+                    });
+                } else if (input.type === "checkbox") {
                     configObject[input.name] = input.checked
                 } else {
                     configObject[input.name] = input.value
@@ -284,6 +316,9 @@
 
         //子级 object
         form.querySelectorAll(".sub-config-form").forEach(function (subForm) {
+            if (subForm.getAttribute("data-fixed") === "true") {
+                return;
+            }
             var key = subForm.getAttribute("data-key")
             var childObject = {}
             subForm.querySelectorAll(".form-row").forEach(function (formRow) {
