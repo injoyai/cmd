@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 )
 
 func TestInfoRemote(t *testing.T) {
@@ -82,12 +82,12 @@ func TestIndexResources(t *testing.T) {
 }
 
 func TestInfoURLs(t *testing.T) {
-	previous := global.File
-	global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
-	t.Cleanup(func() { global.File = previous })
+	previous := config.File
+	config.File = config.Open(filepath.Join(t.TempDir(), "config.json"))
+	t.Cleanup(func() { config.File = previous })
 	info := &Info{Local: "tool"}
 	for _, base := range []string{"https://first.invalid", "https://second.invalid"} {
-		global.File.Set("resource.urls", []string{base + "/{os}/{arch}/{name}"})
+		config.File.Set("resource.urls", []string{base + "/{os}/{arch}/{name}"})
 		urls, err := info.GetFullUrls()
 		want := []string{base + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/tool", Url(DefaultUrl).Format("tool")}
 		if err != nil || !reflect.DeepEqual(urls, want) {

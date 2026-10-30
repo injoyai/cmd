@@ -10,16 +10,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"gopkg.in/yaml.v3"
 )
 
-func isolatedConfig(t *testing.T) *global.Config {
+func isolatedConfig(t *testing.T) *config.Config {
 	t.Helper()
-	previous := global.File
-	global.File = global.Open(filepath.Join(t.TempDir(), "config"))
-	t.Cleanup(func() { global.File = previous })
-	return global.File
+	previous := config.File
+	config.File = config.Open(filepath.Join(t.TempDir(), "config"))
+	t.Cleanup(func() { config.File = previous })
+	return config.File
 }
 
 func runConfig(t *testing.T, args ...string) (map[string]any, error) {
@@ -77,7 +77,7 @@ func TestConfigQueryDoesNotWrite(t *testing.T) {
 		t.Fatalf("query created a file: %v", err)
 	}
 	f.Set("custom", "visible")
-	if err := global.Save(); err != nil {
+	if err := config.Save(); err != nil {
 		t.Fatal(err)
 	}
 	oldTime := time.Unix(1_000_000, 0)
@@ -113,7 +113,7 @@ func TestConfigRepeatedFlagsPreserveValues(t *testing.T) {
 	if !reflect.DeepEqual(values["items"], []any{"first,second", "a=b"}) {
 		t.Fatalf("items=%v", values["items"])
 	}
-	reloaded := global.Open(f.Filename())
+	reloaded := config.Open(f.Filename())
 	if reloaded.GetString("upload.minio.endpoint") != "localhost:9000" || !reflect.DeepEqual(reloaded.GetStrings("resource.urls"), []string{resource}) {
 		t.Fatal("saved values differ after reloading")
 	}
@@ -139,7 +139,7 @@ func TestConfigResourceURLList(t *testing.T) {
 		if _, ok := values["resource"].(map[string]any)["urls"].([]any); !ok {
 			t.Fatalf("resource.urls is not a YAML array: %v", values)
 		}
-		reloaded := global.Open(f.Filename())
+		reloaded := config.Open(f.Filename())
 		if got := reloaded.GetStrings("resource.urls"); !reflect.DeepEqual(got, step.want) {
 			t.Fatalf("%v: got %q, want %q", step.args, got, step.want)
 		}
@@ -187,7 +187,7 @@ func TestConfigInvalidArgsKeepConfig(t *testing.T) {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			f := isolatedConfig(t)
 			f.Set("setting", "original")
-			if err := global.Save(); err != nil {
+			if err := config.Save(); err != nil {
 				t.Fatal(err)
 			}
 			before, err := os.ReadFile(f.Filename())
@@ -233,7 +233,7 @@ func TestConfigSaveFailure(t *testing.T) {
 	if err := os.WriteFile(f.Filename(), []byte("block directory creation"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	global.File = global.Open(filepath.Join(f.Filename(), "child"))
+	config.File = config.Open(filepath.Join(f.Filename(), "child"))
 	if _, err := runConfig(t, "-s", "setting=x"); err == nil {
 		t.Fatal("save failure was ignored")
 	}

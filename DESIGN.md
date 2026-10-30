@@ -48,7 +48,7 @@ components:
 
 ## Overview
 
-范围为 `global/global.html` 的单页配置表单。面向直接操作 CLI 的中文用户，以桌面使用为主，并支持窄窗口。采用系统设置面板的密度：白色分组表单、单列页面、固定顶部保存操作。使用原生复选框，减少控件样式与重复渲染代码。无外部字体、装饰图、统计卡片或营销横幅。
+范围为 `config/gui.html` 的单页配置表单。面向直接操作 CLI 的中文用户，以桌面使用为主，并支持窄窗口。采用系统设置面板的密度：白色分组表单、单列页面、固定顶部保存操作。使用原生复选框，减少控件样式与重复渲染代码。无外部字体、装饰图、统计卡片或营销横幅。
 
 ## Colors
 
@@ -78,8 +78,8 @@ components:
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
-| Form | renderField / collectConfig | 本文件与配置元数据 | 文本、密钥、开关、地址列表、快捷映射 | `node --test global/config_ui_test.js`、Go 保存测试 |
-| Scrollbar | 页面全局 CSS | global/global.html | 纵向页面 | CSS 与静态检查 |
+| Form | renderField / collectConfig | 本文件与配置元数据 | 文本、密钥、开关、地址列表、快捷映射 | `node --test config/gui_test.js`、Go 保存测试 |
+| Scrollbar | 页面全局 CSS | config/gui.html | 纵向页面 | CSS 与静态检查 |
 | Toast | showStatus 状态区域 | 本文件 | 普通、成功、错误 | 保存成功、失败、重试脚本测试 |
 
 保存期间禁用编辑和重复提交，失败时保留输入并允许重试；状态通过 live region 宣告。快捷名称为空或重复时显示关联错误并聚焦输入。密钥默认隐藏，显隐按钮可用键盘操作。快捷删除只修改草稿，保存后生效；关闭窗口直接退出，不弹出未保存修改提示。不使用控件动画。输入不强制协议或 URL 格式。

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
 	"github.com/spf13/cobra"
@@ -167,7 +167,7 @@ func newRootCommand() *cobra.Command {
 				{Name: "redial", Short: "r", Memo: "自动重连", DefaultValue: "true"},
 				{Name: "debug", Short: "d", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "timeout", Short: "t", Memo: "超时时间(ms)", DefaultValue: "500"},
-				{Name: "proxy", Memo: "代理地址", DefaultValue: global.GetProxy()},
+				{Name: "proxy", Memo: "代理地址", DefaultValue: config.GetProxy()},
 				{Name: "printType", Memo: "打印类型", DefaultValue: "utf8"},
 			},
 			Use:     "dial",
@@ -304,7 +304,7 @@ func newRootCommand() *cobra.Command {
 				{Name: "port", Short: "p", Memo: "监听端口"},
 				{Name: "debug", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "download", Short: "d", Memo: "重新下载"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
 				{Name: "timeout", Short: "t", Memo: "设置超时时间"},
 				{Name: "logPort", Memo: "日志端口,部分服务有效,例MQTT"},
 				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
@@ -531,11 +531,11 @@ func newRootCommand() *cobra.Command {
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
 				{Name: "retry", Memo: "失败重试次数", DefaultValue: "10"},
 				{Name: "coroutine", Memo: "协程数量", Short: "c", DefaultValue: "20"},
-				{Name: "dir", Memo: "下载目录", DefaultValue: global.GetString("download.dir", "./")},
+				{Name: "dir", Memo: "下载目录", DefaultValue: config.GetString("download.dir", "./")},
 				{Name: "proxyEnable", Memo: "是否使用HTTP代理", DefaultValue: "true"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
-				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: global.GetString("download.noticeEnable", "true")},
-				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("download.noticeText", "主人. 您的资源已下载结束")},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: config.GetString("download.noticeEnable", "true")},
+				{Name: "noticeText", Memo: "通知内容", DefaultValue: config.GetString("download.noticeText", "主人. 您的资源已下载结束")},
 			},
 			Use:     "download",
 			Short:   "下载资源",
@@ -550,11 +550,11 @@ func newRootCommand() *cobra.Command {
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
 				{Name: "retry", Memo: "失败重试次数", DefaultValue: "10"},
 				{Name: "coroutine", Memo: "协程数量", Short: "c", DefaultValue: "20"},
-				{Name: "dir", Memo: "下载目录", DefaultValue: global.GetString("download.dir", "./")},
+				{Name: "dir", Memo: "下载目录", DefaultValue: config.GetString("download.dir", "./")},
 				{Name: "proxyEnable", Memo: "是否使用HTTP代理", DefaultValue: "true"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
-				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: global.GetString("download.noticeEnable", "true")},
-				{Name: "noticeText", Memo: "通知内容", DefaultValue: global.GetString("download.noticeText", "主人. 您的资源已下载结束")},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: config.GetString("download.noticeEnable", "true")},
+				{Name: "noticeText", Memo: "通知内容", DefaultValue: config.GetString("download.noticeText", "主人. 您的资源已下载结束")},
 			},
 			Use:     "dl",
 			Short:   "下载资源(同download)",
@@ -570,11 +570,11 @@ func newRootCommand() *cobra.Command {
 			Child: []*Command{
 				{
 					Flag: []*Flag{
-						{Name: "endpoint", Short: "e", Memo: "请求地址", DefaultValue: global.GetString("upload.minio.endpoint")},
-						{Name: "access", Short: "a", Memo: "AccessKey", DefaultValue: global.GetString("upload.minio.access")},
-						{Name: "secret", Short: "s", Memo: "SecretKey", DefaultValue: global.GetString("upload.minio.secret")},
-						{Name: "bucket", Short: "b", Memo: "桶名称", DefaultValue: global.GetString("upload.minio.bucket")},
-						{Name: "rename", Short: "r", Memo: "使用随机名称", DefaultValue: global.GetString("upload.minio.rename")},
+						{Name: "endpoint", Short: "e", Memo: "请求地址", DefaultValue: config.GetString("upload.minio.endpoint")},
+						{Name: "access", Short: "a", Memo: "AccessKey", DefaultValue: config.GetString("upload.minio.access")},
+						{Name: "secret", Short: "s", Memo: "SecretKey", DefaultValue: config.GetString("upload.minio.secret")},
+						{Name: "bucket", Short: "b", Memo: "桶名称", DefaultValue: config.GetString("upload.minio.bucket")},
+						{Name: "rename", Short: "r", Memo: "使用随机名称", DefaultValue: config.GetString("upload.minio.rename")},
 					},
 					Use:     "minio",
 					Short:   "上传资源到minio",
@@ -588,7 +588,7 @@ func newRootCommand() *cobra.Command {
 			Flag: []*Flag{
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
 				{Name: "download", Short: "d", Memo: "重新下载"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
 			},
 			Use:     "install",
 			Short:   "安装应用",
@@ -634,7 +634,7 @@ func newRootCommand() *cobra.Command {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
 				{Name: "download", Memo: "重新下载升级程序", Short: "d"},
 			},
 			Use:     "upgrade",

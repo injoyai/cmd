@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/spf13/cobra"
 )
 
 func TestSpeedDefaultsIgnoreConfig(t *testing.T) {
-	previous := global.File
-	global.File = global.Open(filepath.Join(t.TempDir(), "config.yaml"))
-	t.Cleanup(func() { global.File = previous })
+	previous := config.File
+	config.File = config.Open(filepath.Join(t.TempDir(), "config.yaml"))
+	t.Cleanup(func() { config.File = previous })
 	for _, key := range []string{"testDownloadUrl", "testUploadUrl", "test.downloadUrl", "test.uploadUrl"} {
-		global.File.Set(key, "https://ignored.example")
+		config.File.Set(key, "https://ignored.example")
 	}
 	for _, tc := range []struct {
 		name string

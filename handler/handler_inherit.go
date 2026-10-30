@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/g"
@@ -57,7 +57,7 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "ipinfo",
 		Dir:          oss.ExecDir(),
 		ProxyEnable:  true,
-		ProxyAddress: flags.GetString("proxy", global.GetProxy()),
+		ProxyAddress: flags.GetString("proxy", config.GetProxy()),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}

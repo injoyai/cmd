@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 )
 
 func TestHTTPRepositoryMirrorsAndDirectFailure(t *testing.T) {
@@ -35,10 +35,10 @@ func TestHTTPRepositoryMirrorsAndDirectFailure(t *testing.T) {
 				_, _ = w.Write([]byte("mirror content"))
 			}))
 			defer srv.Close()
-			previous := global.File
-			global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
-			global.File.Set("resource.urls", []string{srv.URL + "/first/{name}", srv.URL + "/second/{name}"})
-			t.Cleanup(func() { global.File = previous })
+			previous := config.File
+			config.File = config.Open(filepath.Join(t.TempDir(), "config.json"))
+			config.File.Set("resource.urls", []string{srv.URL + "/first/{name}", srv.URL + "/second/{name}"})
+			t.Cleanup(func() { config.File = previous })
 			config := &Config{Resource: "asset.bin", Dir: t.TempDir(), Name: "saved"}
 			if tc.direct {
 				config.Resource = srv.URL + "/direct.bin"

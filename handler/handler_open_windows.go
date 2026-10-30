@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/g"
@@ -22,7 +22,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 	}
 
 	//尝试在自定义中查找
-	if v, ok := global.File.GetSMap("open.custom")[args[0]]; ok {
+	if v, ok := config.File.GetSMap("open.custom")[args[0]]; ok {
 		fmt.Print("自定义")
 		return tool.ShellStart(v)
 	}

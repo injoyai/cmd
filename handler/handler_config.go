@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ func NewConfigCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
-				return global.RunGUI()
+				return config.RunGUI()
 			}
 			sets, err := parseConfigAssignments("set", set)
 			if err != nil {
@@ -59,20 +59,20 @@ func NewConfigCommand() *cobra.Command {
 						value = []string{pair[1]}
 					}
 				}
-				global.File.Set(pair[0], value)
+				config.File.Set(pair[0], value)
 			}
 			for _, pair := range appends {
-				global.File.Append(pair[0], pair[1])
+				config.File.Append(pair[0], pair[1])
 			}
 			for _, key := range del {
-				global.File.Del(key)
+				config.File.Del(key)
 			}
 			if len(sets)+len(appends)+len(del) > 0 {
-				if err := global.Save(); err != nil {
+				if err := config.Save(); err != nil {
 					return err
 				}
 			}
-			return global.Print(cmd.OutOrStdout())
+			return config.Print(cmd.OutOrStdout())
 		},
 	}
 	cmd.Flags().StringArrayVarP(&set, "set", "s", nil, "设置 key=value，可重复使用")

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/handler"
 )
 
@@ -10,7 +10,7 @@ func Commands() []*handler.Command {
 		{
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: global.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
 				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"}, //runType
 			},
 			Use:     "open",

@@ -1,4 +1,4 @@
-package global
+package config
 
 import (
 	_ "embed"
@@ -8,7 +8,7 @@ import (
 	"github.com/injoyai/lorca"
 )
 
-//go:embed global.html
+//go:embed gui.html
 var html string
 
 func RunGUI() error {

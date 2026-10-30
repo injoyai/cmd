@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/notice"
 	"github.com/injoyai/goutil/oss"
@@ -43,7 +43,7 @@ func MustDownload(ctx context.Context, op *Config) (string, bool, error) {
 	defer stop()
 
 	//忽略正则的资源地址
-	ignore := global.GetString("proxy.ignore")
+	ignore := config.GetString("proxy.ignore")
 	if op != nil && len(ignore) > 0 {
 		op.ProxyIgnore = strings.Split(ignore, ",")
 	}

@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 )
 
 // MergeTS 合并指定目录，保留源文件；失败时保留原有输出文件。
 func MergeTS(dir, output string) error {
-	op, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: global.GetProxy()})
+	op, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: config.GetProxy()})
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package global
+package config
 
 import "github.com/injoyai/goutil/oss"
 

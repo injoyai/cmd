@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/injoyai/cmd/global"
+	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/internal/testutil"
 	"github.com/injoyai/goutil/oss"
 )
@@ -30,10 +30,10 @@ func TestDownloadHTTPBuiltinAndOSS(t *testing.T) {
 				_, _ = w.Write([]byte(r.URL.Path))
 			}))
 			defer srv.Close()
-			previousConfig := global.File
-			global.File = global.Open(filepath.Join(t.TempDir(), "global.json"))
-			global.File.Set("resource.urls", []string{srv.URL + "/store/{name}"})
-			t.Cleanup(func() { global.File = previousConfig })
+			previousConfig := config.File
+			config.File = config.Open(filepath.Join(t.TempDir(), "config.json"))
+			config.File.Set("resource.urls", []string{srv.URL + "/store/{name}"})
+			t.Cleanup(func() { config.File = previousConfig })
 			op := &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir()}
 			wantName, wantPath := "file.bin", "/file.bin"
 			handlerCalls := 0

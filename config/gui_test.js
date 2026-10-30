@@ -60,7 +60,7 @@ function setup() {
     };
     const window = new Element('window');
     const context = vm.createContext({document, window});
-    const html = fs.readFileSync(path.join(__dirname, 'global.html'), 'utf8');
+    const html = fs.readFileSync(path.join(__dirname, 'gui.html'), 'utf8');
     vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
     const fields = [
         {key:'download.dir', name:'下载目录', value:'./downloads'},
