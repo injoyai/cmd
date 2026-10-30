@@ -119,14 +119,7 @@ func installPackage(binary string, command ...string) Handler {
 	}
 }
 
-var Resources = indexResources(map[string]*Info{
-	"build_win.sh":       {Local: "build_win.sh", Key: []string{"build_win"}},
-	"service.service":    {Local: "service.service", Key: []string{"service"}},
-	"install_minio.sh":   {Local: "install_minio.sh", Key: []string{"install_minio"}},
-	"install_nodered.sh": {Local: "install_nodered.sh", Key: []string{"install_nodered"}},
-	"install_v2raya.sh":  {Local: "install_v2raya.sh", Key: []string{"install_v2raya"}},
-	"golang.md":          {Local: "GOLANG.md", Key: []string{"go.md", "GOLANG.md"}},
-}, Exclusive)
+var Resources = indexResources(map[string]*Info{}, Exclusive)
 
 // indexResources 先合并定义、补齐名称，再建立独立索引；后面的清单覆盖同名定义。
 func indexResources(groups ...map[string]*Info) map[string]*Info {
