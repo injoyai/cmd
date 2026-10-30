@@ -23,6 +23,20 @@ func TestDownloadReportsFailure(t *testing.T) {
 
 }
 
+func TestDownloadRejectsInvalidNumericOptions(t *testing.T) {
+	for _, tc := range []struct{ name, value string }{
+		{"coroutine", "invalid"}, {"coroutine", "0"}, {"coroutine", "-1"},
+		{"retry", "invalid"}, {"retry", "-1"},
+	} {
+		err := Download(nil, []string{"agents"}, NewFlags([]*Flag{
+			{Name: tc.name, Value: tc.value}, {Name: "dir", Value: t.TempDir()},
+		}))
+		if err == nil || !strings.Contains(err.Error(), "--"+tc.name) {
+			t.Fatalf("invalid %s=%q: %v", tc.name, tc.value, err)
+		}
+	}
+}
+
 func TestUninstallPath(t *testing.T) {
 	dir := oss.ExecDir()
 

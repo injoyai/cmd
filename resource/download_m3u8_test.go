@@ -250,7 +250,7 @@ func TestM3u8ProxyCoversMasterAndSegments(t *testing.T) {
 	testutil.InstallDownloadHelper(t, "ffmpeg")
 	filename, _, err := Download(context.Background(), &Config{
 		Resource: "http://source.invalid/master.m3u8", Dir: t.TempDir(),
-		ProxyEnable: true, ProxyAddress: proxy.URL,
+		ProxyAddress: proxy.URL,
 	})
 	if err != nil || requests.Load() != 3 {
 		t.Fatalf("master/media/segment proxy requests=%d, err=%v", requests.Load(), err)

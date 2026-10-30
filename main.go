@@ -304,7 +304,7 @@ func newRootCommand() *cobra.Command {
 				{Name: "port", Short: "p", Memo: "监听端口"},
 				{Name: "debug", Memo: "打印日志", DefaultValue: "true"},
 				{Name: "download", Short: "d", Memo: "重新下载"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 				{Name: "timeout", Short: "t", Memo: "设置超时时间"},
 				{Name: "logPort", Memo: "日志端口,部分服务有效,例MQTT"},
 				{Name: "runType", Memo: "执行方式: start(默认,新窗口), run(当前窗口)"},
@@ -529,11 +529,10 @@ func newRootCommand() *cobra.Command {
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
-				{Name: "retry", Memo: "失败重试次数", DefaultValue: "10"},
-				{Name: "coroutine", Memo: "协程数量", Short: "c", DefaultValue: "20"},
+				{Name: "retry", Memo: "额外重试次数，默认由下载器决定（内置 m3u8 为 10）"},
+				{Name: "coroutine", Memo: "下载并发数，默认由下载器决定（内置 m3u8 为 20）", Short: "c"},
 				{Name: "dir", Memo: "下载目录", DefaultValue: config.GetString("download.dir", "./")},
-				{Name: "proxyEnable", Memo: "是否使用HTTP代理", DefaultValue: "true"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: config.GetString("download.noticeEnable", "true")},
 				{Name: "noticeText", Memo: "通知内容", DefaultValue: config.GetString("download.noticeText", "主人. 您的资源已下载结束")},
 			},
@@ -548,11 +547,10 @@ func newRootCommand() *cobra.Command {
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
-				{Name: "retry", Memo: "失败重试次数", DefaultValue: "10"},
-				{Name: "coroutine", Memo: "协程数量", Short: "c", DefaultValue: "20"},
+				{Name: "retry", Memo: "额外重试次数，默认由下载器决定（内置 m3u8 为 10）"},
+				{Name: "coroutine", Memo: "下载并发数，默认由下载器决定（内置 m3u8 为 20）", Short: "c"},
 				{Name: "dir", Memo: "下载目录", DefaultValue: config.GetString("download.dir", "./")},
-				{Name: "proxyEnable", Memo: "是否使用HTTP代理", DefaultValue: "true"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: config.GetString("download.noticeEnable", "true")},
 				{Name: "noticeText", Memo: "通知内容", DefaultValue: config.GetString("download.noticeText", "主人. 您的资源已下载结束")},
 			},
@@ -588,7 +586,7 @@ func newRootCommand() *cobra.Command {
 			Flag: []*Flag{
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
 				{Name: "download", Short: "d", Memo: "重新下载"},
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 			},
 			Use:     "install",
 			Short:   "安装应用",
@@ -634,7 +632,7 @@ func newRootCommand() *cobra.Command {
 
 		&Command{
 			Flag: []*Flag{
-				{Name: "proxy", Memo: "设置下载代理地址", DefaultValue: config.GetProxy()},
+				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 				{Name: "download", Memo: "重新下载升级程序", Short: "d"},
 			},
 			Use:     "upgrade",

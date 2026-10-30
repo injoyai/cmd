@@ -45,7 +45,6 @@ func TestTaskFilenameAndConfigIsolation(t *testing.T) {
 func TestTaskProxyRulesFollowMirror(t *testing.T) {
 	op := &Config{
 		Resource:     "https://source.example/file",
-		ProxyEnable:  true,
 		ProxyAddress: "http://proxy.local:8080",
 		ProxyIgnore:  []string{`mirror\.example`},
 	}
@@ -67,7 +66,6 @@ func TestTaskProxyRulesFollowMirror(t *testing.T) {
 func TestTaskStringRedactsCredentials(t *testing.T) {
 	op := &Config{
 		Resource:     "https://source-user:source-password@example.com/file.bin",
-		ProxyEnable:  true,
 		ProxyAddress: "http://proxy-user:proxy-password@localhost:8080",
 	}
 	task := newTestTask(t, op)
@@ -128,25 +126,37 @@ func TestTaskDirectDownload(t *testing.T) {
 }
 
 func TestTaskProxy(t *testing.T) {
+	t.Setenv("HTTP_PROXY", "http://environment-proxy.local:8080")
 	for _, tt := range []struct {
 		name    string
-		enabled bool
+		address string
 		ignore  []string
 		want    string
 	}{
-		{"ignored", true, []string{`example\.com`}, ""},
-		{"not ignored", true, []string{"localhost", `127\.0\.0\.1`}, "http://proxy.local:8080"},
-		{"disabled", false, nil, ""},
+		{"ignored", "http://proxy.local:8080", []string{`example\.com`}, ""},
+		{"not ignored", "http://proxy.local:8080", []string{"localhost", `127\.0\.0\.1`}, "http://proxy.local:8080"},
+		{"direct", "", nil, ""},
+		{"direct ignores unused rules", "", []string{"["}, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			task := newTestTask(t, &Config{
 				Resource:     "https://example.com/file.bin",
-				ProxyEnable:  tt.enabled,
-				ProxyAddress: "http://proxy.local:8080",
+				ProxyAddress: tt.address,
 				ProxyIgnore:  tt.ignore,
 			})
 			if got := task.Proxy(); got != tt.want {
 				t.Fatalf("Proxy() = %q, want %q", got, tt.want)
+			}
+			req, err := http.NewRequest(http.MethodGet, task.URL(), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			proxy, err := task.Client.Transport.(*http.Transport).Proxy(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (proxy == nil && tt.want != "") || (proxy != nil && proxy.String() != tt.want) {
+				t.Fatalf("transport proxy = %v, want %q", proxy, tt.want)
 			}
 		})
 	}
@@ -154,13 +164,13 @@ func TestTaskProxy(t *testing.T) {
 
 func TestTaskProxyAddressValidation(t *testing.T) {
 	for _, address := range []string{"http://", "localhost:8080", "ftp://proxy.local:8080", "socks5://"} {
-		if task, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: address}); err == nil {
+		if task, err := NewTask(&Config{ProxyAddress: address}); err == nil {
 			task.Close()
 			t.Errorf("invalid proxy accepted: %s", address)
 		}
 	}
 	for _, address := range []string{"http://proxy.local:8080", "https://proxy.local", "socks5://proxy.local:1080", "socks5h://proxy.local:1080", "//proxy.local:8080"} {
-		newTestTask(t, &Config{ProxyEnable: true, ProxyAddress: address})
+		newTestTask(t, &Config{ProxyAddress: address})
 	}
 }
 

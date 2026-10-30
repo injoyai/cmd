@@ -56,7 +56,6 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) error {
 	if _, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "ipinfo",
 		Dir:          oss.ExecDir(),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy", config.GetProxy()),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)

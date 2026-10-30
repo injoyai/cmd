@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/injoyai/cmd/resource"
@@ -27,15 +28,29 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) error {
 		//打开图形化界面
 		return Open(cmd, []string{"downloader"}, flags)
 	}
+	coroutine, retry := 0, -1
+	if raw := flags.GetString("coroutine"); raw != "" {
+		var err error
+		coroutine, err = strconv.Atoi(raw)
+		if err != nil || coroutine <= 0 {
+			return errors.New("--coroutine 必须为正整数")
+		}
+	}
+	if raw := flags.GetString("retry"); raw != "" {
+		var err error
+		retry, err = strconv.Atoi(raw)
+		if err != nil || retry < 0 {
+			return errors.New("--retry 必须为非负整数")
+		}
+	}
 
 	filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          flags.GetString("dir"),
-		Coroutine:    flags.GetInt("coroutine"),
-		Retry:        flags.GetInt("retry"),
+		Coroutine:    coroutine,
+		Retry:        retry,
 		Name:         flags.GetString("name"),
 		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
-		ProxyEnable:  flags.GetBool("proxyEnable"),
 		ProxyAddress: flags.GetString("proxy"),
 		NoticeEnable: flags.GetBool("noticeEnable"),
 		NoticeText:   flags.GetString("noticeText"),
@@ -55,7 +70,6 @@ func InstallGo(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          dir,
 		Name:         flags.GetString("name"),
 		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
@@ -77,7 +91,6 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          oss.ExecDir(),
 		Name:         flags.GetString("name"),
 		Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {

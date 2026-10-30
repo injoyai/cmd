@@ -32,7 +32,7 @@ func NewTask(config *Config) (*Task, error) {
 	}
 	task := &Task{Config: *config, url: config.SourceURL, Ctx: context.Background()}
 	task.ProxyIgnore = append([]string(nil), config.ProxyIgnore...)
-	if task.ProxyEnable && task.ProxyAddress != "" {
+	if task.ProxyAddress != "" {
 		proxy, err := url.Parse(task.ProxyAddress)
 		if err != nil || proxy.Hostname() == "" {
 			// 底层URL解析错误会回显完整代理地址，避免把凭据带入错误日志。
@@ -137,7 +137,7 @@ func (this *Task) URL() string {
 
 func (this *Task) compileProxyRules() ([]*regexp.Regexp, error) {
 	rules := make([]*regexp.Regexp, 0, len(this.ProxyIgnore))
-	if !this.ProxyEnable {
+	if this.ProxyAddress == "" {
 		return rules, nil
 	}
 	for i, pattern := range this.ProxyIgnore {
@@ -159,7 +159,7 @@ func (this *Task) Proxy() string {
 }
 
 func (this *Task) proxyFor(raw string) string {
-	if !this.ProxyEnable {
+	if this.ProxyAddress == "" {
 		return ""
 	}
 	for _, rule := range this.proxyRules {

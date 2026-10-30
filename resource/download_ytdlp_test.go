@@ -21,7 +21,7 @@ func TestYTDLPAutoDownload(t *testing.T) {
 		config := &Config{
 			Resource: "https://www.youtube.com/watch?v=example&list=playlist",
 			Dir:      filepath.Join(t.TempDir(), "video dir"), Name: "100% demo",
-			Cover: cover, ProxyEnable: true, ProxyAddress: "http://proxy.local:8080",
+			Cover: cover, ProxyAddress: "http://proxy.local:8080",
 		}
 		before := *config
 		dir, exist, err := Download(context.Background(), config)

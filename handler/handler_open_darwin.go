@@ -47,7 +47,6 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 				Resource:     args[0],
 				Dir:          oss.UserInjoyDir(),
 				Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
-				ProxyEnable:  true,
 				ProxyAddress: flags.GetString("proxy"),
 			})
 			if err != nil {

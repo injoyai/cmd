@@ -9,6 +9,24 @@ import (
 )
 
 var Exclusive = map[string]*Info{
+	"aria2": {
+		Key:   []string{"aria2c"},
+		Local: "aria2c.exe", Remote: map[string]string{"amd64": "aria2-1.37.0-win-64bit-build1.zip", "386": "aria2-1.37.0-win-32bit-build1.zip"},
+		FullUrl: []Url{"https://github.com/aria2/aria2/releases/download/release-1.37.0/{name}"},
+		Handler: downloadReleaseBinary("aria2c.exe"),
+	},
+	"n-m3u8dl-re": {
+		Key:   []string{"N_m3u8DL-RE"},
+		Local: "N_m3u8DL-RE.exe", Remote: map[string]string{"amd64": "N_m3u8DL-RE_v0.6.0-beta_win-x64_20260629.zip", "arm64": "N_m3u8DL-RE_v0.6.0-beta_win-arm64_20260629.zip", "386": "N_m3u8DL-RE_v0.6.0-beta_win-NT6.0-x86_20260629.zip"},
+		FullUrl: []Url{"https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.6.0-beta/{name}"},
+		Handler: downloadReleaseBinary("N_m3u8DL-RE.exe"),
+	},
+	"gallery-dl": {
+		Local: "gallery-dl.exe", Remote: map[string]string{"amd64": "gallery-dl.exe", "386": "gallery-dl_x86.exe"},
+		FullUrl: []Url{"https://codeberg.org/mikf/gallery-dl/releases/download/v1.32.18/{name}"},
+		Handler: downloadReleaseBinary("gallery-dl.exe"),
+	},
+
 	"hfs":           {Local: "hfs.exe"},
 	"swag":          {Local: "swag.exe"},
 	"win_active":    {Local: "win_active.exe"},

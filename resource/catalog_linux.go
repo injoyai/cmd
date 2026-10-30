@@ -9,6 +9,21 @@ import (
 )
 
 var Exclusive = map[string]*Info{
+	"aria2": {
+		Local: "aria2c", InstallHint: "请使用系统包管理器安装 aria2 到 PATH，例如 apt install aria2",
+	},
+	"n-m3u8dl-re": {
+		Local: "N_m3u8DL-RE", Remote: map[string]string{"amd64": "N_m3u8DL-RE_v0.6.0-beta_linux-x64_20260629.tar.gz", "arm64": "N_m3u8DL-RE_v0.6.0-beta_linux-arm64_20260629.tar.gz"},
+		FullUrl: []Url{"https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.6.0-beta/{name}"},
+		Handler: downloadReleaseBinary("N_m3u8DL-RE"),
+	},
+	"gallery-dl": {
+		Local: "gallery-dl", Remote: map[string]string{"amd64": "gallery-dl.bin"},
+		FullUrl:     []Url{"https://codeberg.org/mikf/gallery-dl/releases/download/v1.32.18/{name}"},
+		Handler:     downloadReleaseBinary("gallery-dl"),
+		InstallHint: "其他架构请通过系统包管理器或 Python 环境安装 gallery-dl 到 PATH",
+	},
+
 	"i":         {Local: "i", Remote: map[string]string{"amd64": "i_linux_amd64", "arm": "i_linux_arm", "arm64": "i_linux_arm64"}},
 	"forward":   {Local: "forward", Remote: map[string]string{"amd64": "forward_linux_amd64", "arm": "forward_linux_arm", "arm64": "forward_linux_arm64"}},
 	"edge":      {Local: "edge", Remote: map[string]string{"amd64": "edge_linux_amd64", "arm": "edge_linux_arm", "arm64": "edge_linux_arm64"}},

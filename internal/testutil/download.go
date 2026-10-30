@@ -18,7 +18,7 @@ import (
 func Main(m *testing.M) {
 	if os.Getenv("CMD_DOWNLOAD_HELPER") == "1" {
 		name := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
-		if name == "ffmpeg" || name == "tdl" || name == "yt-dlp" {
+		if name == "ffmpeg" || name == "tdl" || name == "yt-dlp" || name == "aria2c" || name == "N_m3u8DL-RE" || name == "gallery-dl" {
 			if err := runDownloadHelper(name, os.Args[1:]); err != nil {
 				os.Exit(1)
 			}
@@ -33,11 +33,11 @@ func runDownloadHelper(name string, args []string) error {
 	if err != nil {
 		return err
 	}
-	if name == "yt-dlp" || (name == "tdl" && os.Getenv("CMD_DOWNLOAD_HELPER_TDL") != "") {
+	if name == "yt-dlp" || name == "aria2c" || name == "N_m3u8DL-RE" || name == "gallery-dl" || (name == "tdl" && os.Getenv("CMD_DOWNLOAD_HELPER_TDL") != "") {
 		data, _ := json.Marshal(args)
 		fmt.Fprintln(f, name, string(data))
 	} else {
-		fmt.Fprintln(f, name, args[0])
+		fmt.Fprintln(f, name, strings.Join(args, " "))
 	}
 	f.Close()
 	if name == "tdl" {
@@ -45,11 +45,42 @@ func runDownloadHelper(name string, args []string) error {
 	}
 	arg := func(key string) string {
 		for i := range args {
+			if value, ok := strings.CutPrefix(args[i], key+"="); ok {
+				return value
+			}
 			if args[i] == key && i+1 < len(args) {
 				return args[i+1]
 			}
 		}
 		return ""
+	}
+	if name == "aria2c" || name == "N_m3u8DL-RE" || name == "gallery-dl" {
+		if ready := os.Getenv("CMD_DOWNLOAD_HELPER_READY"); ready != "" {
+			if err := os.WriteFile(ready, nil, 0600); err != nil {
+				return err
+			}
+			time.Sleep(time.Minute)
+		}
+		var output string
+		switch name {
+		case "aria2c":
+			if arg("--out") != "" {
+				output = filepath.Join(arg("--dir"), arg("--out"))
+			}
+		case "N_m3u8DL-RE":
+			output = filepath.Join(arg("--save-dir"), arg("--save-name")+".mkv")
+		case "gallery-dl":
+			output = filepath.Join(arg("--destination"), "image.jpg")
+		}
+		if output != "" && os.Getenv("CMD_DOWNLOAD_HELPER_NO_OUTPUT") == "" {
+			if err := os.WriteFile(output, []byte("downloaded content"), 0600); err != nil {
+				return err
+			}
+		}
+		if os.Getenv("CMD_DOWNLOAD_HELPER_FAIL_TOOL") == name {
+			return errors.New("tool download failed")
+		}
+		return nil
 	}
 	if name == "yt-dlp" {
 		if os.Getenv("CMD_DOWNLOAD_HELPER_FAIL_YTDLP") == "1" {
@@ -78,15 +109,16 @@ func runDownloadHelper(name string, args []string) error {
 		}
 		return os.WriteFile(fmt.Sprintf(pattern, 1), []byte("second"), 0600)
 	}
-	listFile := arg("-i")
+	listFile := strings.TrimPrefix(arg("-i"), "concatf:file:")
 	list, err := os.ReadFile(listFile)
 	if err != nil {
 		return err
 	}
 	var merged []byte
 	for _, line := range strings.Split(strings.TrimSpace(string(list)), "\n") {
-		name := strings.TrimSuffix(strings.TrimPrefix(line, "file '"), "'")
-		data, err := os.ReadFile(filepath.Join(filepath.Dir(listFile), name))
+		name := strings.TrimSuffix(strings.TrimPrefix(line, "'"), "'")
+		name = strings.ReplaceAll(strings.TrimPrefix(name, "file:"), "'\\''", "'")
+		data, err := os.ReadFile(filepath.FromSlash(name))
 		if err != nil {
 			return err
 		}

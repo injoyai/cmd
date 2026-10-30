@@ -1,6 +1,6 @@
 # 资源下载与安装
 
-`i download` 和 `i dl` 用法相同，支持内置资源、项目模板、普通 URL、Telegram 消息、网站视频、m3u8 和 RTSP/RTMP 流。
+`i download` 和 `i dl` 用法相同，支持内置资源、项目模板、普通 URL、Telegram 消息、网站视频、图集、磁力和种子，以及 HLS/DASH/MSS、RTSP/RTMP 流。
 
 ## 常用命令
 
@@ -32,10 +32,9 @@ i install tdl -d=true
 | `--dir` | 保存目录，默认使用全局 `download.dir`，未配置时为当前目录 |
 | `-n` / `--name` | 自定义保存名称；没有扩展名时补默认名称的最后一层后缀 |
 | `-d` / `--download` | 重新下载并覆盖已有目标，例如 `-d=true` |
-| `--proxy` | 代理地址，支持 HTTP、HTTPS、SOCKS5/SOCKS5H |
-| `--proxyEnable` | 是否使用代理，例如 `--proxyEnable=false` |
-| `-c` / `--coroutine` | m3u8 分片并发数，默认 20 |
-| `--retry` | m3u8 每个分片首次尝试之外的重试次数，默认 10；不控制整个下载任务的重试 |
+| `--proxy` | 代理地址，支持 HTTP、HTTPS、SOCKS5/SOCKS5H；显式空值 `--proxy=""` 表示本次直连 |
+| `-c` / `--coroutine` | 内置 m3u8 分片并发默认 20；N_m3u8DL-RE 分片并发使用上游默认值；gallery-dl 不支持 |
+| `--retry` | 首次尝试之外的重试次数；内置 m3u8 默认 10，其他下载器使用各自默认值；`0` 表示不重试 |
 | `--noticeEnable` | 下载完成后是否发送通知 |
 | `--noticeText` | 下载完成通知的内容 |
 
@@ -47,6 +46,48 @@ i install tdl -d=true
 i config --set download.dir=./downloads
 i config --set proxy.addr=http://127.0.0.1:1081
 ```
+
+代理地址非空时启用代理，空值时直连。不传 `--proxy` 时，优先使用全局 `proxy.addr`，未配置时依次读取 `http_proxy`、`HTTP_PROXY`、`https_proxy`、`HTTPS_PROXY`。显式传入 `--proxy=""` 会覆盖默认代理，下载和所需工具的安装均使用直连；匹配 `proxy.ignore` 的地址也使用直连。
+
+```shell
+i dl 'https://example.com/file.zip' --proxy=""
+i install tdl --proxy=""
+```
+
+## 自动识别下载内容
+
+```shell
+# DASH、MSS 流媒体自动使用 N_m3u8DL-RE，保存为 MKV
+i dl 'https://example.com/video.mpd' --dir ./videos -n 演示
+
+# 图集；-n 指定本次下载的子目录名
+i dl 'https://www.pixiv.net/users/123' --dir ./images -n 作品
+
+# 磁力和本地种子自动使用 aria2；本例明确使用直连
+i dl './example.torrent' --proxy="" --dir ./downloads
+```
+
+下载方式由资源自动识别：`.mpd`、`.ism/Manifest` 使用 N_m3u8DL-RE，磁力链接和本地 `.torrent` 文件使用 aria2。Pixiv 的作品与用户作品页、Danbooru 的帖子与图池、DeviantArt 的作品与画廊页使用 gallery-dl。普通文件和 `.m3u8` 保留内置下载方式；`.torrent` 网页链接只保存种子文件。X/Twitter、Instagram、Reddit 保留网站视频下载。
+
+地址或参数不支持时直接报错；下载失败也不会改换其他工具。
+
+N_m3u8DL-RE 输出已有时默认跳过，`-d=true` 重新下载并覆盖；失败保留原文件。名称可省略扩展名或使用 `.mkv`。gallery-dl 返回输出目录，默认跳过已有图片，`-d=true` 覆盖；批量任务失败后已完成的文件会保留，不能保证整批回滚。
+
+aria2 种子任务使用直连，按种子原始目录和文件名保存；不接受 `--name`、`--download`、`--coroutine`、`--retry`，默认代理可用 `--proxy=""` 清除。种子任务会参与 BT 数据交换，下载完成后退出，不继续做种。
+
+### 安装下载工具
+
+优先使用 PATH 中已安装的命令。支持自动安装的平台可运行 `i install <工具名>`；缺少工具时下载命令也会自动安装到 `i` 所在目录。
+
+| 工具 | macOS | Linux | Windows |
+| --- | --- | --- | --- |
+| aria2 | 先安装到 PATH，例如 `brew install aria2` | 先安装到 PATH，例如 `apt install aria2` | 自动安装：amd64、386 |
+| N_m3u8DL-RE | 自动安装：amd64、arm64 | 自动安装：amd64、arm64 | 自动安装：amd64、arm64、386 |
+| gallery-dl | 先安装到 PATH，例如 `brew install gallery-dl` | 自动安装：amd64；其他架构自行安装到 PATH | 自动安装：amd64、386 |
+
+N_m3u8DL-RE 还需要 ffmpeg，缺少时会尝试自动安装。Linux 的独立程序需要满足上游运行库要求；Windows gallery-dl 需要相应的 Visual C++ 运行库。不支持自动安装的平台和架构会给出安装提示。
+
+N_m3u8DL-RE 当前使用 0.6.0-beta；已发现该版本在部分输出重定向环境会异常退出，建议在终端中运行。内置 `.m3u8` 下载不受此限制影响。
 
 ## Telegram 下载
 
@@ -73,7 +114,11 @@ YouTube、Bilibili、AcFun、抖音、TikTok、Vimeo、Twitch、X/Twitter、Inst
 
 yt-dlp、ffmpeg 优先使用 PATH 中的程序，缺少时安装到 `i` 所在目录。m3u8 和 RTSP/RTMP 默认保存为 `.ts` 文件，例如 `video.v1.m3u8` 保存为 `video.v1.ts`。
 
+macOS 缺少 ffmpeg 时，从 [Shaka FFmpeg n8.1.2-1](https://github.com/shaka-project/static-ffmpeg-binaries/releases/tag/n8.1.2-1) 自动安装对应的 amd64 / arm64 程序。
+
 录制时按 Ctrl+C 会先停止录制，再尝试合并已完成的分片：停止最多等待 5 秒，合并最多等待 2 分钟。合并失败会保留已有输出及可用缓存。重新下载相同的 m3u8 地址到相同位置时，可复用匹配的空闲缓存。
+
+TS 合并按顺序连续读取分片，避免在分片边界丢失解码参数。合并时仅显示 ffmpeg 的错误，不输出版本信息和逐帧警告。
 
 ## 错误与重试
 
@@ -85,7 +130,7 @@ yt-dlp、ffmpeg 优先使用 PATH 中的程序，缺少时安装到 `i` 所在�
 | HTTP 401、403、404 等其他状态 | 有其他镜像时尝试下一个地址，否则停止 |
 | 地址或代理配置无效、域名不存在、证书校验失败 | 停止；修正地址或配置后重新执行 |
 | 文件权限、磁盘写入、解压或播放列表格式错误 | 停止，保留已有输出和可用缓存 |
-| tdl、yt-dlp、ffmpeg 运行失败 | 显示工具错误后停止；tdl 未登录时可先登录再继续 |
+| tdl、yt-dlp、ffmpeg、aria2、N_m3u8DL-RE、gallery-dl 运行失败 | 显示工具错误后停止；tdl 未登录时可先登录再继续 |
 
 普通 HTTP 下载和程序安装在完成后才替换目标，失败或取消时保留原文件。媒体缓存位于输出目录的 `.i-download-*` 中，成功合并后清理；清理失败仅显示警告，不影响下载成功。强制结束进程留下的锁定缓存不会自动复用。
 

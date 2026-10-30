@@ -192,9 +192,12 @@ i scan netstat -f 8080
 ```shell
 i download frp
 i dl https://example.com/demo.tar.gz -n demo.tar.gz
+i dl https://example.com/video.mpd --dir ./videos
 i install go 1.20
 i upgrade
 ```
+
+下载和安装使用 `--proxy` 指定代理；未指定时读取全局 `proxy.addr` 或代理环境变量。需要本次直连时使用 `--proxy=""`，例如 `i dl https://example.com/file.zip --proxy=""`。
 
 ### 文本与目录处理
 
@@ -254,7 +257,7 @@ i config -d examples -d proxy.addr
 参数校验失败时不修改配置。Windows 可用 `i config gui` 打开配置表单，按功能分组编辑，
 资源地址每行一项，密钥默认隐藏。
 
-配置使用 YAML 格式，保存在 `os.UserConfigDir()` 下的 `injoy/i/config.yaml`：
+配置使用 YAML 格式，默认保存位置如下：
 
 | 平台 | 默认位置 |
 | --- | --- |
@@ -262,13 +265,7 @@ i config -d examples -d proxy.addr
 | Linux | `~/.config/injoy/i/config.yaml`，设置 `XDG_CONFIG_HOME` 时使用该目录 |
 | Windows | `%APPDATA%\injoy\i\config.yaml` |
 
-仅在保存时创建目录和文件，使用同目录临时文件替换；Unix 下新建目录权限为 `0700`，
-配置文件权限为 `0600`。Windows 文件访问权限由目录 ACL 控制。
-新文件不存在时兼容读取旧的 `global@dfff0a7fa1a55c8c1a4966c19f6da452`：
-macOS 为 `~/Library/Application Support/injoy/data/cache/`，Windows 为
-`~/AppData/Local/injoy/data/cache/`，Linux 为 `/var/lib/injoy/i/cache/`。
-后续保存写入新位置并保留旧文件；新文件存在时优先使用新文件，读取或解析失败时返回错误，禁止覆盖。
-不兼容过渡期的 `config.json`。可手动编辑 YAML；CLI 保存时会重新排版，不保留注释。
+可手动编辑 YAML；通过 CLI 保存时会重新排版，不保留注释。
 
 配置按 `proxy`、`download`、`resource`、`upload`、`open` 分组，CLI 使用点路径访问：
 
@@ -309,17 +306,10 @@ i config -d 'resource.urls[0]'
 i config -s resource.urls=
 ```
 
-已有文件中的 `downloadDir`、`downloadNoticeEnable`、`downloadNoticeText` 分别迁移为
-`download.dir`、`download.noticeEnable`、`download.noticeText`；`proxy` 字符串迁移为
-`proxy.addr`，`proxyIgnore` 迁移为 `proxy.ignore`；原 `resource` 字符串按逗号拆为
-`resource.urls` 数组。`uploadMinio`、`customOpen` 分别迁移为 `upload.minio`、`open.custom`。
-
-迁移只在内存中进行，查询不会写盘；下次修改保存时，完整配置写回原来的 `config.yaml`，
-移除已迁移旧键，保留其他值、类型和自定义项。新旧键并存时新键优先，对象逐项合并；
-目标分组被非对象配置占用时返回错误，禁止覆盖原文件。后续 CLI 修改请使用新键名。
+旧版配置会自动转换为新的配置项名称；后续修改请使用上面的新名称。升级时保留已有配置和自定义项。
 
 配置命令已由 `i global` 改为 `i config`，旧命令不再保留。配置文件位置不变。
-测速地址固定在代码中，不读取全局测速地址，也不接受自定义地址参数；
+测速使用预设地址，不接受自定义地址参数；
 已有的旧测速配置保留在文件中，但不再生效。
 
 ---
@@ -344,6 +334,5 @@ i download --help
 ## 脚本调用与文件处理
 
 - 命令成功退出码为 `0`；参数、下载、安装、上传、构建等执行错误写入标准错误，并以非零状态退出，可配合 `set -e`、`&&` 使用。
-- `dir -r old=new` 对每个文件先写入同目录临时文件，完整写入并关闭后再替换，保留权限；单个文件失败会停止，已成功处理的其他文件不回滚。
+- `dir -r old=new` 替换文件内容并保留权限；单个文件失败会停止，已成功处理的其他文件不回滚。
 - `install` 以及下载后启动程序的命令会设置执行权限；普通下载覆盖已有文件时保留其权限。`init go` 生成的构建脚本可直接执行。
-- `dial wss://…` 保留 TLS 协议；`upgrade` 支持程序路径包含空格。

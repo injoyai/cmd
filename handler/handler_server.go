@@ -164,7 +164,6 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) error {
 			Resource:     "edge",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
-			ProxyEnable:  true,
 			ProxyAddress: flags.GetString("proxy"),
 		})
 		if err != nil {
@@ -192,7 +191,6 @@ func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) error {
 			Resource:     "edge_mini",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
-			ProxyEnable:  true,
 			ProxyAddress: flags.GetString("proxy"),
 		})
 		if err != nil {
@@ -214,7 +212,6 @@ func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "influxdb",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
@@ -285,7 +282,6 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "proxy",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
@@ -309,7 +305,6 @@ func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "livego",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
@@ -326,7 +321,6 @@ func FrpServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "frps",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
@@ -394,7 +388,6 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {
@@ -439,7 +432,6 @@ func NatsServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "nats",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {

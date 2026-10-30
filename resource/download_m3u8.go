@@ -57,6 +57,13 @@ func downloadM3u8(ctx context.Context, op *Task) error {
 
 // downloadSegments 等待所有工作协程结束后再返回，失败时保留已完成的分片。
 func downloadSegments(ctx context.Context, op *Task, list []string) (int64, error) {
+	coroutine, retry := op.Coroutine, op.Retry
+	if coroutine == 0 {
+		coroutine = 20
+	}
+	if retry < 0 {
+		retry = 10
+	}
 	var sum, current int64
 	var done, failed int
 	var failure error
@@ -94,14 +101,14 @@ func downloadSegments(ctx context.Context, op *Task, list []string) (int64, erro
 	}
 	jobs := make(chan int)
 	var wg sync.WaitGroup
-	for range min(max(op.Coroutine, 1), len(list)) {
+	for range min(max(coroutine, 1), len(list)) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for i := range jobs {
 				var n int64
 				var err error
-				for attempt := 0; attempt <= max(op.Retry, 0); attempt++ {
+				for attempt := 0; attempt <= max(retry, 0); attempt++ {
 					if err = ctx.Err(); err != nil {
 						break
 					}

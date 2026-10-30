@@ -123,7 +123,7 @@ func TestDownloadRejectsInvalidProxyRule(t *testing.T) {
 		requests.Add(1)
 	}))
 	defer srv.Close()
-	op := &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir(), ProxyEnable: true, ProxyIgnore: []string{"["}}
+	op := &Config{Resource: srv.URL + "/file.bin", Dir: t.TempDir(), ProxyAddress: "http://proxy.local:8080", ProxyIgnore: []string{"["}}
 	filename, exist, err := Download(context.Background(), op)
 	if err == nil || filename != "" || exist || requests.Load() != 0 {
 		t.Fatalf("invalid proxy rule: filename = %q, exist = %v, err = %v, requests = %d", filename, exist, err, requests.Load())
@@ -165,7 +165,6 @@ func TestDownloadExplicitURLOverride(t *testing.T) {
 func TestInvalidProxyAddressDoesNotExposeCredentials(t *testing.T) {
 	op := &Config{
 		Resource:     "https://example.com/file.bin",
-		ProxyEnable:  true,
 		ProxyAddress: "http://proxy-user:proxy-password@localhost:bad%",
 	}
 	_, _, err := Download(context.Background(), op)
@@ -219,8 +218,8 @@ func TestMustDownloadStopsForPermanentHTTPError(t *testing.T) {
 
 func TestMustDownloadStopsForInvalidConfigAndLocalError(t *testing.T) {
 	for _, config := range []*Config{
-		nil, {}, {Resource: "asset", ProxyEnable: true, ProxyIgnore: []string{"["}},
-		{Resource: "asset", ProxyEnable: true, ProxyAddress: "http://"},
+		nil, {}, {Resource: "asset", ProxyAddress: "http://proxy.local:8080", ProxyIgnore: []string{"["}},
+		{Resource: "asset", ProxyAddress: "http://"},
 	} {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		_, _, err := MustDownload(ctx, config)
@@ -324,7 +323,7 @@ func TestEnsureToolInstallsAndReusesWithProxy(t *testing.T) {
 			defer proxy.Close()
 			t.Setenv("PATH", t.TempDir())
 			op := newTestTask(t, &Config{
-				Resource: "parent", ProxyEnable: true, ProxyAddress: proxy.URL,
+				Resource: "parent", ProxyAddress: proxy.URL,
 				ProxyIgnore: []string{"does-not-match"},
 			})
 			got, err := ensureTool(context.Background(), op, name)

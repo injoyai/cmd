@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -33,6 +34,9 @@ var downloaders = []downloader{
 	telegramDownloader{},
 	streamDownloader{},
 	m3u8Downloader{},
+	nm3u8Downloader{},
+	galleryDownloader{},
+	aria2Downloader{},
 	ytdlpDownloader{},
 	httpDownloader{},
 }
@@ -78,20 +82,62 @@ func Download(ctx context.Context, op *Config) (filename string, exist bool, err
 	}
 	task.Ctx = ctx
 	defer task.Close()
-	for _, downloader := range downloaders {
-		if !downloader.Match(task.Resource) {
-			continue
-		}
-		filename, exist, err = downloader.Download(ctx, task)
-		if err != nil {
-			return "", false, err
-		}
-		if !exist && task.NoticeEnable {
-			tool.PublishNotice(&notice.Message{Title: "下载完成", Content: task.NoticeText})
-		}
-		return filename, exist, nil
+	d, err := selectDownloader(task)
+	if err != nil {
+		return "", false, err
 	}
-	return "", false, errors.New("资源不存在: " + op.Resource)
+	filename, exist, err = d.Download(ctx, task)
+	if err != nil {
+		return "", false, err
+	}
+	if !exist && task.NoticeEnable {
+		tool.PublishNotice(&notice.Message{Title: "下载完成", Content: task.NoticeText})
+	}
+	return filename, exist, nil
+}
+
+func selectDownloader(op *Task) (downloader, error) {
+	for _, d := range downloaders {
+		if d.Match(op.Resource) {
+			return d, nil
+		}
+	}
+	return nil, fmt.Errorf("资源不存在: %s", op.Resource)
+}
+
+func downloadURL(raw string) (*url.URL, bool) {
+	u, err := url.Parse(raw)
+	return u, err == nil && u.Hostname() != "" && (u.Scheme == "http" || u.Scheme == "https")
+}
+
+func runDownloadTool(ctx context.Context, filename, name string, args []string) error {
+	cmd := exec.CommandContext(ctx, filename, args...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return errors.Join(ctx.Err(), fmt.Errorf("%s 下载失败: %w", name, err))
+	}
+	return nil
+}
+
+// finishDownloadFile 发布缓存中的完整文件，保留已有目标的权限。
+func finishDownloadFile(ctx context.Context, op *Task, output string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if info, err := os.Stat(op.Filename()); err == nil {
+		if err := os.Chmod(output, info.Mode().Perm()); err != nil {
+			return err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.Rename(output, op.Filename()); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(op.CacheDir); err != nil {
+		fmt.Fprintf(os.Stderr, "警告: 下载完成，缓存清理失败: %v\n", err)
+	}
+	return nil
 }
 
 func WaitDownload(ctx context.Context, delay time.Duration) error {
@@ -140,7 +186,7 @@ func ensureTool(ctx context.Context, op *Task, name string) (string, error) {
 	}
 	filename, _, err := installBuiltin(ctx, &Config{
 		Resource: name, Dir: oss.ExecDir(),
-		ProxyEnable: op.ProxyEnable, ProxyAddress: op.ProxyAddress, ProxyIgnore: op.ProxyIgnore,
+		ProxyAddress: op.ProxyAddress, ProxyIgnore: op.ProxyIgnore,
 	})
 	if err != nil {
 		return "", err

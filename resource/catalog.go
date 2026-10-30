@@ -18,11 +18,12 @@ import (
 type Handler func(op *Task) error
 
 type Info struct {
-	Key     []string          //别名
-	Local   string            //本地资源名称
-	Remote  map[string]string //架构对应的远程文件名，空键表示通用文件；省略时使用 Local
-	FullUrl []Url             //下载地址模板，省略时使用配置的仓库地址
-	Handler Handler           //自定义处理，例如解压安装
+	Key         []string          //别名
+	Local       string            //本地资源名称
+	Remote      map[string]string //架构对应的远程文件名，空键表示通用文件；省略时使用 Local
+	FullUrl     []Url             //下载地址模板，省略时使用配置的仓库地址
+	Handler     Handler           //自定义处理，例如解压安装
+	InstallHint string            //无对应发布包时的手动安装说明
 }
 
 func (this *Info) GetLocalName() string {
@@ -56,8 +57,11 @@ func (this *Info) remoteForArch(arch string) (string, error) {
 	if name := this.Remote[""]; name != "" {
 		return name, nil
 	}
-	if len(this.Remote) == 0 && this.Local != "" {
+	if len(this.Remote) == 0 && this.Local != "" && this.InstallHint == "" {
 		return this.Local, nil
+	}
+	if this.InstallHint != "" {
+		return "", fmt.Errorf("%s 暂无 %s/%s 自动安装包；%s", this.Local, runtime.GOOS, arch, this.InstallHint)
 	}
 	return "", fmt.Errorf("%s 暂无 %s/%s 资源", this.Local, runtime.GOOS, arch)
 }

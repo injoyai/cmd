@@ -5,10 +5,47 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/injoyai/cmd/internal/testutil"
 )
+
+func TestMergeTSContinuousInput(t *testing.T) {
+	log := testutil.InstallDownloadHelper(t, "ffmpeg")
+	dir := filepath.Join(t.TempDir(), "片段 'sample'")
+	if err := os.Mkdir(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for name, data := range map[string]string{"000000001.ts": "second", "000000000.ts": "first"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(t.TempDir(), "output.ts")
+	if err := mergeTS(context.Background(), ffmpeg, dir, output); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(output); err != nil || string(data) != "firstsecond" {
+		t.Fatalf("merged output: %q, %v", data, err)
+	}
+	args, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"-i concatf:file:", "-loglevel error", "-fflags +genpts+igndts"} {
+		if !strings.Contains(string(args), want) {
+			t.Errorf("missing %q in merge command: %s", want, args)
+		}
+	}
+	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 2 {
+		t.Fatalf("merge changed source files or left a list file: %v, %v", entries, err)
+	}
+}
 
 func TestMediaCacheIsolation(t *testing.T) {
 	config := &Config{Resource: "https://example.invalid/video.m3u8", Dir: t.TempDir(), Coroutine: 3}

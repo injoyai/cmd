@@ -62,11 +62,8 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 	if os.Getenv("TDL_THREADS") == "" {
 		args = append(args, "-t", "8")
 	}
-	var globalArgs []string
-	//tdl的全局参数需放在子命令之前
-	if proxy := op.Proxy(); len(proxy) > 0 {
-		globalArgs = []string{"--proxy", proxy}
-	}
+	// 全局参数放在子命令之前；显式空值覆盖 TDL_PROXY，保持直连语义。
+	globalArgs := []string{"--proxy", op.Proxy()}
 	downloadArgs := append(globalArgs, args...)
 	args = downloadArgs
 	for {

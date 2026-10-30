@@ -12,13 +12,29 @@ import (
 )
 
 var Exclusive = map[string]*Info{
+	"aria2": {
+		Local: "aria2c", InstallHint: "请先安装到 PATH，例如 brew install aria2",
+	},
+	"n-m3u8dl-re": {
+		Local: "N_m3u8DL-RE", Remote: map[string]string{"amd64": "N_m3u8DL-RE_v0.6.0-beta_osx-x64_20260629.tar.gz", "arm64": "N_m3u8DL-RE_v0.6.0-beta_osx-arm64_20260629.tar.gz"},
+		FullUrl: []Url{"https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.6.0-beta/{name}"},
+		Handler: downloadReleaseBinary("N_m3u8DL-RE"),
+	},
+	"gallery-dl": {
+		Local: "gallery-dl", InstallHint: "请先安装到 PATH，例如 brew install gallery-dl",
+	},
+
 	"i":         {Local: "i", Remote: map[string]string{"amd64": "i_darwin_amd64", "arm64": "i_darwin_arm64"}},
 	"forward":   {Local: "forward", Remote: map[string]string{"amd64": "forward_darwin_amd64", "arm64": "forward_darwin_arm64"}},
 	"edge":      {Local: "edge", Remote: map[string]string{"amd64": "edge_darwin_amd64", "arm64": "edge_darwin_arm64"}},
 	"edge_mini": {Local: "edge_mini", Remote: map[string]string{"amd64": "edge_mini_darwin_amd64", "arm64": "edge_mini_darwin_arm64"}},
 	"notice":    {Local: "notice", Remote: map[string]string{"amd64": "notice_darwin_amd64", "arm64": "notice_darwin_arm64"}},
 	"upx":       {Local: "upx", Remote: map[string]string{"amd64": "upx_darwin_amd64", "arm64": "upx_darwin_arm64"}},
-	"ffmpeg":    {Local: "ffmpeg", Remote: map[string]string{"amd64": "ffmpeg_darwin_amd64", "arm64": "ffmpeg_darwin_arm64"}},
+	"ffmpeg": {
+		Local: "ffmpeg", Remote: map[string]string{"amd64": "ffmpeg-osx-x64", "arm64": "ffmpeg-osx-arm64"},
+		FullUrl: []Url{"https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/n8.1.2-1/{name}"},
+		Handler: downloadReleaseBinary("ffmpeg"),
+	},
 
 	"swag": {
 		Local: "swag", Remote: map[string]string{"amd64": "swag_1.16.6_Darwin_x86_64.tar.gz", "arm64": "swag_1.16.6_Darwin_arm64.tar.gz"},

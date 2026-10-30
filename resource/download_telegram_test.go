@@ -58,8 +58,11 @@ func TestTelegramLoginAndResume(t *testing.T) {
 		modes                 []string
 		wantErr               bool
 		wantDownloads         int
+		direct                bool
 	}{
 		{name: "已登录直接下载", scenario: "already-logged-in", wantDownloads: 1},
+		{name: "直连覆盖环境代理", scenario: "already-logged-in", direct: true, wantDownloads: 1},
+		{name: "直连登录后续传", scenario: "success", direct: true, input: "1\n", modes: []string{"qr"}, wantDownloads: 2},
 		{name: "环境变量覆盖线程数", scenario: "success", threads: "12", input: "1\n", modes: []string{"qr"}, wantDownloads: 2},
 		{name: "扫码", scenario: "success", input: "1\n", modes: []string{"qr"}, wantDownloads: 2},
 		{name: "验证码输入保留给子进程", scenario: "login-input", input: "2\n12345\n", modes: []string{"code"}, wantDownloads: 2},
@@ -75,6 +78,7 @@ func TestTelegramLoginAndResume(t *testing.T) {
 			log := testutil.InstallDownloadHelper(t, "tdl")
 			t.Setenv("CMD_DOWNLOAD_HELPER_TDL", tt.scenario)
 			t.Setenv("TDL_THREADS", tt.threads)
+			t.Setenv("TDL_PROXY", "socks5://environment-proxy.local:1080")
 			dir := t.TempDir()
 			input, err := os.CreateTemp(dir, "stdin-*")
 			if err != nil {
@@ -99,7 +103,10 @@ func TestTelegramLoginAndResume(t *testing.T) {
 			defer cancel()
 			config := &Config{
 				Resource: "https://t.me/example/1", Dir: dir,
-				ProxyEnable: true, ProxyAddress: "socks5://proxy-user:proxy-password@localhost:1080",
+				ProxyAddress: "socks5://proxy-user:proxy-password@localhost:1080",
+			}
+			if tt.direct {
+				config.ProxyAddress = ""
 			}
 			filename, exist, err := MustDownload(ctx, config)
 			if (err != nil) != tt.wantErr || ctx.Err() != nil || exist {
@@ -291,7 +298,6 @@ func TestDownloaderRedactsCredentials(t *testing.T) {
 	op, err := NewTask(&Config{
 		Resource:     "https://source-user:source-password@t.me/example/123",
 		Dir:          dir,
-		ProxyEnable:  true,
 		ProxyAddress: "http://proxy-user:proxy-password@localhost:8080",
 	})
 	if err != nil {

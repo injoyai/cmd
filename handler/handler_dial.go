@@ -380,7 +380,6 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "frpc",
 		Dir:          oss.ExecDir(),
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -461,7 +460,6 @@ func DialProxy(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "proxy",
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {

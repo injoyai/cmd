@@ -19,7 +19,6 @@ func SetupSSHKey(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "setup_ssh_key",
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
-		ProxyEnable:  true,
 		ProxyAddress: flags.GetString("proxy"),
 	})
 	if err != nil {

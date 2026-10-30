@@ -15,7 +15,7 @@ import (
 
 // MergeTS 合并指定目录，保留源文件；失败时保留原有输出文件。
 func MergeTS(dir, output string) error {
-	op, err := NewTask(&Config{ProxyEnable: true, ProxyAddress: config.GetProxy()})
+	op, err := NewTask(&Config{ProxyAddress: config.GetProxy()})
 	if err != nil {
 		return err
 	}
@@ -36,8 +36,12 @@ func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
 	var list strings.Builder
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".ts") {
-			name := strings.ReplaceAll(entry.Name(), "'", "'\\''")
-			fmt.Fprintf(&list, "file '%s'\n", name)
+			name, err := filepath.Abs(filepath.Join(dir, entry.Name()))
+			if err != nil {
+				return err
+			}
+			name = strings.ReplaceAll(filepath.ToSlash(name), "'", "'\\''")
+			fmt.Fprintf(&list, "'file:%s'\n", name)
 		}
 	}
 	if list.Len() == 0 {
@@ -67,7 +71,10 @@ func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", temp.Name())
+	// TS分片连续读取，避免在分片边界重置解码参数。
+	cmd := exec.CommandContext(ctx, ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
+		"-fflags", "+genpts+igndts", "-i", "concatf:file:"+filepath.ToSlash(listFile), "-c", "copy", temp.Name())
+	fmt.Println("正在合并视频...")
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		return err

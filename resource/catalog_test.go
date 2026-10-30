@@ -49,6 +49,31 @@ func TestInfoRemote(t *testing.T) {
 	}
 }
 
+func TestDownloadToolCatalog(t *testing.T) {
+	for _, tc := range []struct{ key, command string }{
+		{"aria2", "aria2c"}, {"n-m3u8dl-re", "N_m3u8DL-RE"}, {"gallery-dl", "gallery-dl"},
+	} {
+		info := Resources[tc.key]
+		if info == nil || Resources[tc.command] != info || Resources[info.Local] != info {
+			t.Fatalf("tool aliases missing: %s / %s", tc.key, tc.command)
+		}
+		for _, arch := range []string{"amd64", "arm64", "386", "unsupported"} {
+			asset, err := info.remoteForArch(arch)
+			if _, supported := info.Remote[arch]; supported {
+				if err != nil || asset == "" || info.Handler == nil {
+					t.Errorf("%s/%s: asset=%q err=%v", tc.key, arch, asset, err)
+				}
+			} else if err == nil || IsRetryable(err) {
+				t.Errorf("%s/%s must fail before downloading: %v", tc.key, arch, err)
+			}
+		}
+	}
+	info := &Info{Local: "manual-tool", InstallHint: "install with your package manager"}
+	if _, err := info.GetFullUrls(); err == nil || !strings.Contains(err.Error(), info.InstallHint) {
+		t.Fatalf("manual-only tool fell back to the resource store: %v", err)
+	}
+}
+
 func TestIndexResources(t *testing.T) {
 	remoteOnly := &Info{Remote: map[string]string{"": "remote.bin"}, Key: []string{"alias", ""}}
 	localOnly := &Info{Local: "local.txt", Key: []string{"remote"}}
@@ -134,6 +159,27 @@ func TestYTDLPResources(t *testing.T) {
 	}
 	if err != nil || len(urls) != 1 || urls[0] != "https://github.com/yt-dlp/yt-dlp/releases/latest/download/"+asset {
 		t.Fatalf("unexpected download URLs: %q, %v", urls, err)
+	}
+}
+
+func TestDarwinFFmpegResource(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("macOS ffmpeg resource")
+	}
+	info := Resources["ffmpeg"]
+	if info == nil || info.Handler == nil {
+		t.Fatal("ffmpeg must use the release binary installer")
+	}
+	for arch, asset := range map[string]string{"amd64": "ffmpeg-osx-x64", "arm64": "ffmpeg-osx-arm64"} {
+		if got, err := info.remoteForArch(arch); err != nil || got != asset {
+			t.Fatalf("ffmpeg/%s: asset=%q, err=%v", arch, got, err)
+		}
+	}
+	urls, err := info.GetFullUrls()
+	asset, _ := info.GetRemote()
+	want := []string{"https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/n8.1.2-1/" + asset}
+	if err != nil || !reflect.DeepEqual(urls, want) {
+		t.Fatalf("ffmpeg must not depend on the resource store: URLs=%v, err=%v", urls, err)
 	}
 }
 
