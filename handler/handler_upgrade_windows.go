@@ -2,9 +2,9 @@ package handler
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/injoyai/cmd/tool"
 	"github.com/injoyai/goutil/oss"
@@ -45,8 +45,17 @@ func Upgrade(cmd *cobra.Command, args []string, flags *Flags) error {
 		}
 	}
 
-	//然后执行i_upgrade install i
-	c := exec.Command(upgradeFilename, "install", "i", "-d=true", "-n="+execName, "--proxy="+proxy)
-	c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
-	return c.Start()
+	// 独立控制台随升级进程退出而关闭；空标准句柄让 Windows 为新控制台分配输入输出。
+	const createNewConsole = 0x00000010 // CREATE_NEW_CONSOLE
+	_, handle, err := syscall.StartProcess(upgradeFilename,
+		[]string{upgradeFilename, "install", "i", "-d=true", "-n=" + execName, "--proxy=" + proxy},
+		&syscall.ProcAttr{
+			Env:   os.Environ(),
+			Files: []uintptr{0, 0, 0},
+			Sys:   &syscall.SysProcAttr{CreationFlags: createNewConsole},
+		})
+	if err != nil {
+		return err
+	}
+	return syscall.CloseHandle(syscall.Handle(handle))
 }
