@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -466,9 +467,11 @@ func TestRecursiveDependencies(t *testing.T) {
 			previous := downloaders
 			downloaders = append([]downloader{d}, downloaders...)
 			t.Cleanup(func() { downloaders = previous })
+			var stdout, stderr bytes.Buffer
 			cfg := &Config{
 				Resource: "test-dependency-a", Dir: t.TempDir(), Name: "business.bin", Cover: true,
 				ProxyAddress: proxy.URL, ProxyIgnore: []string{"does-not-match"}, Retry: 7, Coroutine: 3,
+				Output: &stdout, ErrOutput: &stderr,
 			}
 			filename, exist, err := Download(context.Background(), cfg)
 			requestMu.Lock()
@@ -489,8 +492,19 @@ func TestRecursiveDependencies(t *testing.T) {
 			if !reflect.DeepEqual(requests, []string{"/shared", "/b", "/c", "/a"}) {
 				t.Fatalf("dependency execution order or reuse: %v", requests)
 			}
+			if stdout.Len() != 0 {
+				t.Fatal("dependency diagnostics reached stdout")
+			}
+			for _, name := range []string{"a", "b", "c", "shared"} {
+				if !strings.Contains(stderr.String(), "开始下载: http://dependency.invalid/"+name) {
+					t.Fatalf("dependency %s diagnostic missing from injected writer", name)
+				}
+			}
 			for _, name := range []string{"b", "c", "shared"} {
 				child := d.tasks[infos[name]]
+				if child.Output != cfg.Output || child.ErrOutput != cfg.ErrOutput {
+					t.Fatalf("dependency %s did not inherit both writers", name)
+				}
 				if child.Dir != oss.ExecDir() || child.Name != "" || child.Cover || child.NoticeEnable || child.Retry != 0 || child.Coroutine != 0 ||
 					child.ProxyAddress != cfg.ProxyAddress || !reflect.DeepEqual(child.ProxyIgnore, cfg.ProxyIgnore) {
 					t.Fatalf("child inherited business options: %+v", child)

@@ -30,7 +30,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	switch {
 	case _type == "merge_ts" || _type == "mergets":
-		return resource.MergeTS(args[0], output)
+		return resource.MergeTSWithOutput(args[0], output, cmd.OutOrStdout(), cmd.ErrOrStderr())
 
 	case count:
 		countFile := 0
@@ -46,8 +46,8 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("文件夹数量:", countDir)
-		fmt.Println("文件数量:", countFile)
+		fmt.Fprintln(cmd.OutOrStdout(), "文件夹数量:", countDir)
+		fmt.Fprintln(cmd.OutOrStdout(), "文件数量:", countFile)
 
 	case len(find) > 0:
 		return oss.RangeFileInfo(args[0], func(info *oss.FileInfo) (bool, error) {
@@ -57,7 +57,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) error {
 					return false, err
 				}
 				if bytes.Contains(bs, find) {
-					fmt.Println(info.Filename())
+					fmt.Fprintln(cmd.OutOrStdout(), info.Filename())
 				}
 			}
 			return true, nil
@@ -70,7 +70,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) error {
 			if err := replaceFile(info.Filename(), []byte(replace[0]), []byte(replace[1])); err != nil {
 				return false, err
 			}
-			fmt.Printf("%s  %s >>> %s \n", info.Filename(), replace[0], replace[1])
+			fmt.Fprintf(cmd.OutOrStdout(), "%s  %s >>> %s \n", info.Filename(), replace[0], replace[1])
 			return true, nil
 		}, level)
 
@@ -80,7 +80,7 @@ func Dir(cmd *cobra.Command, args []string, flags *Flags) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(d)
+		fmt.Fprintln(cmd.OutOrStdout(), d)
 	}
 
 	return nil
@@ -140,7 +140,7 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) error {
 	//字符取长
 	if l := flags.GetString("length"); len(l) > 0 && conv.Bool(l) {
 		for _, v := range args {
-			fmt.Println(len(v))
+			fmt.Fprintln(cmd.OutOrStdout(), len(v))
 			return nil
 		}
 	}
@@ -258,7 +258,7 @@ func Text(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	//打印字符串
 	for _, v := range args {
-		fmt.Println(v)
+		fmt.Fprintln(cmd.OutOrStdout(), v)
 	}
 
 	return nil

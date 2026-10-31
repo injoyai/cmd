@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"io"
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/injoyai/cmd/config"
+	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -27,28 +28,22 @@ func TestSpeedDefaultsIgnoreConfig(t *testing.T) {
 		{"upload", TestUpload, testUploadURL},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			reader, writer, err := os.Pipe()
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer reader.Close()
-			defer writer.Close()
-			stdout := os.Stdout
-			os.Stdout = writer
-			defer func() { os.Stdout = stdout }()
+			var out, diag bytes.Buffer
+			cmd := &cobra.Command{}
+			cmd.SetOut(&out)
+			cmd.SetErr(&diag)
+			logs.SetWriter(&diag)
+			t.Cleanup(func() { logs.SetWriter(os.Stdout) })
 			// 零协程只检查默认地址，不向公网测速节点发送请求。
-			err = tc.run(&cobra.Command{}, []string{"https://ignored-argument.example"}, NewFlags([]*Flag{{Name: "goroutines", Value: "0"}, {Name: "seconds", Value: "1"}}))
-			writer.Close()
-			os.Stdout = stdout
+			err := tc.run(cmd, []string{"https://ignored-argument.example"}, NewFlags([]*Flag{{Name: "goroutines", Value: "0"}, {Name: "seconds", Value: "1"}}))
 			if err != nil {
 				t.Fatal(err)
 			}
-			data, err := io.ReadAll(reader)
-			if err != nil {
-				t.Fatal(err)
+			if out.Len() != 0 {
+				t.Fatalf("测速结果不应写入stdout: %q", out.String())
 			}
-			if !strings.Contains(string(data), tc.url) || strings.Contains(string(data), "ignored") {
-				t.Fatalf("speed default should be fixed in code: %s", data)
+			if !strings.Contains(diag.String(), tc.url) || strings.Contains(diag.String(), "ignored") {
+				t.Fatalf("speed default should be fixed in code: %s", diag.String())
 			}
 		})
 	}

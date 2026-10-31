@@ -3,7 +3,6 @@ package resource
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -58,6 +57,6 @@ func (aria2Downloader) Download(ctx context.Context, op *Task) (string, bool, er
 	args := []string{"--no-conf=true", "--enable-rpc=false", "--daemon=false", "--auto-file-renaming=false",
 		"--all-proxy=", "--http-proxy=", "--https-proxy=", "--no-proxy=",
 		"--dir=" + dir, "--seed-time=0", "--check-integrity=true", "--", op.URL()}
-	fmt.Println(op)
-	return dir, false, runDownloadTool(ctx, op.tools["aria2c"], "aria2", args)
+	op.Errorln(op)
+	return dir, false, runDownloadTool(ctx, op, op.tools["aria2c"], "aria2", args)
 }

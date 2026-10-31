@@ -81,9 +81,9 @@ func installPackage(binary string, command ...string) Handler {
 		defer os.RemoveAll(temp)
 		filename, err := exec.LookPath(binary)
 		if err != nil || op.Cover {
-			fmt.Printf("执行安装: %s\n", strings.Join(command, " "))
+			op.Errorf("执行安装: %s\n", strings.Join(command, " "))
 			cmd := exec.CommandContext(op.Ctx, command[0], command[1:]...)
-			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, op.ErrorWriter(), op.ErrorWriter()
 			// 显式代理（包括空值）覆盖父进程的代理环境。
 			for _, value := range os.Environ() {
 				key, _, _ := strings.Cut(value, "=")

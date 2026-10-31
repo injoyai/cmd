@@ -64,8 +64,8 @@ func (nm3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, er
 		if op.Retry >= 0 {
 			args = append(args, "--download-retry-count", strconv.Itoa(op.Retry))
 		}
-		fmt.Println(op)
-		if err := runDownloadTool(ctx, op.tools["N_m3u8DL-RE"], "n-m3u8dl-re", args); err != nil {
+		op.Errorln(op)
+		if err := runDownloadTool(ctx, op, op.tools["N_m3u8DL-RE"], "n-m3u8dl-re", args); err != nil {
 			return err
 		}
 		info, err := os.Stat(output)

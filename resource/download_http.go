@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/injoyai/goutil/str/bar"
-	"github.com/injoyai/logs"
 )
 
 type httpDownloader struct{}
@@ -53,7 +52,6 @@ func DownloadURLs(op *Task, urls []string, handler Handler) error {
 		if err = op.Download(handler); err == nil {
 			return nil
 		}
-		logs.Err(err)
 		if IsRetryable(err) {
 			retryErr = err
 		} else {
@@ -61,6 +59,9 @@ func DownloadURLs(op *Task, urls []string, handler Handler) error {
 			if !errors.As(err, &status) {
 				return err
 			}
+		}
+		if i+1 < len(urls) {
+			op.Errorln("下载失败, 尝试下一个地址:", err)
 		}
 		if i+1 < len(urls) && IsRetryable(err) {
 			if err := WaitDownload(op.Ctx, 2*time.Second); err != nil {
@@ -78,7 +79,7 @@ func (this *Task) Download(h ...Handler) error {
 	if err := this.Ctx.Err(); err != nil {
 		return err
 	}
-	fmt.Println(this)
+	fmt.Fprintln(this.ErrorWriter(), this)
 	if len(h) > 0 && h[0] != nil {
 		return h[0](this)
 	}
@@ -86,12 +87,21 @@ func (this *Task) Download(h ...Handler) error {
 }
 
 func (this *Task) DownloadTo(filename string) error {
-	_, err := DownloadHTTPFile(this.Ctx, this.Client, this.URL(), filename, true)
+	_, err := downloadHTTPFile(this.Ctx, this.Client, this.URL(), filename, true, this.ErrorWriter())
 	return err
 }
 
 // DownloadHTTPFile 只在完整写入并关闭文件后替换目标，失败时保留原文件。
+// 公开入口不再写进程输出，进度目标由包内实现决定。
 func DownloadHTTPFile(ctx context.Context, client *http.Client, raw, filename string, progress bool) (int64, error) {
+	return downloadHTTPFile(ctx, client, raw, filename, progress, io.Discard)
+}
+
+// downloadHTTPFile 将进度写 progressWriter，nil 表示丢弃。
+func downloadHTTPFile(ctx context.Context, client *http.Client, raw, filename string, progress bool, progressWriter io.Writer) (int64, error) {
+	if progressWriter == nil {
+		progressWriter = io.Discard
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, raw, nil)
 	if err != nil {
 		return 0, err
@@ -115,7 +125,7 @@ func DownloadHTTPFile(ctx context.Context, client *http.Client, raw, filename st
 	defer f.Close()
 	var reader io.Reader = resp.Body
 	if progress && resp.ContentLength > 0 {
-		p := &httpProgress{bar: bar.New(resp.ContentLength)}
+		p := &httpProgress{bar: bar.New(resp.ContentLength).SetWriter(progressWriter)}
 		defer func() {
 			if !p.bar.Closed() {
 				p.bar.Close()

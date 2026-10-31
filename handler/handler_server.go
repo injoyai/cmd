@@ -51,7 +51,7 @@ func SeleniumServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		return err
 	}
 	defer ser.Stop()
-	logs.Infof("[:%d] 开启驱动成功\n", port)
+	logs.Infof("[:%d] 开启驱动成功", port)
 	select {}
 }
 
@@ -115,21 +115,21 @@ func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) error {
 					case packets.Version5:
 						version = "5.0"
 					}
-					logs.Infof("[%s] [连接] Address: %s, Version: %s\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), version)
+					logs.Infof("[%s] [连接] Address: %s, Version: %s", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), version)
 				}
 			},
 			OnClosed: func(ctx context.Context, client mqttServer.Client, err error) {
-				logs.Infof("[%s] [断开] Address: %s, Message: %v\n", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), err)
+				logs.Infof("[%s] [断开] Address: %s, Message: %v", client.ClientOptions().ClientID, client.Connection().RemoteAddr(), err)
 			},
 			OnMsgArrived: func(ctx context.Context, client mqttServer.Client, req *mqttServer.MsgArrivedRequest) error {
 				if debug {
-					logs.Infof("[%s] [消息] Topic: %s, Message: %s\n", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
+					logs.Infof("[%s] [消息] Topic: %s, Message: %s", client.ClientOptions().ClientID, req.Message.Topic, string(req.Message.Payload))
 				}
 				return nil
 			},
 			OnSubscribe: func(ctx context.Context, client mqttServer.Client, req *mqttServer.SubscribeRequest) error {
 				for _, v := range req.Subscribe.Topics {
-					logs.Infof("[%s] [订阅] Topic: %s\n", client.ClientOptions().ClientID, v.Name)
+					logs.Infof("[%s] [订阅] Topic: %s", client.ClientOptions().ClientID, v.Name)
 					srv.SubscriptionService().Subscribe(client.ClientOptions().ClientID, &gmqtt.Subscription{
 						TopicFilter: v.Name,
 						QoS:         v.Qos,
@@ -140,7 +140,7 @@ func MQTTServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		})); err != nil {
 			return err
 		}
-		logs.Infof("[:%d] 开启MQTT服务成功...\n", port)
+		logs.Infof("[:%d] 开启MQTT服务成功...", port)
 		if err := srv.Run(); err != nil {
 			return err
 		}
@@ -158,13 +158,15 @@ func EdgeServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		}
 	}
 	{
-		fmt.Println("开始运行Edge服务...")
+		logs.Info("开始运行Edge服务...")
 		shell.Stop("edge.exe")
 		filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 			Resource:     "edge",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyAddress: flags.GetString("proxy"),
+			Output:       cmd.OutOrStdout(),
+			ErrOutput:    cmd.ErrOrStderr(),
 		})
 		if err != nil {
 			return fmt.Errorf("下载失败: %w", err)
@@ -185,13 +187,15 @@ func EdgeMiniServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		}
 	}
 	{
-		fmt.Println("开始运行EdgeMini服务...")
+		logs.Info("开始运行EdgeMini服务...")
 		shell.Stop("edge_mini.exe")
 		filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 			Resource:     "edge_mini",
 			Dir:          oss.UserInjoyDir(),
 			Cover:        flags.GetBool("download") || (len(args) >= 1 && args[0] == "upgrade"),
 			ProxyAddress: flags.GetString("proxy"),
+			Output:       cmd.OutOrStdout(),
+			ErrOutput:    cmd.ErrOrStderr(),
 		})
 		if err != nil {
 			return fmt.Errorf("下载失败: %w", err)
@@ -213,6 +217,8 @@ func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -225,7 +231,7 @@ func InfluxServer(cmd *cobra.Command, args []string, flags *Flags) error {
 func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	port := flags.GetInt("port", 8200)
 	debug := flags.GetBool("debug")
-	logs.Infof("[:%d] 开启Websocket服务成功...\n", port)
+	logs.Infof("[:%d] 开启Websocket服务成功...", port)
 	return http.ListenAndServe(
 		fmt.Sprintf(":%d", port),
 		in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -237,13 +243,13 @@ func WebsocketServer(cmd *cobra.Command, args []string, flags *Flags) error {
 			}
 			defer ws.Close()
 			if debug {
-				logs.Debugf("[%s] 新的Websocket连接...\n", r.URL.Path)
+				logs.Debugf("[%s] 新的Websocket连接...", r.URL.Path)
 			}
 			for {
 				_, msg, err := ws.ReadMessage()
 				in.CheckErr(err)
 				if debug {
-					logs.Infof("Path: %s, Body: %s\n", r.URL.Path, string(msg))
+					logs.Infof("Path: %s, Body: %s", r.URL.Path, string(msg))
 				}
 			}
 		})),
@@ -263,7 +269,7 @@ func ForwardServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	}
 
 	if port == 0 || len(address) == 0 {
-		return fmt.Errorf("[错误] 请指定转发规则, 例: i forward 80->:8080 或 -p=80 -a=127.0.0.1:8080")
+		return fmt.Errorf("请指定转发规则, 例: i forward 80->:8080 或 -p=80 -a=127.0.0.1:8080")
 	}
 
 	f := &forward.Forward{
@@ -283,6 +289,8 @@ func ProxyServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -306,6 +314,8 @@ func LivegoServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -322,6 +332,8 @@ func FrpServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -333,7 +345,7 @@ func FrpServer(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	port := flags.GetInt("port", DefaultHTTPPort)
-	logs.Infof("[:%d] 开启HTTP服务成功...\n", port)
+	logs.Infof("[:%d] 开启HTTP服务成功...", port)
 	return http.ListenAndServe(
 		fmt.Sprintf(":%d", port),
 		in.Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -341,7 +353,7 @@ func HTTPServer(cmd *cobra.Command, args []string, flags *Flags) error {
 			body, err := io.ReadAll(r.Body)
 			in.CheckErr(err)
 			if flags.GetBool("debug") {
-				logs.Infof("Path: %s, Body: %s\n", r.URL, string(body))
+				logs.Infof("Path: %s, Body: %s", r.URL, string(body))
 			}
 			in.Succ(nil)
 		})),
@@ -383,12 +395,14 @@ func InServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	}
 
 	shell.Stop(name)
-	fmt.Println("开始运行In服务...")
+	logs.Info("开始运行In服务...")
 	filename, _, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     "server",
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download") || (len(args) > 0 && args[0] == "upgrade"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -403,7 +417,7 @@ func FileServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		args = []string{"./"}
 	}
 	port := flags.GetInt("port", 8080)
-	logs.Infof("[:%d] 开启文件服务成功...\n", port)
+	logs.Infof("[:%d] 开启文件服务成功...", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), http.FileServer(http.Dir(args[0])))
 	return err
 }
@@ -415,7 +429,7 @@ func WebDAVServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		args = []string{"./"}
 	}
 	port := flags.GetInt("port", 8080)
-	logs.Infof("[:%d] 开启WebDAV服务成功...\n", port)
+	logs.Infof("[:%d] 开启WebDAV服务成功...", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), &webdav.Handler{
 		Prefix:     "/",
 		FileSystem: webdav.Dir(args[0]), // 本地目录映射
@@ -433,6 +447,8 @@ func NatsServer(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)

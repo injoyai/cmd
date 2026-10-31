@@ -3,7 +3,6 @@ package resource
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -60,6 +59,6 @@ func (galleryDownloader) Download(ctx context.Context, op *Task) (string, bool, 
 		args = append(args, "--retries", strconv.Itoa(op.Retry))
 	}
 	args = append(args, "--", op.URL())
-	fmt.Println(op)
-	return dir, false, runDownloadTool(ctx, op.tools["gallery-dl"], "gallery-dl", args)
+	op.Errorln(op)
+	return dir, false, runDownloadTool(ctx, op, op.tools["gallery-dl"], "gallery-dl", args)
 }

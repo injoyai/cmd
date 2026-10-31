@@ -2,6 +2,7 @@ package resource
 
 import (
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,7 +28,7 @@ func TestMergeTSContinuousInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	output := filepath.Join(t.TempDir(), "output.ts")
-	if err := mergeTS(context.Background(), ffmpeg, dir, output); err != nil {
+	if err := mergeTS(context.Background(), ffmpeg, dir, output, io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	if data, err := os.ReadFile(output); err != nil || string(data) != "firstsecond" {

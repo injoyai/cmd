@@ -8,6 +8,7 @@ import (
 	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/handler"
 	"github.com/injoyai/goutil/g"
+	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,8 @@ type (
 )
 
 func main() {
+	// 运行日志统一写 stderr,结果与交互提示保留在 stdout。
+	logs.SetWriter(os.Stderr)
 	if err := newRootCommand().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

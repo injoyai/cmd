@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -48,11 +49,12 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) error {
 		mode = "完整"
 	}
 
-	fmt.Printf("目标目录: %s\n", targetDir)
-	fmt.Printf("模块名: %s\n", moduleName)
-	fmt.Printf("模式: %s\n", mode)
-	fmt.Printf("覆盖已存在文件: %v\n", force)
-	fmt.Println("------------------------")
+	out := cmd.OutOrStdout()
+	fmt.Fprintf(out, "目标目录: %s\n", targetDir)
+	fmt.Fprintf(out, "模块名: %s\n", moduleName)
+	fmt.Fprintf(out, "模式: %s\n", mode)
+	fmt.Fprintf(out, "覆盖已存在文件: %v\n", force)
+	fmt.Fprintln(out, "------------------------")
 
 	// 3. 完整模式创建空目录 (bin/, internal/)
 	if full {
@@ -62,7 +64,7 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) error {
 			if err := os.MkdirAll(dirPath, 0755); err != nil {
 				return fmt.Errorf("create dir %s: %w", d, err)
 			}
-			fmt.Printf("[创建目录] %s/\n", d)
+			fmt.Fprintf(out, "[创建目录] %s/\n", d)
 		}
 	}
 
@@ -86,47 +88,47 @@ func InitGo(cmd *cobra.Command, args []string, flags *Flags) error {
 			return fmt.Errorf("write %s: %w", targetPath, err)
 		}
 		relPath, _ := filepath.Rel(targetDir, targetPath)
-		printAction(action, relPath, &counts)
+		printAction(out, action, relPath, &counts)
 	}
 
-	fmt.Println("------------------------")
+	fmt.Fprintln(out, "------------------------")
 
 	// 已有模块默认保留，只有明确 force 才重建。
 	if _, err := os.Stat(filepath.Join(targetDir, "go.mod")); force || os.IsNotExist(err) {
-		fmt.Println("[执行] go mod init " + moduleName)
+		fmt.Fprintln(out, "[执行] go mod init "+moduleName)
 		if err := runGoModInit(targetDir, moduleName, force); err != nil {
 			return fmt.Errorf("go mod init 失败: %w", err)
 		}
 	} else if err != nil {
 		return err
 	}
-	fmt.Println("[执行] go mod tidy")
+	fmt.Fprintln(out, "[执行] go mod tidy")
 	if err := runGoModTidy(targetDir); err != nil {
 		return fmt.Errorf("go mod tidy 失败: %w", err)
 	}
 
 	// 8. 打印总结
-	fmt.Println("------------------------")
-	fmt.Printf("✅ 项目初始化完成 (%s模式)\n", mode)
-	fmt.Printf("   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
+	fmt.Fprintln(out, "------------------------")
+	fmt.Fprintf(out, "项目初始化完成 (%s模式)\n", mode)
+	fmt.Fprintf(out, "   创建: %d 个文件, 跳过: %d 个文件, 覆盖: %d 个文件\n",
 		counts.create, counts.skip, counts.overwrite)
-	fmt.Printf("   模块名: %s\n", moduleName)
+	fmt.Fprintf(out, "   模块名: %s\n", moduleName)
 
 	return nil
 }
 
 // printAction 打印写入动作并累计计数
-func printAction(action, relPath string, counts *struct{ create, skip, overwrite int }) {
+func printAction(out io.Writer, action, relPath string, counts *struct{ create, skip, overwrite int }) {
 	switch action {
 	case "创建":
 		counts.create++
-		fmt.Printf("[创建] %s\n", relPath)
+		fmt.Fprintf(out, "[创建] %s\n", relPath)
 	case "覆盖":
 		counts.overwrite++
-		fmt.Printf("[覆盖] %s\n", relPath)
+		fmt.Fprintf(out, "[覆盖] %s\n", relPath)
 	case "跳过":
 		counts.skip++
-		fmt.Printf("[跳过] %s 已存在\n", relPath)
+		fmt.Fprintf(out, "[跳过] %s 已存在\n", relPath)
 	}
 }
 

@@ -3,7 +3,9 @@ package handler
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"regexp"
@@ -48,7 +50,7 @@ const (
 
 func Dial(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 
 	defaultType := DialTypeTCP
@@ -100,7 +102,7 @@ func Dial(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func DialTCP(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 	return redial.RunTCP(args[0], func(c *client.Client) {
 		DialDeal(c, flags)
@@ -109,7 +111,7 @@ func DialTCP(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func DialUDP(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 	return client.Run(func(ctx context.Context) (ios.ReadWriteCloser, string, error) {
 		c, err := net.Dial("udp", args[0])
@@ -121,7 +123,7 @@ func DialUDP(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func DialLog(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 	return redial.RunTCP(args[0], func(c *client.Client) {
 		DialDeal(c, flags)
@@ -130,7 +132,7 @@ func DialLog(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func DialWebsocket(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 
 	switch {
@@ -181,7 +183,7 @@ func DialMQTT(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func DialSSH(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 	for {
 		addr := args[0]
@@ -218,7 +220,7 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) error {
 		DialDeal(c, flags)
 		c.Logger.Enable(false)
 		c.OnDealMessage(func(c *client.Client, msg ios.Acker) {
-			fmt.Print(string(msg.Bytes()))
+			fmt.Fprint(cmd.OutOrStdout(), string(msg.Bytes()))
 		})
 		go c.Run(context.Background())
 		//stdin由DialDeal统一处理,这里仅等待连接结束
@@ -229,7 +231,7 @@ func DialSSH(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func DialSerial(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 	return redial.Run(serial.NewDial(&serial.Config{
 		Address:  args[0],
@@ -250,17 +252,20 @@ func DialRedis(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	c, err := redis.Dial("tcp", args[0])
 	if err != nil {
-		return fmt.Errorf("[错误] %w", err)
+		return err
 	}
 	defer c.Close()
 
+	out := cmd.OutOrStdout()
 	r := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("redis>")
+		fmt.Fprint(out, "redis>")
 		bs, _, err := r.ReadLine()
 		if err != nil {
-			fmt.Println(err)
-			return nil //EOF或输入错误时退出,避免忙循环
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return err
 		}
 		ls := strings.Split(string(bs), " ")
 		if len(ls) == 0 {
@@ -269,20 +274,20 @@ func DialRedis(cmd *cobra.Command, args []string, flags *Flags) error {
 		if ls[0] == "exit" {
 			return nil
 		}
-		out, err := c.Do(ls[0], conv.Interfaces(ls[1:])...)
+		value, err := c.Do(ls[0], conv.Interfaces(ls[1:])...)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(cmd.ErrOrStderr(), err)
 			continue
 		}
-		fmt.Println(conv.String(out))
+		fmt.Fprintln(out, conv.String(value))
 	}
 }
 
 func DialDeploy(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
-	return DeployClient(args[0], flags)
+	return deployClient(args[0], flags, cmd.OutOrStdout())
 }
 
 func DialDeal(c *client.Client, flags *Flags) {
@@ -351,9 +356,11 @@ func dialStdinPump(c *client.Client) {
 
 func DialNPS(cmd *cobra.Command, args []string, flags *Flags) error {
 	if _, _, err := resource.Install(g.Ctx(), &resource.Config{
-		Resource: "npc",
-		Dir:      oss.ExecDir(),
-		Cover:    flags.GetBool("download"),
+		Resource:  "npc",
+		Dir:       oss.ExecDir(),
+		Cover:     flags.GetBool("download"),
+		Output:    cmd.OutOrStdout(),
+		ErrOutput: cmd.ErrOrStderr(),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
@@ -363,7 +370,7 @@ func DialNPS(cmd *cobra.Command, args []string, flags *Flags) error {
 	key := flags.GetString("key", file.GetString("key"))
 	Type := flags.GetString("type", file.GetString("type", "tcp"))
 	if len(addr) == 0 || len(key) == 0 {
-		return fmt.Errorf("[错误] 请填写服务地址与key, 例: i dial nps 服务器地址 key")
+		return fmt.Errorf("请填写服务地址与key, 例: i dial nps 服务器地址 key")
 	}
 	file.Set("addr", addr)
 	file.Set("key", key)
@@ -381,15 +388,18 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          oss.ExecDir(),
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
 	file := cache.NewFile("dial", "frp")
 	if len(args) > 0 && args[0] == "config" {
-		fmt.Println("服务地址: ", file.GetString("serverAddr"))
-		fmt.Println("映射端口: ", file.GetString("port"))
-		fmt.Println("连接方式: ", file.GetString("type"))
-		fmt.Println("连接名称: ", file.GetString("name"))
+		out := cmd.OutOrStdout()
+		fmt.Fprintln(out, "服务地址: ", file.GetString("serverAddr"))
+		fmt.Fprintln(out, "映射端口: ", file.GetString("port"))
+		fmt.Fprintln(out, "连接方式: ", file.GetString("type"))
+		fmt.Fprintln(out, "连接名称: ", file.GetString("name"))
 		return nil
 	}
 	//命令行参数优先于缓存配置
@@ -398,7 +408,7 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) error {
 		serverAddr = args[0]
 	}
 	if len(serverAddr) == 0 {
-		return fmt.Errorf("[错误] 未填写连接地址")
+		return fmt.Errorf("未填写连接地址")
 	}
 
 	//  1. -p 1883 服务1883转到本地1883  2. -p 80:1883 服务1883转到本地80  3. -p 192.168.1.1:80:1883 服务80转到192.168.1.1:1883
@@ -407,7 +417,7 @@ func DialFrp(cmd *cobra.Command, args []string, flags *Flags) error {
 		port = append(port, port[0])
 	}
 	if len(port) < 2 {
-		return fmt.Errorf("[错误] 未填写连接端口")
+		return fmt.Errorf("未填写连接端口")
 	}
 	localAddr, serverPort := strings.Join(port[:len(port)-1], ":"), port[len(port)-1]
 	if !strings.Contains(localAddr, ":") {
@@ -461,6 +471,8 @@ func DialProxy(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          oss.UserInjoyDir(),
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
@@ -472,26 +484,3 @@ func DialProxy(cmd *cobra.Command, args []string, flags *Flags) error {
 	s := fmt.Sprintf(`%s client %s "%s" `, filename, args[0], proxy)
 	return tool.ShellRun(s)
 }
-
-/*
-
-
-
- */
-
-type _log struct{}
-
-func (l _log) Readf(format string, v ...interface{}) {
-	if len(format) > 0 && format[len(format)-1] == '\n' {
-		format = format[:len(format)-1]
-	}
-	fmt.Printf(format, v...)
-}
-
-func (l _log) Writef(format string, v ...interface{}) {}
-
-func (l _log) Infof(format string, v ...interface{}) { logs.Infof(format, v...) }
-
-func (l _log) Errorf(format string, v ...interface{}) { logs.Errorf(format, v...) }
-
-func (l _log) Printf(format string, v ...interface{}) {}

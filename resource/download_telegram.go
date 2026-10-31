@@ -68,28 +68,28 @@ func (telegramDownloader) Download(ctx context.Context, op *Task) (string, bool,
 	downloadArgs := append(globalArgs, args...)
 	args = downloadArgs
 	for {
-		needsLogin, err := runTDL(ctx, filename, args)
+		needsLogin, err := runTDL(ctx, op, filename, args)
 		if err == nil {
 			return dir, false, nil
 		}
 		if !needsLogin || ctx.Err() != nil {
 			return "", false, err
 		}
-		fmt.Println("Telegram 未登录或登录已失效，请选择登录方式。")
-		if loginErr := loginTDL(ctx, filename, globalArgs); loginErr != nil {
+		op.Println("Telegram 未登录或登录已失效，请选择登录方式。")
+		if loginErr := loginTDL(ctx, op, filename, globalArgs); loginErr != nil {
 			if ctx.Err() != nil {
 				return "", false, ctx.Err()
 			}
 			return "", false, fmt.Errorf("%w；登录未完成: %v", err, loginErr)
 		}
-		fmt.Println("登录成功，继续原下载任务...")
+		op.Errorln("登录成功，继续原下载任务...")
 		// 登录恢复后的任务沿用 tdl 保存的进度，避免再次询问是否继续。
 		args = append(append([]string(nil), downloadArgs...), "--continue")
 	}
 }
 
-// runTDL 保留终端输出，仅从 stderr 识别明确的认证失败。
-func runTDL(ctx context.Context, filename string, args []string) (bool, error) {
+// runTDL 保留交互菜单到结果通道，仅从 stderr 识别明确的认证失败。
+func runTDL(ctx context.Context, op *Task, filename string, args []string) (bool, error) {
 	displayArgs := append([]string(nil), args...)
 	for i := 0; i+1 < len(displayArgs); i++ {
 		if displayArgs[i] == "--proxy" || displayArgs[i] == "-u" {
@@ -97,12 +97,12 @@ func runTDL(ctx context.Context, filename string, args []string) (bool, error) {
 			i++
 		}
 	}
-	fmt.Println("执行: ", filename, strings.Join(displayArgs, " "))
+	op.Errorln("执行: ", filename, strings.Join(displayArgs, " "))
 	cmd := exec.CommandContext(ctx, filename, args...)
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = op.OutputWriter()
 	output := &tdlAuthOutput{}
-	cmd.Stderr = io.MultiWriter(os.Stderr, output)
+	cmd.Stderr = io.MultiWriter(op.ErrorWriter(), output)
 	err := cmd.Run()
 	if ctx.Err() != nil {
 		return false, ctx.Err()
@@ -134,10 +134,10 @@ func (w *tdlAuthOutput) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func loginTDL(ctx context.Context, filename string, globalArgs []string) error {
+func loginTDL(ctx context.Context, op *Task, filename string, globalArgs []string) error {
 	for {
-		fmt.Println("1. 扫码登录\n2. 手机号和验证码登录\n3. 从 Telegram Desktop 导入登录\n0. 取消下载")
-		fmt.Print("请选择登录方式 [1-3/0]: ")
+		op.Println("1. 扫码登录\n2. 手机号和验证码登录\n3. 从 Telegram Desktop 导入登录\n0. 取消下载")
+		op.Printf("请选择登录方式 [1-3/0]: ")
 		choice, err := readTDLChoice(ctx)
 		if err != nil {
 			return fmt.Errorf("读取登录选择: %w", err)
@@ -153,15 +153,15 @@ func loginTDL(ctx context.Context, filename string, globalArgs []string) error {
 		case "0":
 			return errors.New("已取消登录和下载")
 		default:
-			fmt.Println("请输入 1、2、3 或 0。")
+			op.Println("请输入 1、2、3 或 0。")
 			continue
 		}
 		args := append(append([]string(nil), globalArgs...), "login", "-T", mode)
-		if _, err := runTDL(ctx, filename, args); err != nil {
+		if _, err := runTDL(ctx, op, filename, args); err != nil {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			fmt.Printf("登录失败: %v，请重新选择登录方式，或输入 0 取消。\n", err)
+			op.Errorf("登录失败: %v，请重新选择登录方式，或输入 0 取消。\n", err)
 			continue
 		}
 		return nil

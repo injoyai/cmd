@@ -13,6 +13,7 @@ import (
 
 	"github.com/injoyai/bar"
 	"github.com/injoyai/goutil/oss"
+	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,9 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 	seconds := flags.GetDuration("seconds", 10)
 	_proxy := flags.GetString("proxy")
 
-	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", testDownloadURL, _proxy, goroutines, seconds)
+	start := time.Now()
+	logs.Infof("测速下载 地址: %s 代理: %s 协程: %d 时长: %d秒", testDownloadURL, _proxy, goroutines, seconds)
+	defer func() { logs.Infof("测速下载结束, 耗时: %s", time.Since(start)) }()
 
 	var failure error
 	var mu sync.Mutex
@@ -43,6 +46,7 @@ func TestDownload(cmd *cobra.Command, args []string, flags *Flags) error {
 		math.MaxInt,
 		goroutines,
 		bar.WithPrefix("[下载]"),
+		bar.WithWriter(cmd.ErrOrStderr()),
 		bar.WithFormat(
 			func(b *bar.Bar) string {
 				return fmt.Sprintf(" 大小: %s  平均速度: %s",
@@ -118,7 +122,9 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) error {
 	seconds := flags.GetDuration("seconds", 10)
 	_proxy := flags.GetString("proxy")
 
-	fmt.Printf("[地址] %s\n[代理] %s\n[协程] %d\n[时长] %d秒\n", testUploadURL, _proxy, goroutines, seconds)
+	start := time.Now()
+	logs.Infof("测速上传 地址: %s 代理: %s 协程: %d 时长: %d秒", testUploadURL, _proxy, goroutines, seconds)
+	defer func() { logs.Infof("测速上传结束, 耗时: %s", time.Since(start)) }()
 
 	var failure error
 	var mu sync.Mutex
@@ -134,6 +140,7 @@ func TestUpload(cmd *cobra.Command, args []string, flags *Flags) error {
 		math.MaxInt,
 		goroutines,
 		bar.WithPrefix("[上传]"),
+		bar.WithWriter(cmd.ErrOrStderr()),
 		bar.WithFormat(
 			func(b *bar.Bar) string {
 				return fmt.Sprintf(" 大小: %s  平均速度: %s",
@@ -229,6 +236,6 @@ func TestSpeed(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err := TestDownload(cmd, nil, flags); err != nil {
 		return err
 	}
-	fmt.Println()
+	fmt.Fprintln(cmd.ErrOrStderr())
 	return TestUpload(cmd, nil, flags)
 }

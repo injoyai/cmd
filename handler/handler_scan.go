@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -41,14 +42,15 @@ func ScanNetwork(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
+	out := cmd.OutOrStdout()
 	for _, v := range is {
-		fmt.Printf("\n%s(%s):\n", v.Name, v.HardwareAddr.String())
+		fmt.Fprintf(out, "\n%s(%s):\n", v.Name, v.HardwareAddr.String())
 		ips, err := v.Addrs()
 		if err != nil {
 			return err
 		}
 		for _, vv := range ips {
-			fmt.Printf("  - %s \n", vv.String())
+			fmt.Fprintf(out, "  - %s \n", vv.String())
 		}
 	}
 
@@ -61,10 +63,19 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) error {
 	network := flags.GetString("network")
 	find := flags.GetString("find")
 
+	start := time.Now()
+	logs.Info("开始扫描ICMP")
+	defer func() { logs.Infof("扫描ICMP结束, 耗时: %s", time.Since(start)) }()
 	return RangeNetwork(network, func(inter *Interfaces) {
-		inter.Print()
+		inter.printTo(cmd.OutOrStdout())
 		list := types.List[g.Map]{}
 		mu := sync.Mutex{}
+		var writeMu sync.Mutex
+		printOut := func(s string) {
+			writeMu.Lock()
+			defer writeMu.Unlock()
+			fmt.Fprint(cmd.OutOrStdout(), s)
+		}
 		wg := sync.WaitGroup{}
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
@@ -87,7 +98,7 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) error {
 					mu.Unlock()
 					return
 				}
-				fmt.Print(s)
+				printOut(s)
 			}(ipv4)
 			return true
 		})
@@ -97,7 +108,7 @@ func ScanICMP(cmd *cobra.Command, args []string, flags *Flags) error {
 				return i["i"].(uint32) < j["i"].(uint32)
 			})
 			for _, m := range list {
-				fmt.Print(m["s"])
+				printOut(m["s"].(string))
 			}
 		}
 	})
@@ -122,10 +133,19 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) error {
 	Type := flags.GetString("type", "tcp")
 	find := flags.GetString("find")
 
+	start := time.Now()
+	logs.Info("开始扫描端口: ", args[0])
+	defer func() { logs.Infof("扫描端口结束, 耗时: %s", time.Since(start)) }()
 	return RangeNetwork(network, func(inter *Interfaces) {
-		inter.Print()
+		inter.printTo(cmd.OutOrStdout())
 		list := types.List[g.Map]{}
 		mu := sync.Mutex{}
+		var writeMu sync.Mutex
+		printOut := func(s string) {
+			writeMu.Lock()
+			defer writeMu.Unlock()
+			fmt.Fprint(cmd.OutOrStdout(), s)
+		}
 		wg := sync.WaitGroup{}
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
 			wg.Add(1)
@@ -151,7 +171,7 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) error {
 						list = append(list, g.Map{"i": conv.Uint32([]byte(ipv4)), "s": s})
 						mu.Unlock()
 					} else {
-						fmt.Print(s)
+						printOut(s)
 					}
 				}
 			}(ipv4, timeout)
@@ -163,7 +183,7 @@ func ScanPort(cmd *cobra.Command, args []string, flags *Flags) error {
 				return i["i"].(uint32) < j["i"].(uint32)
 			})
 			for _, m := range list {
-				fmt.Print(m["s"])
+				printOut(m["s"].(string))
 			}
 		}
 	})
@@ -178,8 +198,17 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) error {
 	find := flags.GetString("find")
 	sortResult := flags.GetBool("sort")
 
+	start := time.Now()
+	logs.Info("开始扫描串口")
+	defer func() { logs.Infof("扫描串口结束, 耗时: %s", time.Since(start)) }()
 	result := types.List[g.Map]{}
 	mu := sync.Mutex{}
+	var writeMu sync.Mutex
+	printOut := func(s string) {
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		fmt.Fprintln(cmd.OutOrStdout(), s)
+	}
 	wg := sync.WaitGroup{}
 	for i, v := range list {
 		wg.Add(1)
@@ -203,7 +232,7 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) error {
 				return
 			}
 			if !sortResult {
-				fmt.Println(s)
+				printOut(s)
 				return
 			}
 			mu.Lock()
@@ -221,7 +250,7 @@ func ScanSerial(cmd *cobra.Command, args []string, flags *Flags) error {
 			return conv.Int(i["index"]) < conv.Int(j["index"])
 		})
 		for _, v := range result {
-			fmt.Println(v["msg"])
+			printOut(v["msg"].(string))
 		}
 	}
 
@@ -236,8 +265,17 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	http.DefaultClient.Timeout = timeout
 
+	start := time.Now()
+	logs.Info("开始扫描Edge")
+	defer func() { logs.Infof("扫描Edge结束, 耗时: %s", time.Since(start)) }()
 	result := types.List[g.Map]{}
 	mu := sync.Mutex{}
+	var writeMu sync.Mutex
+	printOut := func(s string) {
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		fmt.Fprintln(cmd.OutOrStdout(), s)
+	}
 	wg := sync.WaitGroup{}
 	err := RangeNetwork(network, func(inter *Interfaces) {
 		inter.RangeSegment(func(ipv4 net.IP, self bool) bool {
@@ -264,7 +302,7 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) error {
 							m.GetString("data.model"),
 							m.GetString("data.version"))
 						if !sortResult {
-							fmt.Println(info)
+							printOut(info)
 							return
 						}
 						mu.Lock()
@@ -286,7 +324,7 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) error {
 			return conv.Int(i["index"]) < conv.Int(j["index"])
 		})
 		for _, v := range result {
-			fmt.Println(v["msg"])
+			printOut(v["msg"].(string))
 		}
 	}
 
@@ -370,8 +408,6 @@ func ScanEdge(cmd *cobra.Command, args []string, flags *Flags) error {
 func RangeNetwork(network string, fn func(inter *Interfaces)) error {
 	inters, err := net.Interfaces()
 	if err != nil {
-		//记录错误,避免调用方忽略错误时无任何输出
-		logs.Err(err)
 		return err
 	}
 	for i, inter := range inters {
@@ -396,7 +432,11 @@ type Interfaces struct {
 }
 
 func (this *Interfaces) Print() {
-	fmt.Printf("\n%d: %s (%s):\n", this.Index, this.HardwareAddr, this.Name)
+	this.printTo(os.Stdout)
+}
+
+func (this *Interfaces) printTo(w io.Writer) {
+	fmt.Fprintf(w, "\n%d: %s (%s):\n", this.Index, this.HardwareAddr, this.Name)
 }
 
 func (this *Interfaces) IPv4s() ([]net.IP, error) {

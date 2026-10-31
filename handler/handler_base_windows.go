@@ -18,7 +18,7 @@ func Kill(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(resp)
+	fmt.Fprintln(cmd.OutOrStdout(), resp)
 
 	return nil
 }

@@ -24,7 +24,7 @@ func Hint(msg string) RunFunc {
 
 func Where(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 || args[0] == "self" {
-		fmt.Println(oss.ExecDir())
+		fmt.Fprintln(cmd.OutOrStdout(), oss.ExecDir())
 		return nil
 	}
 
@@ -34,7 +34,7 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) error {
 	list, _ := tool.APPPath(args[0])
 	for _, v := range list {
 		find = true
-		fmt.Println(v)
+		fmt.Fprintln(cmd.OutOrStdout(), v)
 	}
 
 	//尝试在环境变量查找
@@ -44,27 +44,27 @@ func Where(cmd *cobra.Command, args []string, flags *Flags) error {
 			for _, ss := range strings.Split(list[1], string(os.PathListSeparator)) {
 				if strings.Contains(ss, args[0]) {
 					find = true
-					fmt.Println(ss)
+					fmt.Fprintln(cmd.OutOrStdout(), ss)
 				}
 			}
 		}
 	}
 
 	if !find {
-		fmt.Println("未找到")
+		fmt.Fprintln(cmd.OutOrStdout(), "未找到")
 	}
 
 	return nil
 }
 
 func Date(cmd *cobra.Command, args []string, flags *Flags) error {
-	fmt.Println(time.Now().String())
+	fmt.Fprintln(cmd.OutOrStdout(), time.Now().String())
 
 	return nil
 }
 
 func Doc(cmd *cobra.Command, args []string, flags *Flags) error {
-	fmt.Println(`配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
+	fmt.Fprintln(cmd.OutOrStdout(), `配置清华镜像源: pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple`)
 
 	return nil
 }
@@ -88,7 +88,7 @@ func PushServer(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("推送成功")
+	fmt.Fprintln(cmd.OutOrStdout(), "推送成功")
 
 	return nil
 }
@@ -106,7 +106,7 @@ func PushVoice(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("推送成功")
+	fmt.Fprintln(cmd.OutOrStdout(), "推送成功")
 
 	return nil
 }
@@ -124,7 +124,7 @@ func PushNotice(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("推送成功")
+	fmt.Fprintln(cmd.OutOrStdout(), "推送成功")
 
 	return nil
 }
@@ -142,7 +142,7 @@ func PushPopup(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("推送成功")
+	fmt.Fprintln(cmd.OutOrStdout(), "推送成功")
 
 	return nil
 }
@@ -170,11 +170,11 @@ func Resources(cmd *cobra.Command, args []string, flags *Flags) error {
 	for k, v := range resource.Resources {
 		_ = v
 		if find == "" || strings.Contains(k, find) {
-			fmt.Println(k)
+			fmt.Fprintln(cmd.OutOrStdout(), k)
 			co++
 		}
 	}
-	fmt.Println("数量:", co)
+	fmt.Fprintln(cmd.OutOrStdout(), "数量:", co)
 
 	return nil
 }
@@ -212,7 +212,7 @@ func Wake(cmd *cobra.Command, args []string, flags *Flags) error {
 		return err
 	}
 
-	fmt.Println("已发送唤醒命令")
+	fmt.Fprintln(cmd.OutOrStdout(), "已发送唤醒命令")
 
 	return nil
 }

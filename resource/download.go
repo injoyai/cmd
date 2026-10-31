@@ -62,7 +62,7 @@ func MustDownload(ctx context.Context, op *Config) (string, bool, error) {
 			return filename, exist, err
 		}
 		wait = min(wait+2*time.Second, 30*time.Second)
-		fmt.Printf("下载失败，%s后重试: %v\n", wait, err)
+		op.Errorf("下载失败, %s 后重试: %v\n", wait, err)
 		if err := WaitDownload(ctx, wait); err != nil {
 			return "", false, err
 		}
@@ -145,6 +145,7 @@ func resolveDependencies(ctx context.Context, task *Task, names []string, visiti
 				child, err := NewTask(&Config{
 					Resource: name, Dir: oss.ExecDir(),
 					ProxyAddress: task.ProxyAddress, ProxyIgnore: task.ProxyIgnore,
+					Output: task.Output, ErrOutput: task.ErrOutput,
 				})
 				if err != nil {
 					return err
@@ -180,9 +181,11 @@ func downloadURL(raw string) (*url.URL, bool) {
 	return u, err == nil && u.Hostname() != "" && (u.Scheme == "http" || u.Scheme == "https")
 }
 
-func runDownloadTool(ctx context.Context, filename, name string, args []string) error {
+// runDownloadTool 执行非交互下载工具，进度与诊断统一写任务的诊断通道。
+func runDownloadTool(ctx context.Context, op *Task, filename, name string, args []string) error {
 	cmd := exec.CommandContext(ctx, filename, args...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	out := op.ErrorWriter()
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, out, out
 	if err := cmd.Run(); err != nil {
 		return errors.Join(ctx.Err(), fmt.Errorf("%s 下载失败: %w", name, err))
 	}
@@ -205,7 +208,7 @@ func finishDownloadFile(ctx context.Context, op *Task, output string) error {
 		return err
 	}
 	if err := os.RemoveAll(op.CacheDir); err != nil {
-		fmt.Fprintf(os.Stderr, "警告: 下载完成，缓存清理失败: %v\n", err)
+		op.Errorf("警告: 下载完成, 缓存清理失败: %v\n", err)
 	}
 	return nil
 }

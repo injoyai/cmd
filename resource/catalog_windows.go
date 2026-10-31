@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/injoyai/goutil/oss/compress/zip"
-	"github.com/injoyai/logs"
 )
 
 var Exclusive = map[string]*Info{
@@ -124,8 +123,12 @@ var Exclusive = map[string]*Info{
 				return err
 			}
 			folder := "/influxdb-1.8.10-1"
-			logs.PrintErr(os.Rename(filepath.Join(op.Dir, folder, "/influxd.exe"), op.Filename()))
-			logs.PrintErr(os.RemoveAll(filepath.Join(op.Dir, folder)))
+			if err := os.Rename(filepath.Join(op.Dir, folder, "/influxd.exe"), op.Filename()); err != nil {
+				return err
+			}
+			if err := os.RemoveAll(filepath.Join(op.Dir, folder)); err != nil {
+				op.Errorf("警告: 安装完成, 临时目录清理失败: %v\n", err)
+			}
 			return nil
 		},
 	},

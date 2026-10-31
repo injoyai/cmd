@@ -20,6 +20,8 @@ func SetupSSHKey(cmd *cobra.Command, args []string, flags *Flags) error {
 		Dir:          userDir,
 		Cover:        flags.GetBool("download"),
 		ProxyAddress: flags.GetString("proxy"),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	})
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)

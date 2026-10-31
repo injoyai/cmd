@@ -13,9 +13,14 @@ import (
 	"github.com/injoyai/cmd/config"
 )
 
-// MergeTS 合并指定目录，保留源文件；失败时保留原有输出文件。
+// MergeTS 合并指定目录，保留源文件；默认不输出。
 func MergeTS(dir, output string) error {
-	op, err := NewTask(&Config{ProxyAddress: config.GetProxy()})
+	return MergeTSWithOutput(dir, output, io.Discard, io.Discard)
+}
+
+// MergeTSWithOutput 合并指定目录，提示与诊断写指定通道。
+func MergeTSWithOutput(dir, output string, out, errOut io.Writer) error {
+	op, err := NewTask(&Config{ProxyAddress: config.GetProxy(), Output: out, ErrOutput: errOut})
 	if err != nil {
 		return err
 	}
@@ -23,11 +28,14 @@ func MergeTS(dir, output string) error {
 	if err := resolveDependencies(context.Background(), op, []string{"ffmpeg"}, nil); err != nil {
 		return err
 	}
-	return mergeTS(context.Background(), op.tools["ffmpeg"], dir, output)
+	return mergeTS(context.Background(), op.tools["ffmpeg"], dir, output, op.ErrorWriter())
 }
 
 // mergeTS 使用指定的ffmpeg合并TS文件，成功后才替换输出，并保留源文件。
-func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
+func mergeTS(ctx context.Context, ffmpeg, dir, output string, errOut io.Writer) error {
+	if errOut == nil {
+		errOut = io.Discard
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
@@ -73,8 +81,8 @@ func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
 	// TS分片连续读取，避免在分片边界重置解码参数。
 	cmd := exec.CommandContext(ctx, ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
 		"-fflags", "+genpts+igndts", "-i", "concatf:file:"+filepath.ToSlash(listFile), "-c", "copy", temp.Name())
-	fmt.Println("正在合并视频...")
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	fmt.Fprintln(errOut, "正在合并视频...")
+	cmd.Stdout, cmd.Stderr = errOut, errOut
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -93,12 +101,12 @@ func mergeTS(ctx context.Context, ffmpeg, dir, output string) error {
 
 // mergeTask 合并任务分片，成功后清理本次任务的专用缓存。
 func mergeTask(ctx context.Context, this *Task, ffmpeg string) error {
-	if err := mergeTS(ctx, ffmpeg, this.TempDir(), this.Filename()); err != nil {
+	if err := mergeTS(ctx, ffmpeg, this.TempDir(), this.Filename(), this.ErrorWriter()); err != nil {
 		return err
 	}
 	if this.CacheDir != "" {
 		if err := os.RemoveAll(this.CacheDir); err != nil {
-			fmt.Fprintf(os.Stderr, "警告: 视频已合并，临时目录清理失败: %v\n", err)
+			this.Errorf("警告: 视频已合并, 临时目录清理失败: %v\n", err)
 		}
 	}
 	return nil

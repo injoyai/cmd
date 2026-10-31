@@ -35,7 +35,7 @@ func UploadMinio(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("资源上传成功,地址：", filename)
+	fmt.Fprintln(cmd.OutOrStdout(), "资源上传成功,地址：", filename)
 
 	return nil
 }

@@ -16,7 +16,6 @@ import (
 
 	hls "github.com/grafov/m3u8"
 	"github.com/injoyai/goutil/str/bar"
-	"github.com/injoyai/logs"
 )
 
 type m3u8Downloader struct{}
@@ -39,7 +38,7 @@ func (m3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, err
 }
 
 func downloadM3u8(ctx context.Context, op *Task) error {
-	fmt.Println(op)
+	op.Errorln(op)
 	list, err := decodeM3u8WithClient(ctx, op.URL(), op.Client)
 	if err != nil {
 		return err
@@ -72,6 +71,7 @@ func downloadSegments(ctx context.Context, op *Task, list []string) (int64, erro
 	var failure error
 	var mu sync.Mutex
 	b := bar.New(int64(len(list)))
+	b.SetWriter(op.ErrorWriter())
 	b.SetFormatter(bar.NewWithM3u8(&current, &sum))
 	defer func() {
 		if !b.Closed() {
@@ -87,7 +87,6 @@ func downloadSegments(ctx context.Context, op *Task, list []string) (int64, erro
 			if failure == nil || (IsRetryable(failure) && !IsRetryable(err)) {
 				failure = err
 			}
-			logs.Err(err)
 			return
 		}
 		current = n

@@ -3,7 +3,6 @@ package resource
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -34,7 +33,7 @@ func (streamDownloader) Download(ctx context.Context, op *Task) (string, bool, e
 }
 
 func downloadStream(ctx context.Context, op *Task) error {
-	fmt.Println(op)
+	op.Errorln(op)
 	recordCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	ffmpeg := op.tools["ffmpeg"]
@@ -46,7 +45,7 @@ func downloadStream(ctx context.Context, op *Task) error {
 	cmd := exec.CommandContext(recordCtx, ffmpeg, "-i", op.URL(), "-c", "copy", "-f", "hls",
 		"-hls_list_size", "0", "-hls_segment_filename", filepath.Join(op.TempDir(), "out%09d.ts"),
 		filepath.Join(op.TempDir(), "out.m3u8"))
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = op.ErrorWriter(), op.ErrorWriter()
 	input, err := cmd.StdinPipe()
 	if err != nil {
 		return err

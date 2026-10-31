@@ -72,9 +72,10 @@ func (ytdlpDownloader) Download(ctx context.Context, op *Task) (string, bool, er
 	}
 	// URL单独作为参数传递，并使用--避免被解释为yt-dlp选项。
 	args = append(args, "--", op.URL())
-	fmt.Println(op)
+	op.Errorln(op)
 	cmd := exec.CommandContext(ctx, op.tools["yt-dlp"], args...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	out := op.ErrorWriter()
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, out, out
 	if err := cmd.Run(); err != nil {
 		return "", false, errors.Join(ctx.Err(), fmt.Errorf("yt-dlp下载失败: %w", err))
 	}

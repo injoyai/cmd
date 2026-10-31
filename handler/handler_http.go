@@ -89,7 +89,7 @@ func HTTP(cmd *cobra.Command, args []string, flags *Flags) error {
 		return nil
 	}
 
-	fmt.Println(msg)
+	fmt.Fprintln(cmd.OutOrStdout(), msg)
 
 	return nil
 }

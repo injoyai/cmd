@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,11 @@ type resp struct {
 //====================DeployClient====================//
 
 func DeployClient(addr string, flags *Flags) error {
+	return deployClient(addr, flags, os.Stdout)
+}
+
+// deployClient 部署客户端实现，响应结果写 out。
+func deployClient(addr string, flags *Flags, out io.Writer) error {
 
 	target := flags.GetString("target")
 	source := flags.GetString("source")
@@ -78,7 +84,7 @@ func DeployClient(addr string, flags *Flags) error {
 		c.Logger.SetLevel(common.LevelInfo)
 		c.OnReadFrom(frame.Default.ReadFrom)
 		c.OnDealMessage(func(c *client.Client, msg ios.Acker) {
-			fmt.Println(string(msg.Bytes()))
+			fmt.Fprintln(out, string(msg.Bytes()))
 			var result resp
 			responseErr = json.Unmarshal(msg.Bytes(), &result)
 			if responseErr == nil && result.Code != 200 {
@@ -99,7 +105,7 @@ func DeployClient(addr string, flags *Flags) error {
 	if len(target) > 0 && len(source) > 0 {
 
 		zipPath := filepath.Clean(source) + ".zip"
-		logs.Debugf("打包文件: %s\n", zipPath)
+		logs.Debugf("打包文件: %s", zipPath)
 		err := zip.Encode(source, zipPath)
 		if err != nil {
 			return err
@@ -173,7 +179,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) error {
 					for _, v := range m.Data {
 						dir, _ := filepath.Split(v.Filename)
 						zipPath := filepath.Join(dir, time.Now().Format("20060102150405.zip"))
-						logs.Debugf("保存文件: %s\n", zipPath)
+						logs.Debugf("保存文件: %s", zipPath)
 						if err = oss.New(zipPath, v.Data); err == nil {
 							logs.Info("解压文件: ", dir)
 							err = zip.Decode(zipPath, dir)
@@ -189,7 +195,7 @@ func DeployServer(cmd *cobra.Command, args []string, flags *Flags) error {
 				case deployShell:
 
 					for _, v := range m.Shell {
-						logs.Debugf("执行脚本: %s\n", v)
+						logs.Debugf("执行脚本: %s", v)
 						result, err := shell.Exec(v)
 						c.WriteAny(&resp{
 							Code: conv.Select(err == nil, 200, 500),

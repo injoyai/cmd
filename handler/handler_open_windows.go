@@ -16,6 +16,7 @@ import (
 )
 
 func Open(cmd *cobra.Command, args []string, flags *Flags) error {
+	out := cmd.OutOrStdout()
 	if len(args) == 0 {
 		//打开执行目录
 		return tool.ShellStart(oss.ExecDir())
@@ -23,7 +24,7 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 
 	//尝试在自定义中查找
 	if v, ok := config.File.GetSMap("open.custom")[args[0]]; ok {
-		fmt.Print("自定义")
+		fmt.Fprint(out, "自定义")
 		return tool.ShellStart(v)
 	}
 
@@ -66,6 +67,8 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 				Dir:          oss.UserInjoyDir(),
 				Cover:        flags.GetBool("download") || (len(args) >= 2 && args[1] == "upgrade"),
 				ProxyAddress: flags.GetString("proxy"),
+				Output:       out,
+				ErrOutput:    cmd.ErrOrStderr(),
 			})
 			if err != nil {
 				return fmt.Errorf("下载失败: %w", err)
@@ -73,13 +76,13 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 			if !exist {
 				<-time.After(time.Millisecond * 500)
 			}
-			fmt.Print("内置资源")
+			fmt.Fprint(out, "内置资源")
 			return tool.ShellStart(filename)
 		}
 
 		//尝试在注册表查找
 		if list, _ := tool.APPPath(args[0]); len(list) > 0 {
-			fmt.Print("注册表")
+			fmt.Fprint(out, "注册表")
 			cmd := `"" "` + list[0] + `"`
 			return tool.ShellStart(cmd)
 		}
@@ -89,24 +92,24 @@ func Open(cmd *cobra.Command, args []string, flags *Flags) error {
 			list := strings.Split(v, ";")
 			switch {
 			case len(list) == 1:
-				fmt.Print("环境变量")
+				fmt.Fprint(out, "环境变量")
 				return tool.ShellStart(list[0])
 
 			case len(list) > 1:
 				for i, v := range list {
-					fmt.Printf("%d. %s\n", i+1, v)
+					fmt.Fprintf(out, "%d. %s\n", i+1, v)
 				}
-				fmt.Println("请选择要打开的序号: ")
+				fmt.Fprintln(out, "请选择要打开的序号: ")
 				for {
 					n := g.InputVar("").Int()
 					if n > 0 && n <= len(list) {
-						fmt.Print("环境变量")
+						fmt.Fprint(out, "环境变量")
 						if err := tool.ShellStart(list[n-1]); err != nil {
 							return err
 						}
 						break
 					}
-					fmt.Println("请输入正确的序号")
+					fmt.Fprintln(out, "请输入正确的序号")
 				}
 				return nil
 			}

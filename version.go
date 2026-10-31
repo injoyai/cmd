@@ -17,6 +17,7 @@ type VersionInfo struct {
 // 已核对并排除早期版本号笔误；提交日期不代表正式发布日期。
 var (
 	versions = []VersionInfo{
+		{Version: "v1.6.5", Date: "2026-10-31", Details: "统一命令结果与运行日志输出,完善下载进度与依赖输出传递,修复安装提示和错误返回"},
 		{Version: "v1.6.4", Date: "2026-10-30", Details: "更新UPX及Windows工具下载来源,完善发布包解压和ADB配套DLL安装及失败恢复"},
 		{Version: "v1.6.3", Date: "2026-10-30", Details: "全局配置按功能分组,资源地址支持数组,自动迁移旧配置并保留自定义项,同步配置表单和文档"},
 		{Version: "v1.6.2", Date: "2026-10-29", Details: "全局配置改用用户目录YAML并兼容旧缓存迁移,修复配置读写和GUI保存,移除下载语音提醒"},

@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestReplaceFile(t *testing.T) {
@@ -28,7 +30,7 @@ func TestReplaceFile(t *testing.T) {
 	if len(entries) != 1 {
 		t.Fatalf("temporary files left: %v", entries)
 	}
-	if err := Dir(nil, []string{filepath.Join(dir, "missing")}, NewFlags([]*Flag{{Name: "replace", Value: "a=b"}})); err == nil {
+	if err := Dir(&cobra.Command{}, []string{filepath.Join(dir, "missing")}, NewFlags([]*Flag{{Name: "replace", Value: "a=b"}})); err == nil {
 		t.Fatal("missing directory must fail")
 	}
 }

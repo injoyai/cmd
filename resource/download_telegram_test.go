@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -91,19 +92,16 @@ func TestTelegramLoginAndResume(t *testing.T) {
 			if _, err := input.Seek(0, io.SeekStart); err != nil {
 				t.Fatal(err)
 			}
-			output, err := os.CreateTemp(dir, "stdout-*")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer output.Close()
-			previousIn, previousOut := os.Stdin, os.Stdout
-			os.Stdin, os.Stdout = input, output
-			defer func() { os.Stdin, os.Stdout = previousIn, previousOut }()
+			previousIn := os.Stdin
+			os.Stdin = input
+			defer func() { os.Stdin = previousIn }()
+			var stdout, stderr bytes.Buffer
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			config := &Config{
 				Resource: "https://t.me/example/1", Dir: dir,
 				ProxyAddress: "socks5://proxy-user:proxy-password@localhost:1080",
+				Output:       &stdout, ErrOutput: &stderr,
 			}
 			if tt.direct {
 				config.ProxyAddress = ""
@@ -165,15 +163,33 @@ func TestTelegramLoginAndResume(t *testing.T) {
 			if downloads != tt.wantDownloads || strings.Join(modes, ",") != strings.Join(tt.modes, ",") {
 				t.Fatalf("downloads=%d modes=%v; want %d, %v", downloads, modes, tt.wantDownloads, tt.modes)
 			}
-			printed, err := os.ReadFile(output.Name())
-			if err != nil {
-				t.Fatal(err)
+			needsLogin := tt.scenario != "network" && tt.scenario != "already-logged-in"
+			if strings.Contains(stdout.String(), "请选择登录方式") != needsLogin {
+				t.Fatal("login menu missing from stdout or shown without authentication failure")
 			}
-			if (tt.scenario == "network" || tt.scenario == "already-logged-in") && strings.Contains(string(printed), "请选择登录方式") {
-				t.Fatal("download without authentication failure triggered login menu")
+			for _, marker := range []string{"Telegram 未登录", "1. 扫码登录", "请选择登录方式", "请输入 1、2、3 或 0。"} {
+				if strings.Contains(stderr.String(), marker) {
+					t.Fatalf("interaction prompt reached stderr: %s", marker)
+				}
 			}
-			if strings.Contains(string(printed), "proxy-user") || strings.Contains(string(printed), "proxy-password") {
-				t.Fatal("command log leaked proxy credentials")
+			if !strings.Contains(stderr.String(), "执行:") {
+				t.Fatal("command diagnostic missing from stderr")
+			}
+			for _, marker := range []string{"执行:", "登录成功，继续原下载任务", "登录失败:"} {
+				if strings.Contains(stdout.String(), marker) {
+					t.Fatalf("diagnostic reached stdout: %s", marker)
+				}
+			}
+			if len(modes) > 0 && !strings.Contains(stderr.String(), "登录成功，继续原下载任务") {
+				t.Fatal("login resume diagnostic missing from stderr")
+			}
+			if tt.scenario == "retry-login" && !strings.Contains(stderr.String(), "登录失败:") {
+				t.Fatal("recoverable login failure missing from stderr")
+			}
+			for _, printed := range []string{stdout.String(), stderr.String()} {
+				if strings.Contains(printed, "proxy-user") || strings.Contains(printed, "proxy-password") {
+					t.Fatal("output leaked proxy credentials")
+				}
 			}
 		})
 	}
@@ -295,41 +311,28 @@ func TestDownloaderRedactsCredentials(t *testing.T) {
 	t.Setenv("PATH", dir)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+	var logged bytes.Buffer
 	op, err := NewTask(&Config{
 		Resource:     "https://source-user:source-password@t.me/example/123",
 		Dir:          dir,
 		ProxyAddress: "http://proxy-user:proxy-password@localhost:8080",
+		Output:       &logged,
+		ErrOutput:    &logged,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer op.Close()
 	op.tools = map[string]string{"tdl": filepath.Join(dir, binary)}
-	output, err := os.Create(filepath.Join(dir, "stdout.log"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer output.Close()
-	var filename string
-	var exist bool
-	func() {
-		previous := os.Stdout
-		os.Stdout = output
-		defer func() { os.Stdout = previous }()
-		filename, exist, err = (telegramDownloader{}).Download(ctx, op)
-	}()
+	filename, exist, err := (telegramDownloader{}).Download(ctx, op)
 	if !errors.Is(err, context.Canceled) || filename != "" || exist {
 		t.Fatalf("Download() = %q, %v, %v; want empty, false, context.Canceled", filename, exist, err)
 	}
-	logged, err := os.ReadFile(output.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(logged), "执行:") {
+	if !strings.Contains(logged.String(), "执行:") {
 		t.Fatal("tdl command was not logged")
 	}
 	for _, credential := range []string{"source-user", "source-password", "proxy-user", "proxy-password"} {
-		if strings.Contains(string(logged), credential) {
+		if strings.Contains(logged.String(), credential) {
 			t.Error("tdl command log contains URL credentials")
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/injoyai/cmd/config"
 	"github.com/injoyai/cmd/resource"
@@ -14,13 +15,16 @@ import (
 	"github.com/injoyai/goutil/g"
 	"github.com/injoyai/goutil/oss"
 	"github.com/injoyai/goutil/oss/shell"
+	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
 func Swag(cmd *cobra.Command, args []string, flags *Flags) error {
 	if _, _, err := resource.Install(g.Ctx(), &resource.Config{
-		Resource: "swag",
-		Dir:      oss.ExecDir(),
+		Resource:  "swag",
+		Dir:       oss.ExecDir(),
+		Output:    cmd.OutOrStdout(),
+		ErrOutput: cmd.ErrOrStderr(),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
@@ -42,7 +46,7 @@ func Swag(cmd *cobra.Command, args []string, flags *Flags) error {
 		cmdline += " " + v
 	}
 	bs, err := shell.Exec(cmdline)
-	fmt.Println(bs)
+	fmt.Fprintln(cmd.OutOrStdout(), bs)
 
 	return err
 }
@@ -57,6 +61,8 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) error {
 		Resource:     "ipinfo",
 		Dir:          oss.ExecDir(),
 		ProxyAddress: flags.GetString("proxy", config.GetProxy()),
+		Output:       cmd.OutOrStdout(),
+		ErrOutput:    cmd.ErrOrStderr(),
 	}); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
@@ -65,10 +71,10 @@ func IP(cmd *cobra.Command, args []string, flags *Flags) error {
 
 func Len(cmd *cobra.Command, args []string, flags *Flags) error {
 	if len(args) == 0 {
-		fmt.Println(0)
+		fmt.Fprintln(cmd.OutOrStdout(), 0)
 		return nil
 	}
-	fmt.Println(len(args[0]))
+	fmt.Fprintln(cmd.OutOrStdout(), len(args[0]))
 
 	return nil
 }
@@ -78,19 +84,20 @@ func Base64(cmd *cobra.Command, args []string, flags *Flags) error {
 		args = []string{""}
 	}
 
-	fmt.Println("-------------------------------------------------------")
-	fmt.Println("Decode:")
+	out := cmd.OutOrStdout()
+	fmt.Fprintln(out, "-------------------------------------------------------")
+	fmt.Fprintln(out, "Decode:")
 	bs, err := base64.StdEncoding.DecodeString(args[0])
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Fprintln(out, err.Error())
 	} else {
-		fmt.Println(string(bs))
+		fmt.Fprintln(out, string(bs))
 	}
 
-	fmt.Println("\n-------------------------------------------------------")
-	fmt.Println("Encode:")
+	fmt.Fprintln(out, "\n-------------------------------------------------------")
+	fmt.Fprintln(out, "Encode:")
 	s := base64.StdEncoding.EncodeToString([]byte(args[0]))
-	fmt.Println(s)
+	fmt.Fprintln(out, s)
 
 	return nil
 }
@@ -113,8 +120,10 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) error {
 	upx := flags.GetBool("upx")
 	if upx {
 		if _, _, err := resource.Install(g.Ctx(), &resource.Config{
-			Resource: "upx",
-			Dir:      oss.ExecDir(),
+			Resource:  "upx",
+			Dir:       oss.ExecDir(),
+			Output:    cmd.OutOrStdout(),
+			ErrOutput: cmd.ErrOrStderr(),
 		}); err != nil {
 			return fmt.Errorf("下载失败: %w", err)
 		}
@@ -152,10 +161,13 @@ func GoBuild(cmd *cobra.Command, args []string, flags *Flags) error {
 				out += ".exe"
 			}
 
-			fmt.Println("开始编译:", osName, arch)
+			start := time.Now()
+			logs.Info("开始编译: ", osName, " ", arch)
 			if err := c.Run(); err != nil {
+				logs.Infof("编译失败: %s/%s, 耗时: %s", osName, arch, time.Since(start))
 				return err
 			}
+			logs.Infof("完成编译: %s/%s, 耗时: %s", osName, arch, time.Since(start))
 
 			if upx {
 				//fmt.Println("开始upx压缩:", out)
