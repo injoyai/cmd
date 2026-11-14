@@ -35,7 +35,6 @@ var downloaders = []downloader{
 	builtinDownloader{},
 	telegramDownloader{},
 	streamDownloader{},
-	m3u8Downloader{},
 	nm3u8Downloader{},
 	galleryDownloader{},
 	aria2Downloader{},

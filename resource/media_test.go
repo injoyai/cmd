@@ -48,6 +48,62 @@ func TestMergeTSContinuousInput(t *testing.T) {
 	}
 }
 
+// fmp4Init 构造含ftyp和moov的fMP4初始化段。
+func fmp4Init() []byte {
+	init := []byte("\x00\x00\x00\x18ftypmsdh\x00\x00\x00\x00msdhmsdh")
+	return append(init, []byte("\x00\x00\x00\x08moov")...)
+}
+
+func TestMergeFMP4Fragments(t *testing.T) {
+	log := testutil.InstallDownloadHelper(t, "ffmpeg")
+	dir := t.TempDir()
+	init := fmp4Init()
+	for name, data := range map[string][]byte{
+		"000000000-init.m4s": init,
+		"000000000.ts":       []byte("\x00\x00\x00\x08styp"),
+		"000000001.ts":       []byte("\x00\x00\x00\x08moof"),
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(t.TempDir(), "output.mp4")
+	if err := mergeTS(context.Background(), ffmpeg, dir, output, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(output)
+	if want := string(init) + "\x00\x00\x00\x08styp\x00\x00\x00\x08moof"; err != nil || string(data) != want {
+		t.Fatalf("fMP4合并结果: %q, %v, want %q", data, err, want)
+	}
+	args, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(args), "concatf:file:") || !strings.Contains(string(args), "-c copy") {
+		t.Fatalf("fMP4应按字节拼接后重封装: %s", args)
+	}
+}
+
+func TestMergeFMP4MissingInit(t *testing.T) {
+	testutil.InstallDownloadHelper(t, "ffmpeg")
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "000000000.ts"), []byte("\x00\x00\x00\x08styp"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = mergeTS(context.Background(), ffmpeg, dir, filepath.Join(t.TempDir(), "output.mp4"), io.Discard)
+	if err == nil || !strings.Contains(err.Error(), "EXT-X-MAP") {
+		t.Fatalf("缺少初始化段应报错: %v", err)
+	}
+}
+
 func TestMediaCacheIsolation(t *testing.T) {
 	config := &Config{Resource: "https://example.invalid/video.m3u8", Dir: t.TempDir(), Coroutine: 3}
 	op := newTestTask(t, config)
