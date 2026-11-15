@@ -2,6 +2,7 @@ bin/
 docs/
 output/
 .idea/
+.*
 *.exe
 *.go~
 i
