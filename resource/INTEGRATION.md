@@ -46,7 +46,7 @@ type downloader interface {
 | 安装资源名 | 实际命令 | 自动处理范围 |
 | --- | --- | --- |
 | `aria2` | `aria2c` | 磁力链接、本地种子任务 |
-| `n-m3u8dl-re` | `N_m3u8DL-RE` | DASH、MSS 流媒体 |
+| `n-m3u8dl-re` | `N_m3u8DL-RE` | HLS、DASH、MSS 流媒体 |
 | `gallery-dl` | `gallery-dl` | 已登记的图集、作者作品和相册路径 |
 
 资源清单应同时索引规范资源名和实际本地命令名，Windows 使用对应 `.exe` 文件名。可执行文件名与资源名不同不构成两套实现。
@@ -65,13 +65,12 @@ i install n-m3u8dl-re
 
 `Match` 只判断输入，不联网、不安装程序、不写文件、不修改配置。下载器按照明确顺序选择第一个匹配项；错误处理不参与选择。
 
-当前顺序为：模板 → 内置资源 → Telegram → RTSP/RTMP → 内置 m3u8 → N_m3u8DL-RE → gallery-dl → aria2 → 网站视频 → 普通 URL / 仓库资源。各类型按以下规则处理：
+当前顺序为：模板 → 内置资源 → Telegram → RTSP/RTMP → N_m3u8DL-RE → gallery-dl → aria2 → 网站视频 → 普通 URL / 仓库资源。各类型按以下规则处理：
 
 | 输入 | 自动处理约定 |
 | --- | --- |
 | 模板、内置资源、Telegram、RTSP/RTMP | 保留当前处理方式 |
-| HTTP(S) `.m3u8` | 使用现有内置 m3u8 下载器 |
-| HTTP(S) `.mpd`、`.ism/Manifest` | 交给 N_m3u8DL-RE，匹配放在网站视频之前 |
+| HTTP(S) `.m3u8`、`.mpd`、`.ism/Manifest` | 交给 N_m3u8DL-RE，HLS 的 TS/fMP4 分片与 DASH、MSS 统一输出 MKV，匹配放在网站视频之前 |
 | 明确支持的图片站点 | 交给 gallery-dl，逐项登记站点和支持路径，并补匹配测试 |
 | X/Twitter、Instagram、Reddit 等图文视频混合站点 | 保留当前 yt-dlp 分流 |
 | `magnet:` | 交给 aria2 |
@@ -96,14 +95,14 @@ i install n-m3u8dl-re
 
 | 下载器 | 依赖资源 |
 | --- | --- |
-| 内置 m3u8、RTSP/RTMP | `ffmpeg` |
+| RTSP/RTMP | `ffmpeg` |
 | 网站视频 | `yt-dlp`、`ffmpeg` |
 | N_m3u8DL-RE | `N_m3u8DL-RE`、`ffmpeg` |
 | Telegram | `tdl` |
 | gallery-dl | `gallery-dl` |
 | aria2 | `aria2c` |
 
-内置 m3u8 在下载分片前解析 ffmpeg，缺少合并工具时提前失败；已有媒体目标且不覆盖时仍跳过依赖解析和下载。
+`.m3u8`、`.mpd`、`.ism/Manifest` 统一由 N_m3u8DL-RE 处理；RTSP/RTMP 在下载前解析 ffmpeg。已有媒体目标且不覆盖时仍跳过依赖解析和下载。
 
 每个平台独立核实上游发布内容，登记：官方项目和许可证、版本或稳定下载地址、系统与架构、包内命令路径、运行库及辅助文件需求。不能从文件名猜测资源存在，也不能把源代码包当作可执行发布包。
 
@@ -189,7 +188,7 @@ Telegram 保留现有“明确认证错误 → 当前终端登录 → 继续原�
 ## 9. 当前工具的实现约定
 
 - 三个适配器分别为 `aria2Downloader`、`nm3u8Downloader`、`galleryDownloader`，均实现既有接口，通过 `downloaders` 和 `selectDownloader` 进入统一执行路径。
-- 不保留下载器选择字段或选择分支。并发 `0` 表示下载器默认值，重试 `-1` 表示下载器默认值；CLI 未提供参数时传这些值，避免把内置 m3u8 的默认值错误套用到其他工具。
+- 不保留下载器选择字段或选择分支。并发 `0` 表示下载器默认值，重试 `-1` 表示下载器默认值；CLI 未提供参数时传这些值，避免把内置实现的默认值错误套用到其他工具。
 - aria2 只适配磁力和本地种子任务，按原始目录命名，不映射只适用于普通文件的统一参数；HTTP 代理不能转发 BT 对等连接，因此种子入口要求直连。普通 HTTP 文件继续使用内置实现。
 - N_m3u8DL-RE 的轨道、混流输出在本任务缓存完成后发布为最终文件，复用缓存锁及权限保留逻辑。N_m3u8DL-RE 统一混流为 MKV，避免把不同格式仅重命名为同一后缀。
 - gallery-dl 的 `--name` 表示输出子目录名，不将任意用户字符串拼接为工具命名模板。关闭环境代理，并明确传递跳过或覆盖选项；其输出按文件完成，不提供整批事务。

@@ -109,20 +109,29 @@ func runDownloadHelper(name string, args []string) error {
 		}
 		return os.WriteFile(fmt.Sprintf(pattern, 1), []byte("second"), 0600)
 	}
-	listFile := strings.TrimPrefix(arg("-i"), "concatf:file:")
-	list, err := os.ReadFile(listFile)
-	if err != nil {
-		return err
-	}
+	listFile, isList := strings.CutPrefix(arg("-i"), "concatf:file:")
 	var merged []byte
-	for _, line := range strings.Split(strings.TrimSpace(string(list)), "\n") {
-		name := strings.TrimSuffix(strings.TrimPrefix(line, "'"), "'")
-		name = strings.ReplaceAll(strings.TrimPrefix(name, "file:"), "'\\''", "'")
-		data, err := os.ReadFile(filepath.FromSlash(name))
+	if isList {
+		list, err := os.ReadFile(listFile)
 		if err != nil {
 			return err
 		}
-		merged = append(merged, data...)
+		for _, line := range strings.Split(strings.TrimSpace(string(list)), "\n") {
+			name := strings.TrimSuffix(strings.TrimPrefix(line, "'"), "'")
+			name = strings.ReplaceAll(strings.TrimPrefix(name, "file:"), "'\\''", "'")
+			data, err := os.ReadFile(filepath.FromSlash(name))
+			if err != nil {
+				return err
+			}
+			merged = append(merged, data...)
+		}
+	} else {
+		// fMP4直接输入拼接文件时整体复制，模拟重封装。
+		data, err := os.ReadFile(listFile)
+		if err != nil {
+			return err
+		}
+		merged = data
 	}
 	if err := os.WriteFile(args[len(args)-1], merged, 0600); err != nil {
 		return err

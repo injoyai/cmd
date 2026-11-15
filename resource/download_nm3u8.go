@@ -13,18 +13,23 @@ import (
 
 type nm3u8Downloader struct{}
 
+// Match 覆盖HLS、DASH和MSS，统一交给N_m3u8DL-RE处理。
 func (nm3u8Downloader) Match(raw string) bool {
 	u, ok := downloadURL(raw)
 	if !ok {
 		return false
 	}
 	p := strings.ToLower(u.Path)
-	return path.Ext(p) == ".mpd" || strings.HasSuffix(p, ".ism/manifest")
+	switch path.Ext(p) {
+	case ".m3u8", ".mpd":
+		return true
+	}
+	return strings.HasSuffix(p, ".ism/manifest")
 }
 
 func (nm3u8Downloader) Dependencies(op *Task) ([]string, error) {
 	if !(nm3u8Downloader{}).Match(op.URL()) {
-		return nil, errors.New("n-m3u8dl-re 需要 HTTP(S) .mpd 或 .ism/Manifest 地址")
+		return nil, errors.New("n-m3u8dl-re 需要 HTTP(S) .m3u8/.mpd 或 .ism/Manifest 地址")
 	}
 	if op.Coroutine < 0 || op.Coroutine > 2147483647 || op.Retry < -1 || op.Retry > 2147483647 {
 		return nil, errors.New("n-m3u8dl-re 并发数和重试次数超出范围")

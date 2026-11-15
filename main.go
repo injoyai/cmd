@@ -532,8 +532,8 @@ func newRootCommand() *cobra.Command {
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
-				{Name: "retry", Memo: "额外重试次数，默认由下载器决定（内置 m3u8 为 10）"},
-				{Name: "coroutine", Memo: "下载并发数，默认由下载器决定（内置 m3u8 为 20）", Short: "c"},
+				{Name: "retry", Memo: "额外重试次数，默认由下载器决定"},
+				{Name: "coroutine", Memo: "下载并发数，默认由下载器决定", Short: "c"},
 				{Name: "dir", Memo: "下载目录", DefaultValue: config.GetString("download.dir", "./")},
 				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: config.GetString("download.noticeEnable", "true")},
@@ -550,8 +550,8 @@ func newRootCommand() *cobra.Command {
 			Flag: []*Flag{
 				{Name: "download", Memo: "重新下载", Short: "d"},
 				{Name: "name", Memo: "自定义保存名称", Short: "n"},
-				{Name: "retry", Memo: "额外重试次数，默认由下载器决定（内置 m3u8 为 10）"},
-				{Name: "coroutine", Memo: "下载并发数，默认由下载器决定（内置 m3u8 为 20）", Short: "c"},
+				{Name: "retry", Memo: "额外重试次数，默认由下载器决定"},
+				{Name: "coroutine", Memo: "下载并发数，默认由下载器决定", Short: "c"},
 				{Name: "dir", Memo: "下载目录", DefaultValue: config.GetString("download.dir", "./")},
 				{Name: "proxy", Memo: "设置下载代理地址，空值表示直连", DefaultValue: config.GetProxy()},
 				{Name: "noticeEnable", Memo: "是否启用通知", DefaultValue: config.GetString("download.noticeEnable", "true")},

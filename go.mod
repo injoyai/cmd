@@ -8,7 +8,6 @@ require (
 	github.com/go-ole/go-ole v1.2.6
 	github.com/gomodule/redigo v1.8.5
 	github.com/gorilla/websocket v1.5.3
-	github.com/grafov/m3u8 v0.12.1
 	github.com/injoyai/bar v0.0.12
 	github.com/injoyai/base v1.2.23
 	github.com/injoyai/conv v1.2.8
@@ -42,6 +41,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/grafov/m3u8 v0.12.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect

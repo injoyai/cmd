@@ -39,8 +39,8 @@ i install tdl -d=true
 | `-n` / `--name` | 自定义保存名称；没有扩展名时补默认名称的最后一层后缀 |
 | `-d` / `--download` | 重新下载并覆盖已有目标，例如 `-d=true` |
 | `--proxy` | 代理地址，支持 HTTP、HTTPS、SOCKS5/SOCKS5H；显式空值 `--proxy=""` 表示本次直连 |
-| `-c` / `--coroutine` | 内置 m3u8 分片并发默认 20；N_m3u8DL-RE 分片并发使用上游默认值；gallery-dl 不支持 |
-| `--retry` | 首次尝试之外的重试次数；内置 m3u8 默认 10，其他下载器使用各自默认值；`0` 表示不重试 |
+| `-c` / `--coroutine` | N_m3u8DL-RE 分片并发使用上游默认值；gallery-dl 不支持 |
+| `--retry` | 首次尝试之外的重试次数；N_m3u8DL-RE 使用 `--download-retry-count`，其他下载器使用各自默认值；`0` 表示不重试 |
 | `--noticeEnable` | 下载完成后是否发送通知 |
 | `--noticeText` | 下载完成通知的内容 |
 
@@ -63,7 +63,7 @@ i install tdl --proxy=""
 ## 自动识别下载内容
 
 ```shell
-# DASH、MSS 流媒体自动使用 N_m3u8DL-RE，保存为 MKV
+# HLS、DASH、MSS 流媒体自动使用 N_m3u8DL-RE，保存为 MKV
 i dl 'https://example.com/video.mpd' --dir ./videos -n 演示
 
 # 图集；-n 指定本次下载的子目录名
@@ -73,7 +73,7 @@ i dl 'https://www.pixiv.net/users/123' --dir ./images -n 作品
 i dl './example.torrent' --proxy="" --dir ./downloads
 ```
 
-下载方式由资源自动识别：`.mpd`、`.ism/Manifest` 使用 N_m3u8DL-RE，磁力链接和本地 `.torrent` 文件使用 aria2。Pixiv 的作品与用户作品页、Danbooru 的帖子与图池、DeviantArt 的作品与画廊页使用 gallery-dl。普通文件和 `.m3u8` 保留内置下载方式；`.torrent` 网页链接只保存种子文件。X/Twitter、Instagram、Reddit 保留网站视频下载。
+下载方式由资源自动识别：`.m3u8`、`.mpd`、`.ism/Manifest` 均交给 N_m3u8DL-RE（HLS 的 TS 分片、fMP4 分片以及 DASH、MSS 统一保存为 MKV），磁力链接和本地 `.torrent` 文件使用 aria2。Pixiv 的作品与用户作品页、Danbooru 的帖子与图池、DeviantArt 的作品与画廊页使用 gallery-dl。普通文件保留内置 HTTP 下载方式；`.torrent` 网页链接只保存种子文件。X/Twitter、Instagram、Reddit 保留网站视频下载。
 
 地址或参数不支持时直接报错；下载失败也不会改换其他工具。
 
@@ -99,7 +99,7 @@ macOS 需要已有 Homebrew；Linux 按顺序使用已有的 apt-get、dnf 或 y
 
 N_m3u8DL-RE 还需要 ffmpeg，缺少时会尝试自动安装。Linux 的独立程序需要满足上游运行库要求；Windows gallery-dl 需要相应的 Visual C++ 运行库。不支持的平台和架构会直接报错。
 
-N_m3u8DL-RE 当前使用 0.6.0-beta；已发现该版本在部分输出重定向环境会异常退出，建议在终端中运行。内置 `.m3u8` 下载不受此限制影响。
+N_m3u8DL-RE 当前使用 0.6.0-beta；已发现该版本在部分输出重定向环境会异常退出，建议在终端中运行。`.m3u8`、`.mpd`、`.ism/Manifest` 均受该版本限制影响。
 
 ## Telegram 下载
 
@@ -124,11 +124,11 @@ i dl 'rtsp://192.168.1.10/live' --dir ./videos
 
 YouTube、Bilibili、AcFun、抖音、TikTok、Vimeo、Twitch、X/Twitter、Instagram、Facebook、Dailymotion、Reddit 等已识别站点使用 yt-dlp 下载。网站视频和播放列表的实际支持情况取决于 yt-dlp；下载失败时会显示工具错误。未指定名称时使用 yt-dlp 默认名称，播放列表可能生成多个文件。
 
-yt-dlp、ffmpeg 优先使用 PATH 中的程序，缺少时安装到 `i` 所在目录。m3u8 和 RTSP/RTMP 默认保存为 `.ts` 文件，例如 `video.v1.m3u8` 保存为 `video.v1.ts`。
+yt-dlp、ffmpeg 优先使用 PATH 中的程序，缺少时安装到 `i` 所在目录。RTSP/RTMP 默认保存为 `.ts` 文件；`.m3u8`、`.mpd`、`.ism/Manifest` 由 N_m3u8DL-RE 统一保存为 `.mkv`，例如 `video.v1.m3u8` 保存为 `video.v1.mkv`。
 
 macOS 缺少 ffmpeg 时，从 [Shaka FFmpeg n8.1.2-1](https://github.com/shaka-project/static-ffmpeg-binaries/releases/tag/n8.1.2-1) 自动安装对应的 amd64 / arm64 程序。
 
-录制时按 Ctrl+C 会先停止录制，再尝试合并已完成的分片：停止最多等待 5 秒，合并最多等待 2 分钟。合并失败会保留已有输出及可用缓存。重新下载相同的 m3u8 地址到相同位置时，可复用匹配的空闲缓存。
+录制 RTSP/RTMP 时按 Ctrl+C 会先停止录制，再尝试合并已完成的分片：停止最多等待 5 秒，合并最多等待 2 分钟。合并失败会保留已有输出及可用缓存。
 
 TS 合并按顺序连续读取分片，避免在分片边界丢失解码参数。合并时仅显示 ffmpeg 的错误，不输出版本信息和逐帧警告。
 

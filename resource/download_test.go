@@ -521,7 +521,7 @@ func TestRecursiveDependencies(t *testing.T) {
 func TestExistingMediaSkipsDependencies(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 	for _, tc := range []struct{ resource, output string }{
-		{"https://example.invalid/video.m3u8", "saved.ts"},
+		{"https://example.invalid/video.m3u8", "saved.mkv"},
 		{"rtsp://example.invalid/live", "saved.ts"},
 		{"https://example.invalid/video.mpd", "saved.mkv"},
 	} {
@@ -605,11 +605,11 @@ func TestDownloadMediaFilename(t *testing.T) {
 		name     string
 		want     string
 	}{
-		{"https://example.com/video.v1.m3u8", "", "video.v1.ts"},
-		{"https://www.youtube.com/video.m3u8", "", "video.ts"},
+		{"https://example.com/video.v1.m3u8", "", "video.v1.mkv"},
+		{"https://www.youtube.com/video.m3u8", "", "video.mkv"},
 		{"rtsp://example.com/live", "", "live.ts"},
 		{"rtmp://example.com/live", ".hidden", ".hidden.ts"},
-		{"https://example.com/video.m3u8?token=test", "saved", "saved.ts"},
+		{"https://example.com/video.m3u8?token=test", "saved", "saved.mkv"},
 		{"rtsp://example.com/live", "saved", "saved.ts"},
 		{"rtmp://example.com/live", "saved", "saved.ts"},
 	} {
