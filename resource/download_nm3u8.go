@@ -57,7 +57,7 @@ func (nm3u8Downloader) Download(ctx context.Context, op *Task) (string, bool, er
 		}
 		args := []string{op.URL(), "--save-dir", op.CacheDir, "--save-name", "result",
 			"--tmp-dir", filepath.Join(op.CacheDir, "segments"), "--auto-select", "--no-log",
-			"--disable-update-check", "--log-level", "ERROR",
+			"--disable-update-check",
 			"--write-meta-json", "false", "--ffmpeg-binary-path", op.tools["ffmpeg"],
 			"--mux-after-done", "format=mkv:muxer=ffmpeg", "--use-system-proxy", "false"}
 		if proxy := op.Proxy(); proxy != "" {

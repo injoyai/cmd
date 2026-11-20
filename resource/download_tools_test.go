@@ -91,7 +91,7 @@ func TestToolDownloadsAndOverwrite(t *testing.T) {
 		name, tool, input, output string
 		args                      []string
 	}{
-		{"n-m3u8dl-re", "N_m3u8DL-RE", "https://example.com/video.mpd", "saved.mkv", []string{"--log-level", "ERROR", "--download-retry-count", "0", "--thread-count", "4", "--use-system-proxy", "false", "--mux-after-done", "format=mkv:muxer=ffmpeg"}},
+		{"n-m3u8dl-re", "N_m3u8DL-RE", "https://example.com/video.mpd", "saved.mkv", []string{"--download-retry-count", "0", "--thread-count", "4", "--use-system-proxy", "false", "--mux-after-done", "format=mkv:muxer=ffmpeg"}},
 		{"gallery-dl", "gallery-dl", "https://www.pixiv.net/artworks/123", "saved", []string{"--retries", "0", "--proxy", "", "-o", "proxy-env=false", "--", "https://www.pixiv.net/artworks/123"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

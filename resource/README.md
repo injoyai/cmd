@@ -97,7 +97,7 @@ macOS 需要已有 Homebrew；Linux 按顺序使用已有的 apt-get、dnf 或 y
 
 包管理器安装继承 `--proxy`，`--proxy=""` 清除代理环境变量；`proxy.ignore` 正则不作用于包管理器内部请求，其自身配置仍有效。
 
-N_m3u8DL-RE 的日志级别为 ERROR，终端只显示该工具的错误日志。该工具还需要 ffmpeg，缺少时会尝试自动安装。Linux 的独立程序需要满足上游运行库要求；Windows gallery-dl 需要相应的 Visual C++ 运行库。不支持的平台和架构会直接报错。
+N_m3u8DL-RE 还需要 ffmpeg，缺少时会尝试自动安装。Linux 的独立程序需要满足上游运行库要求；Windows gallery-dl 需要相应的 Visual C++ 运行库。不支持的平台和架构会直接报错。
 
 N_m3u8DL-RE 当前使用 0.6.0-beta；已发现该版本在部分输出重定向环境会异常退出，建议在终端中运行。`.m3u8`、`.mpd`、`.ism/Manifest` 均受该版本限制影响。
 
