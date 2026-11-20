@@ -76,7 +76,7 @@ func (this *Task) SetFilename(name, extension string) {
 	if name == "" {
 		name = sourceFilename(this.Resource)
 	}
-	this.filename = resolveFilename(name, this.Name, extension)
+	this.filename = sanitizeFilename(resolveFilename(name, this.Name, extension))
 }
 
 func sourceFilename(resource string) string {
@@ -87,6 +87,14 @@ func sourceFilename(resource string) string {
 		}
 	}
 	return time.Now().Format("20060102150405")
+}
+
+// sanitizeFilename 把文件名中系统不允许的字符替换为下划线。
+func sanitizeFilename(name string) string {
+	return strings.NewReplacer(
+		`<`, "_", `>`, "_", `:`, "_", `"`, "_",
+		`/`, "_", `\`, "_", `|`, "_", `?`, "_", `*`, "_",
+	).Replace(name)
 }
 
 // resolveFilename 保留完整默认名称；只在需要转换格式或自定义名称缺后缀时处理扩展名。

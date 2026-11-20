@@ -183,3 +183,37 @@ func newTestTask(t *testing.T, config *Config) *Task {
 	t.Cleanup(task.Close)
 	return task
 }
+
+func TestSanitizeFilename(t *testing.T) {
+	for _, tt := range []struct{ name, want string }{
+		{"app.zip", "app.zip"},
+		{"1 2 :", "1 2 _"},
+		{`a<b>c:d"e|f?g*h`, "a_b_c_d_e_f_g_h"},
+		{`dir/name.zip`, "dir_name.zip"},
+		{`dir\name.zip`, "dir_name.zip"},
+		{"", ""},
+	} {
+		if got := sanitizeFilename(tt.name); got != tt.want {
+			t.Errorf("sanitizeFilename(%q) = %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestTaskFilenameReplacesInvalidCharacters(t *testing.T) {
+	dir := t.TempDir()
+	task := newTestTask(t, &Config{
+		Resource: "https://example.com/app.zip",
+		Dir:      dir,
+		Name:     "1 2 :",
+	})
+	want := filepath.Join(dir, "1 2 _.zip")
+	if task.Filename() != want {
+		t.Fatalf("Filename() = %q, want %q", task.Filename(), want)
+	}
+
+	task = newTestTask(t, &Config{Resource: "https://example.com/a:b.zip", Dir: dir})
+	want = filepath.Join(dir, "a_b.zip")
+	if task.Filename() != want {
+		t.Fatalf("default name = %q, want %q", task.Filename(), want)
+	}
+}
