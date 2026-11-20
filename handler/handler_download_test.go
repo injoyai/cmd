@@ -3,7 +3,6 @@ package handler
 import (
 	"bytes"
 	"errors"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,11 +12,10 @@ import (
 
 	"github.com/injoyai/cmd/resource"
 	"github.com/injoyai/goutil/oss"
-	"github.com/injoyai/logs"
 	"github.com/spf13/cobra"
 )
 
-func TestDownloadAndInstallLogsPreserveURL(t *testing.T) {
+func TestDownloadAndInstallOutput(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, password, ok := r.BasicAuth()
 		if !ok || user != "audit-user" || password != "audit-password" {
@@ -33,10 +31,7 @@ func TestDownloadAndInstallLogsPreserveURL(t *testing.T) {
 		{"下载", Download}, {"安装", Install},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var logged, stdout, stderr bytes.Buffer
-			previous := append([]io.Writer(nil), logs.DefaultInfo.Writer...)
-			logs.DefaultInfo.SetWriter(&logged)
-			t.Cleanup(func() { logs.DefaultInfo.SetWriter(previous...) })
+			var stdout, stderr bytes.Buffer
 			cmd := &cobra.Command{}
 			cmd.SetOut(&stdout)
 			cmd.SetErr(&stderr)
@@ -48,14 +43,13 @@ func TestDownloadAndInstallLogsPreserveURL(t *testing.T) {
 			if err != nil {
 				t.Fatalf("download/install failed: %v", err)
 			}
-			if !strings.Contains(logged.String(), "开始"+tc.name) || !strings.Contains(logged.String(), tc.name+"结束") {
-				t.Fatal("missing lifecycle logs")
+			// 下载过程诊断输出到 stderr，且只出现一次
+			if strings.Count(stderr.String(), "开始下载:") != 1 {
+				t.Fatalf("download diagnostic should appear once, got %q", stderr.String())
 			}
-			if !strings.Contains(logged.String(), raw) {
-				t.Fatal("lifecycle log did not preserve original URL")
-			}
-			if tc.name == "安装" && !strings.Contains(logged.String(), "安装结束: "+raw) {
-				t.Fatal("installation completion log did not preserve original URL")
+			// 完成结果输出到 stdout，且只出现一次
+			if strings.Count(stdout.String(), tc.name+"完成") != 1 {
+				t.Fatalf("completion result should appear once, got %q", stdout.String())
 			}
 		})
 	}

@@ -46,8 +46,6 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) error {
 		}
 	}
 
-	start := time.Now()
-	logs.Info("开始下载: ", args[0])
 	filename, exist, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          flags.GetString("dir"),
@@ -64,7 +62,6 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.Infof("下载结束: %s, 耗时: %s", filename, time.Since(start))
 	fmt.Fprintln(cmd.OutOrStdout(), "下载完成: ", filename, conv.Select(exist, "(已存在)", ""))
 
 	return nil
@@ -73,7 +70,6 @@ func Download(cmd *cobra.Command, args []string, flags *Flags) error {
 func InstallGo(cmd *cobra.Command, args []string, flags *Flags) error {
 	dir := "./"
 	start := time.Now()
-	logs.Info("开始安装: install_go")
 	filename, _, err := resource.MustDownload(g.Ctx(), &resource.Config{
 		Resource:     "install_go",
 		Dir:          dir,
@@ -101,8 +97,6 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) error {
 		return fmt.Errorf("请输入需要安装的应用")
 	}
 
-	start := time.Now()
-	logs.Info("开始安装: ", args[0])
 	filename, exist, err := resource.Install(g.Ctx(), &resource.Config{
 		Resource:     args[0],
 		Dir:          oss.ExecDir(),
@@ -115,8 +109,6 @@ func Install(cmd *cobra.Command, args []string, flags *Flags) error {
 	if err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
-	logs.Infof("安装结束: %s, 耗时: %s", args[0], time.Since(start))
-
 	fmt.Fprintln(cmd.OutOrStdout(), "安装完成: ", filename, conv.Select(exist, "(已存在)", ""))
 
 	return nil
